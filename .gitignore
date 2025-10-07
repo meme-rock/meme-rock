@@ -1,0 +1,65 @@
+# ===================================================================
+# Genel / Ortak Kurallar
+# ===================================================================
+hosting.txt
+.cursor
+.cursor/rules/rule.mdc
+# İşletim sistemi ve editör dosyaları
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.sublime-workspace
+
+# Bağımlılıklar (Tüm alt klasörlerdeki node_modules'ları yok say)
+**/node_modules
+
+# Çevre Değişkenleri (Tüm alt klasörlerdeki .env dosyalarını yok say)
+**/.env*
+
+# Log Dosyaları
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Test ve Build Çıktıları
+**/coverage
+/.nyc_output
+
+# ===================================================================
+# Sunucu (NestJS) Özel Kuralları
+# ===================================================================
+/server/dist
+/server/build
+/server/.next
+/server/.env.local
+# ===================================================================
+# Client (Next.js) Özel Kuralları
+# ===================================================================
+/client/.next/
+/client/out/
+/client/build
+/client/*.tsbuildinfo
+/client/next-env.d.ts
+
+# ===================================================================
+# Diğer
+# ===================================================================
+# Vercel
+.vercel
+
+# Pnp / Yarn
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
