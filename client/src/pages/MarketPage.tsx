@@ -77,7 +77,7 @@ export const MarketPage = ({}: MarketPageProps) => {
               <img
                 src="/ton_symbol.svg"
                 alt="TON"
-                className="w-5 h-5 filter brightness-110"
+                className="w-8 h-8 filter brightness-110"
               />
               <span>TON +20%</span>
             </button>

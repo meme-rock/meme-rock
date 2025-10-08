@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TonModule } from './ton/ton.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -17,6 +18,7 @@ if (!mongoUri) {
     }),
     MongooseModule.forRoot(mongoUri),
     UserModule,
+    TonModule,
   ],
   controllers: [AppController],
   providers: [AppService],

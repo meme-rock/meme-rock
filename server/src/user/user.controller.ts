@@ -8,10 +8,6 @@ export class UserController {
 
   @Post('loading/:_id')
   async loading(@Param('_id') _id: string, @Body() user: CreateUserDto) {
-    try {
-      return await this.userService.loading(_id, user);
-    } catch (error) {
-      throw error;
-    }
+    return await this.userService.loading(_id, user);
   }
 }

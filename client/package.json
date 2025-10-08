@@ -12,7 +12,9 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@ton/core": "^0.62.0",
     "@tonconnect/ui": "^2.3.1",
+    "@tonconnect/ui-react": "^2.3.1",
     "@twa-dev/sdk": "^8.0.2",
     "framer-motion": "^12.23.22",
     "lottie-react": "^2.4.1",

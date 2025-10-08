@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { TonController } from './ton.controller';
+import { TonService } from './ton.service';
+
+@Module({
+  imports: [],
+  controllers: [TonController],
+  providers: [TonService],
+})
+export class TonModule {}
+
+/* export class TonModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TelegramInitDataMiddleware).forRoutes(TonController);
+  }
+} */

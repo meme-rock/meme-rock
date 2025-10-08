@@ -7,6 +7,7 @@ import { MainPage } from "./pages/MainPage";
 import { BoostersPage } from "./pages/BoostersPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { TonConnectUIProvider } from "@tonconnect/ui-react";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,22 +28,29 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <TopBar stones={stones} />
+    <>
+      <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
+        <Router>
+          <div className="min-h-screen bg-black text-white flex flex-col">
+            <TopBar stones={stones} />
 
-        <main className="flex-1 pb-16">
-          <Routes>
-            <Route path="/" element={<MainPage />} />
-            <Route path="/boosters" element={<BoostersPage />} />
-            <Route path="/market" element={<MarketPage stones={stones} />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Routes>
-        </main>
+            <main className="flex-1 pb-16">
+              <Routes>
+                <Route path="/" element={<MainPage />} />
+                <Route path="/boosters" element={<BoostersPage />} />
+                <Route
+                  path="/market"
+                  element={<MarketPage stones={stones} />}
+                />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Routes>
+            </main>
 
-        <Navbar />
-      </div>
-    </Router>
+            <Navbar />
+          </div>
+        </Router>
+      </TonConnectUIProvider>
+    </>
   );
 }
 
