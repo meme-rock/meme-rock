@@ -32,7 +32,7 @@ export const ProfilePage = () => {
           },
           body: JSON.stringify({
             userAddress: walletAddress,
-            amount: "0.01", // 0.02 TON
+            amount: "0.5", // 0.02 TON
           }),
         }
       );

@@ -910,7 +910,6 @@ export function storeStonePurchase(src: StonePurchase) {
     b_0.storeUint(2560869873, 32);
     b_0.storeAddress(src.user);
     b_0.storeInt(src.amount, 257);
-    b_0.storeStringTail('Hello, From Thor!');
   };
 }
 
