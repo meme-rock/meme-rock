@@ -32,7 +32,7 @@ export const ProfilePage = () => {
           },
           body: JSON.stringify({
             userAddress: walletAddress,
-            amount: "2", // 0.02 TON
+            amount: "0.01", // 0.02 TON
           }),
         }
       );
@@ -42,6 +42,7 @@ export const ProfilePage = () => {
       }
 
       const transactionData = await response.json();
+      console.log("transactionData: ", transactionData);
       setTransaction(transactionData);
     } catch (error) {
       console.error("Error creating transaction:", error);

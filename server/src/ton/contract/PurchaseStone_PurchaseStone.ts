@@ -907,15 +907,16 @@ export type StonePurchase = {
 export function storeStonePurchase(src: StonePurchase) {
   return (builder: Builder) => {
     const b_0 = builder;
-    b_0.storeUint(2, 32);
+    b_0.storeUint(2560869873, 32);
     b_0.storeAddress(src.user);
     b_0.storeInt(src.amount, 257);
+    b_0.storeStringTail('Hello, From Thor!');
   };
 }
 
 export function loadStonePurchase(slice: Slice) {
   const sc_0 = slice;
-  if (sc_0.loadUint(32) !== 2) {
+  if (sc_0.loadUint(32) !== 2560869873) {
     throw Error('Invalid prefix');
   }
   const _user = sc_0.loadAddress();
@@ -1034,7 +1035,7 @@ function initPurchaseStone_init_args(src: PurchaseStone_init_args) {
 
 async function PurchaseStone_init(owner: Address, uniqueId: bigint) {
   const __code = Cell.fromHex(
-    'b5ee9c7241020901000137000228ff008e88f4a413f4bcf2c80bed5320e303ed43d9010602027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f1002f83001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21c002e3023220820b93b1ceba8e345b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb00e00708008210235f03fa40810101d70030f8416f24303220812eea05c70514f2f4817a8d02baf2f4707270136d5520c8cf8580ca00cf8440ce01fa02806acf40f400c901fb00003c6c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c0829e47eb4f',
+    'b5ee9c72410208010001390003feff008e88f4a413f4bcf2c80bed53208f6a3001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21821098a3c5f1bae3023220820b93b1cebae3026c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c082e1ed43d901060702027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f10008210235f03fa40810101d70030f8416f24303220812eea05c70514f2f4817a8d02baf2f4707270136d5520c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0000685b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0075d02c87',
   );
   const builder = beginCell();
   initPurchaseStone_init_args({
@@ -1333,7 +1334,7 @@ const PurchaseStone_types: ABIType[] = [
   },
   {
     name: 'StonePurchase',
-    header: 2,
+    header: 2560869873,
     fields: [
       {
         name: 'user',
@@ -1364,7 +1365,7 @@ const PurchaseStone_types: ABIType[] = [
 const PurchaseStone_opcodes = {
   Withdraw: 60010958,
   StonePurchasedNotification: 1,
-  StonePurchase: 2,
+  StonePurchase: 2560869873,
 };
 
 const PurchaseStone_getters: ABIGetter[] = [
