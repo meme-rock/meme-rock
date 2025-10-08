@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Lottie from "lottie-react";
-import starAnimation from "../../public/star.json";
+import starAnimation from "../../public/animated-star.json";
+import tonAnimation from "../../public/animated-ton.json";
+import star from "../../public/star.json";
 
 type CurrencyType = "stars" | "ton";
 
@@ -15,7 +17,7 @@ interface MarketPageProps {
   stones: number;
 }
 
-export const MarketPage = ({ stones }: MarketPageProps) => {
+export const MarketPage = ({}: MarketPageProps) => {
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyType>("stars");
 
@@ -59,8 +61,8 @@ export const MarketPage = ({ stones }: MarketPageProps) => {
                   : "text-gray-400 hover:text-gray-300"
               }`}
             >
-              <div className="w-5 h-5">
-                <Lottie animationData={starAnimation} loop={true} />
+              <div className="w-10 h-10">
+                <Lottie animationData={star} />
               </div>
               <span>Telegram Stars</span>
             </button>
@@ -100,15 +102,13 @@ export const MarketPage = ({ stones }: MarketPageProps) => {
                     }`}
                   >
                     {selectedCurrency === "stars" ? (
-                      <div className="w-5 h-5">
+                      <div className="w-10 h-10">
                         <Lottie animationData={starAnimation} loop={true} />
                       </div>
                     ) : (
-                      <img
-                        src="/ton_symbol.svg"
-                        alt="TON"
-                        className="w-5 h-5 filter brightness-110"
-                      />
+                      <div className="w-10 h-10">
+                        <Lottie animationData={tonAnimation} loop={true} />
+                      </div>
                     )}
                   </div>
                   <div>
@@ -123,9 +123,6 @@ export const MarketPage = ({ stones }: MarketPageProps) => {
                         {selectedCurrency === "stars"
                           ? item.currency.toLocaleString()
                           : item.currency.toFixed(2)}
-                      </span>
-                      <span className="text-gray-400 text-sm">
-                        {selectedCurrency === "stars" ? "⭐" : "TON"}
                       </span>
                     </div>
                     {item.bonus && (
