@@ -900,16 +900,20 @@ export function dictValueParserStonePurchasedNotification(): DictionaryValue<Sto
 
 export type StonePurchase = {
   $$type: 'StonePurchase';
-  user: Address;
   amount: bigint;
+  walletAddress: Address;
+  userId: string;
+  objectId: string;
 };
 
 export function storeStonePurchase(src: StonePurchase) {
   return (builder: Builder) => {
     const b_0 = builder;
     b_0.storeUint(2560869873, 32);
-    b_0.storeAddress(src.user);
     b_0.storeInt(src.amount, 257);
+    b_0.storeAddress(src.walletAddress);
+    b_0.storeStringRefTail(src.userId);
+    b_0.storeStringRefTail(src.objectId);
   };
 }
 
@@ -918,27 +922,53 @@ export function loadStonePurchase(slice: Slice) {
   if (sc_0.loadUint(32) !== 2560869873) {
     throw Error('Invalid prefix');
   }
-  const _user = sc_0.loadAddress();
   const _amount = sc_0.loadIntBig(257);
-  return { $$type: 'StonePurchase' as const, user: _user, amount: _amount };
+  const _walletAddress = sc_0.loadAddress();
+  const _userId = sc_0.loadStringRefTail();
+  const _objectId = sc_0.loadStringRefTail();
+  return {
+    $$type: 'StonePurchase' as const,
+    amount: _amount,
+    walletAddress: _walletAddress,
+    userId: _userId,
+    objectId: _objectId,
+  };
 }
 
 export function loadTupleStonePurchase(source: TupleReader) {
-  const _user = source.readAddress();
   const _amount = source.readBigNumber();
-  return { $$type: 'StonePurchase' as const, user: _user, amount: _amount };
+  const _walletAddress = source.readAddress();
+  const _userId = source.readString();
+  const _objectId = source.readString();
+  return {
+    $$type: 'StonePurchase' as const,
+    amount: _amount,
+    walletAddress: _walletAddress,
+    userId: _userId,
+    objectId: _objectId,
+  };
 }
 
 export function loadGetterTupleStonePurchase(source: TupleReader) {
-  const _user = source.readAddress();
   const _amount = source.readBigNumber();
-  return { $$type: 'StonePurchase' as const, user: _user, amount: _amount };
+  const _walletAddress = source.readAddress();
+  const _userId = source.readString();
+  const _objectId = source.readString();
+  return {
+    $$type: 'StonePurchase' as const,
+    amount: _amount,
+    walletAddress: _walletAddress,
+    userId: _userId,
+    objectId: _objectId,
+  };
 }
 
 export function storeTupleStonePurchase(source: StonePurchase) {
   const builder = new TupleBuilder();
-  builder.writeAddress(source.user);
   builder.writeNumber(source.amount);
+  builder.writeAddress(source.walletAddress);
+  builder.writeString(source.userId);
+  builder.writeString(source.objectId);
   return builder.build();
 }
 
@@ -1034,7 +1064,7 @@ function initPurchaseStone_init_args(src: PurchaseStone_init_args) {
 
 async function PurchaseStone_init(owner: Address, uniqueId: bigint) {
   const __code = Cell.fromHex(
-    'b5ee9c72410208010001390003feff008e88f4a413f4bcf2c80bed53208f6a3001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21821098a3c5f1bae3023220820b93b1cebae3026c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c082e1ed43d901060702027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f10008210235f03fa40810101d70030f8416f24303220812eea05c70514f2f4817a8d02baf2f4707270136d5520c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0000685b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0075d02c87',
+    'b5ee9c724102080100013a0003feff008e88f4a413f4bcf2c80bed53208f6a3001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21821098a3c5f1bae3023220820b93b1cebae3026c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c082e1ed43d901060702027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f10008410235f03810101d700fa4030f8416f24303220812eea04c70513f2f4817a8d03ba12f2f4707270136d5520c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0000685b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0004c45f84',
   );
   const builder = beginCell();
   initPurchaseStone_init_args({
@@ -1336,12 +1366,20 @@ const PurchaseStone_types: ABIType[] = [
     header: 2560869873,
     fields: [
       {
-        name: 'user',
+        name: 'amount',
+        type: { kind: 'simple', type: 'int', optional: false, format: 257 },
+      },
+      {
+        name: 'walletAddress',
         type: { kind: 'simple', type: 'address', optional: false },
       },
       {
-        name: 'amount',
-        type: { kind: 'simple', type: 'int', optional: false, format: 257 },
+        name: 'userId',
+        type: { kind: 'simple', type: 'string', optional: false },
+      },
+      {
+        name: 'objectId',
+        type: { kind: 'simple', type: 'string', optional: false },
       },
     ],
   },

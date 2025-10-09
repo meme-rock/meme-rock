@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TonController } from './ton.controller';
 import { TonService } from './ton.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  TonPayments,
+  TonPaymentsSchema,
+} from 'src/schemas/ton-payments.schema';
 
 @Module({
-  imports: [],
+  imports: [
+    MongooseModule.forFeature([
+      { name: TonPayments.name, schema: TonPaymentsSchema },
+    ]),
+  ],
   controllers: [TonController],
   providers: [TonService],
 })

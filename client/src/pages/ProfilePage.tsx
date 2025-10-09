@@ -31,8 +31,9 @@ export const ProfilePage = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userAddress: walletAddress,
+            wallet_address: walletAddress,
             amount: "0.5", // 0.02 TON
+            user_id: "5075071123",
           }),
         }
       );
