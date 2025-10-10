@@ -1,110 +1,70 @@
-import "buffer";
-import { useState } from "react";
-import {
-  TonConnectButton,
-  useTonConnectUI,
-  useTonAddress,
-  SendTransactionRequest,
-} from "@tonconnect/ui-react";
+import { ProfileHeader } from "../components/profile/ProfileHeader";
+import { AirdropStats } from "../components/profile/AirdropStats";
+import { InviteSection } from "../components/profile/InviteSection";
+import { WalletConnection } from "../components/profile/WalletConnection";
+import { UserStats } from "../components/profile/UserStats";
 
 export const ProfilePage = () => {
-  const [tonConnectUI] = useTonConnectUI();
-  const walletAddress = useTonAddress();
-  const [transaction, setTransaction] = useState<SendTransactionRequest | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
-
-  const createPurchaseTransaction = async () => {
-    if (!walletAddress) {
-      alert("Please connect your wallet first!");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/ton/create-purchase-stone-transaction`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            wallet_address: walletAddress,
-            amount: "0.2", // 0.02 TON
-            user_id: "5075071123",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to create transaction");
-      }
-
-      const transactionData = await response.json();
-      console.log("transactionData: ", transactionData);
-      setTransaction(transactionData);
-    } catch (error) {
-      console.error("Error creating transaction:", error);
-      alert("Failed to create transaction. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  // TODO: Bu veriler Redux'tan ve backend'den gelecek
+  const userData = {
+    username: "CryptoMiner",
+    photoUrl: undefined,
+    userId: "5075071123",
   };
 
-  const sendTransaction = async () => {
-    if (!transaction) {
-      alert("Please create transaction first!");
-      return;
-    }
+  const airdropData = {
+    totalEarned: 125000,
+    dailyEarnings: 5000,
+    nextAirdrop: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+  };
 
-    try {
-      await tonConnectUI.sendTransaction(transaction);
-      alert("Transaction sent successfully!");
-      setTransaction(null); // Reset transaction after sending
-    } catch (error) {
-      console.error("Error sending transaction:", error);
-      alert("Failed to send transaction. Please try again.");
-    }
+  const inviteData = {
+    inviteCount: 12,
+    inviteLink: "https://t.me/memerock_bot?start=ref_5075071123",
+    bonusPerInvite: 1000,
+  };
+
+  const statsData = {
+    miningLevel: 3,
+    totalStones: 50000,
+    miningStreak: 7,
+    tasksCompleted: 15,
   };
 
   return (
-    <div>
-      <TonConnectButton />
-      {walletAddress && <p>Wallet Address: {walletAddress}</p>}
-      {tonConnectUI.connected ? <p>Connected</p> : <p>Unconnected</p>}
-      {tonConnectUI.connected && (
-        <p>Account Address: {tonConnectUI.account?.address}</p>
-      )}
-      <div className="space-y-2">
-        <button
-          className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer hover:bg-green-600 disabled:opacity-50"
-          onClick={createPurchaseTransaction}
-          disabled={loading || !tonConnectUI.connected}
-        >
-          {loading
-            ? "Creating Transaction..."
-            : "Create Stone Purchase Transaction (0.02 TON)"}
-        </button>
+    <div className="min-h-screen bg-black relative overflow-hidden pb-20">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
 
-        {transaction && (
-          <button
-            className="bg-blue-500 text-white p-2 rounded-md hover:cursor-pointer hover:bg-blue-600"
-            onClick={sendTransaction}
-          >
-            Send Stone Purchase Transaction
-          </button>
-        )}
+      {/* Content container */}
+      <div className="relative container mx-auto px-4 py-6 max-w-2xl">
+        {/* Profile Header */}
+        <ProfileHeader
+          username={userData.username}
+          photoUrl={userData.photoUrl}
+          userId={userData.userId}
+        />
 
-        {transaction && (
-          <div className="mt-4 p-4 bg-gray-100 rounded-md">
-            <h3 className="font-bold">Transaction Details:</h3>
-            <pre className="text-xs mt-2 overflow-x-auto">
-              {JSON.stringify(transaction, null, 2)}
-            </pre>
-          </div>
-        )}
+        {/* Airdrop Stats */}
+        <AirdropStats
+          totalEarned={airdropData.totalEarned}
+          dailyEarnings={airdropData.dailyEarnings}
+          nextAirdrop={airdropData.nextAirdrop}
+        />
+
+        {/* Invite Section */}
+        <InviteSection
+          inviteCount={inviteData.inviteCount}
+          inviteLink={inviteData.inviteLink}
+          bonusPerInvite={inviteData.bonusPerInvite}
+        />
+
+        {/* Wallet Connection */}
+        <WalletConnection />
+
+        {/* User Stats */}
+        <UserStats stats={statsData} />
       </div>
     </div>
   );

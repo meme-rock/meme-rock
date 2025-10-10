@@ -17,7 +17,7 @@ export const MinerLevelThumbnails = ({
 }: MinerLevelThumbnailsProps) => {
   const levels: MinerLevel[] = Array.from({ length: maxLevel }, (_, i) => ({
     level: i + 1,
-    image: `/miner-level-${i + 1}.png`,
+    image: `/miner-level-${i + 1}.svg`,
     locked: i + 1 > currentLevel,
   }));
 

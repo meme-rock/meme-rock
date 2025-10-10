@@ -1,97 +1,177 @@
+import { useState } from "react";
+import { HourlyEarnings } from "../components/boosters/HourlyEarnings";
+import { BoostersList } from "../components/boosters/BoostersList";
+import { Booster } from "../components/boosters/BoosterCard";
+
 export const BoostersPage = () => {
+  // TODO: Bu veriler Redux'tan gelecek
+  const [userStones, setUserStones] = useState(50000);
+
+  const [boosters, setBoosters] = useState<Booster[]>([
+    {
+      id: "auto-miner",
+      name: "Auto Miner",
+      description: "Automatically mines stones for you",
+      icon: "⛏️",
+      level: 3,
+      maxLevel: 10,
+      isLocked: false,
+      unlockCost: 1000,
+      upgradeCost: 5000,
+      baseEarnings: 100,
+      currentEarnings: 300,
+      nextLevelEarnings: 400,
+    },
+    {
+      id: "mining-rig",
+      name: "Mining Rig",
+      description: "Advanced mining equipment",
+      icon: "🏭",
+      level: 2,
+      maxLevel: 10,
+      isLocked: false,
+      unlockCost: 5000,
+      upgradeCost: 12000,
+      baseEarnings: 250,
+      currentEarnings: 500,
+      nextLevelEarnings: 750,
+    },
+    {
+      id: "energy-boost",
+      name: "Energy Boost",
+      description: "Increases mining efficiency",
+      icon: "⚡",
+      level: 1,
+      maxLevel: 10,
+      isLocked: false,
+      unlockCost: 3000,
+      upgradeCost: 8000,
+      baseEarnings: 150,
+      currentEarnings: 150,
+      nextLevelEarnings: 300,
+    },
+    {
+      id: "quantum-chip",
+      name: "Quantum Chip",
+      description: "Cutting-edge mining technology",
+      icon: "💎",
+      level: 0,
+      maxLevel: 10,
+      isLocked: true,
+      unlockCost: 10000,
+      upgradeCost: 15000,
+      baseEarnings: 500,
+      currentEarnings: 0,
+      nextLevelEarnings: 500,
+    },
+    {
+      id: "ai-optimizer",
+      name: "AI Optimizer",
+      description: "AI-powered mining optimization",
+      icon: "🤖",
+      level: 0,
+      maxLevel: 10,
+      isLocked: true,
+      unlockCost: 25000,
+      upgradeCost: 30000,
+      baseEarnings: 1000,
+      currentEarnings: 0,
+      nextLevelEarnings: 1000,
+    },
+    {
+      id: "space-station",
+      name: "Space Station",
+      description: "Mine from orbit",
+      icon: "🛸",
+      level: 0,
+      maxLevel: 10,
+      isLocked: true,
+      unlockCost: 50000,
+      upgradeCost: 60000,
+      baseEarnings: 2000,
+      currentEarnings: 0,
+      nextLevelEarnings: 2000,
+    },
+  ]);
+
+  // Calculate total hourly earnings
+  const calculateHourlyRate = () => {
+    return boosters.reduce((total, booster) => {
+      if (!booster.isLocked) {
+        return total + booster.currentEarnings;
+      }
+      return total;
+    }, 0);
+  };
+
+  const hourlyRate = calculateHourlyRate();
+  const totalEarned24h = hourlyRate * 24;
+
+  const handleUnlock = (boosterId: string) => {
+    const booster = boosters.find((b) => b.id === boosterId);
+    if (!booster || !booster.isLocked) return;
+
+    if (userStones >= booster.unlockCost) {
+      setBoosters(
+        boosters.map((b) =>
+          b.id === boosterId
+            ? {
+                ...b,
+                isLocked: false,
+                level: 1,
+                currentEarnings: b.baseEarnings,
+              }
+            : b
+        )
+      );
+      setUserStones(userStones - booster.unlockCost);
+    }
+  };
+
+  const handleUpgrade = (boosterId: string) => {
+    const booster = boosters.find((b) => b.id === boosterId);
+    if (!booster || booster.isLocked || booster.level >= booster.maxLevel)
+      return;
+
+    if (userStones >= booster.upgradeCost) {
+      setBoosters(
+        boosters.map((b) =>
+          b.id === boosterId
+            ? {
+                ...b,
+                level: b.level + 1,
+                currentEarnings: b.nextLevelEarnings,
+                nextLevelEarnings: b.nextLevelEarnings + b.baseEarnings,
+                upgradeCost: Math.floor(b.upgradeCost * 1.5),
+              }
+            : b
+        )
+      );
+      setUserStones(userStones - booster.upgradeCost);
+    }
+  };
+
   return (
-    <div className="flex-1 bg-black px-6 py-8">
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-500/30">
-            <svg
-              className="w-8 h-8 text-purple-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">
-            Power Boosters
-          </h1>
-          <p className="text-gray-400">Level up your mining operation</p>
-        </div>
+    <div className="min-h-screen bg-black relative overflow-hidden pb-20">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
 
-        {/* Booster cards */}
-        <div className="space-y-4">
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-yellow-400"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">
-                    Mining Speed +50%
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    2x faster stone collection
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-yellow-400 font-bold">250 💎</div>
-                <div className="text-xs text-gray-500">24h duration</div>
-              </div>
-            </div>
-            <button className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold py-2 rounded-lg hover:from-yellow-400 hover:to-orange-400 transition-all duration-300">
-              Activate Booster
-            </button>
-          </div>
+      {/* Content container */}
+      <div className="relative container mx-auto px-4 py-2 max-w-2xl">
+        {/* Hourly Earnings Display */}
+        <HourlyEarnings
+          hourlyRate={hourlyRate}
+          totalEarned24h={totalEarned24h}
+        />
 
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-blue-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Auto Collector</h3>
-                  <p className="text-gray-500 text-sm">
-                    Automatic stone gathering
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-blue-400 font-bold">500 💎</div>
-                <div className="text-xs text-gray-500">Permanent</div>
-              </div>
-            </div>
-            <button className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold py-2 rounded-lg hover:from-blue-400 hover:to-cyan-400 transition-all duration-300">
-              Purchase
-            </button>
-          </div>
-        </div>
+        {/* Boosters List */}
+        <BoostersList
+          boosters={boosters}
+          userStones={userStones}
+          onUnlock={handleUnlock}
+          onUpgrade={handleUpgrade}
+        />
       </div>
     </div>
   );

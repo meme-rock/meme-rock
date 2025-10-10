@@ -46,12 +46,15 @@ export const MarketPage = ({}: MarketPageProps) => {
     selectedCurrency === "stars" ? starsPricing : tonPricing;
 
   return (
-    <div className="flex-1 bg-black px-6 py-8">
-      <div className="max-w-md mx-auto">
-        {/* Stone Display */}
-        <div className="flex justify-center mb-8"></div>
+    <div className="min-h-screen bg-black relative overflow-hidden pb-20">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
+
+      {/* Content container */}
+      <div className="relative max-w-md mx-auto px-4 py-2">
         {/* Currency Selector */}
-        <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-1 mb-6">
+        <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-1 mb-4">
           <div className="grid grid-cols-2 gap-1">
             <button
               onClick={() => setSelectedCurrency("stars")}
@@ -85,7 +88,7 @@ export const MarketPage = ({}: MarketPageProps) => {
         </div>
 
         {/* Pricing Cards - Click to Expand */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {currentPricing.map((item) => (
             <div
               key={item.id}
@@ -151,7 +154,7 @@ export const MarketPage = ({}: MarketPageProps) => {
         </div>
 
         {/* Info Section */}
-        <div className="mt-8 p-4 bg-gray-900/30 border border-gray-800/50 rounded-xl">
+        <div className="mt-6 p-4 bg-gray-900/30 border border-gray-800/50 rounded-xl">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg

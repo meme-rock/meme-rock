@@ -54,7 +54,7 @@ export const MineButton = ({
           }`}
         >
           <div className="flex items-center gap-3">
-            <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
+            <img src="/stone.svg" alt="Stone" className="w-12 h-12" />
             <div className="flex flex-col items-start">
               <span
                 className={`text-xl font-bold tracking-wide ${

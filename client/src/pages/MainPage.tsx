@@ -81,7 +81,7 @@ export const MainPage = () => {
 
           {/* Miner display */}
           <div className="mt-2">
-            <MinerDisplay level={currentLevel} />
+            <MinerDisplay level={1} />
           </div>
 
           {/* Mine button */}

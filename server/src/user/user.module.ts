@@ -4,10 +4,14 @@ import { UserService } from './user.service';
 import { TelegramInitDataMiddleware } from './middleware/telegram-initdata.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
+import { Miner, MinerSchema } from 'src/schemas/miner.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Miner.name, schema: MinerSchema },
+    ]),
   ],
   controllers: [UserController],
   providers: [UserService],

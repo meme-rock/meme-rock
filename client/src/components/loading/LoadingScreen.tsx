@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLoadingMutation } from "../../redux/services/user/user-api";
 import { IUser } from "../../types";
 import WebApp from "@twa-dev/sdk";
@@ -10,6 +10,7 @@ interface LoadingScreenProps {
 
 export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
   const [loadingMutation] = useLoadingMutation();
+  const hasLoadedRef = useRef(false); // Race condition önleme flag'i
 
   useEffect(() => {
     const timer = setTimeout(onComplete, 4000);
@@ -17,8 +18,17 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
   }, [onComplete]);
 
   useEffect(() => {
+    // Eğer zaten load edildiyse, tekrar çalıştırma
+    if (hasLoadedRef.current) {
+      console.log("User already loaded, skipping...");
+      return;
+    }
+
     const loadUser = async () => {
       try {
+        // Flag'i hemen set et (race condition önleme)
+        hasLoadedRef.current = true;
+
         const telegramUser = WebApp.initDataUnsafe.user;
         if (telegramUser) {
           const { id, is_premium, ...rest } = telegramUser;
@@ -29,18 +39,25 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
               is_telegram_premium: is_premium,
             },
           };
+
+          console.log("Loading user:", id);
+
           // Redux RTK Query ile loading mutation'ını çağır
           await loadingMutation({
             user: user as unknown as Partial<IUser>,
           }).unwrap();
+
+          console.log("User loaded successfully");
         }
       } catch (error) {
         console.error("Failed to load user:", error);
+        // Hata durumunda flag'i sıfırla (retry için)
+        hasLoadedRef.current = false;
       }
     };
 
     loadUser();
-  }, [loadingMutation]);
+  }, []); // Dependency array boş - sadece mount'ta çalış
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
       {/* Background gradient overlay */}
