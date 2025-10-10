@@ -1,10 +1,46 @@
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useLoadingMutation } from "../../redux/services/user/user-api";
+import { IUser } from "../../types";
+import WebApp from "@twa-dev/sdk";
 
 interface LoadingScreenProps {
   onComplete: () => void;
 }
 
 export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
+  const [loadingMutation] = useLoadingMutation();
+
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 4000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const telegramUser = WebApp.initDataUnsafe.user;
+        if (telegramUser) {
+          const { id, is_premium, ...rest } = telegramUser;
+          const user = {
+            _id: id.toString(),
+            telegram_data: {
+              ...rest,
+              is_telegram_premium: is_premium,
+            },
+          };
+          // Redux RTK Query ile loading mutation'ını çağır
+          await loadingMutation({
+            user: user as unknown as Partial<IUser>,
+          }).unwrap();
+        }
+      } catch (error) {
+        console.error("Failed to load user:", error);
+      }
+    };
+
+    loadUser();
+  }, [loadingMutation]);
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
       {/* Background gradient overlay */}
@@ -160,9 +196,6 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
           </motion.p>
         </motion.div>
       </motion.div>
-
-      {/* Auto-complete after 4 seconds */}
-      {setTimeout(onComplete, 4000)}
     </div>
   );
 };

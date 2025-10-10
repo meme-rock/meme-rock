@@ -983,6 +983,72 @@ export function dictValueParserStonePurchase(): DictionaryValue<StonePurchase> {
   };
 }
 
+export type StonePurchaseSuccessNotification = {
+  $$type: 'StonePurchaseSuccessNotification';
+  queryId: string;
+};
+
+export function storeStonePurchaseSuccessNotification(
+  src: StonePurchaseSuccessNotification,
+) {
+  return (builder: Builder) => {
+    const b_0 = builder;
+    b_0.storeUint(3667243021, 32);
+    b_0.storeStringRefTail(src.queryId);
+  };
+}
+
+export function loadStonePurchaseSuccessNotification(slice: Slice) {
+  const sc_0 = slice;
+  if (sc_0.loadUint(32) !== 3667243021) {
+    throw Error('Invalid prefix');
+  }
+  const _queryId = sc_0.loadStringRefTail();
+  return {
+    $$type: 'StonePurchaseSuccessNotification' as const,
+    queryId: _queryId,
+  };
+}
+
+export function loadTupleStonePurchaseSuccessNotification(source: TupleReader) {
+  const _queryId = source.readString();
+  return {
+    $$type: 'StonePurchaseSuccessNotification' as const,
+    queryId: _queryId,
+  };
+}
+
+export function loadGetterTupleStonePurchaseSuccessNotification(
+  source: TupleReader,
+) {
+  const _queryId = source.readString();
+  return {
+    $$type: 'StonePurchaseSuccessNotification' as const,
+    queryId: _queryId,
+  };
+}
+
+export function storeTupleStonePurchaseSuccessNotification(
+  source: StonePurchaseSuccessNotification,
+) {
+  const builder = new TupleBuilder();
+  builder.writeString(source.queryId);
+  return builder.build();
+}
+
+export function dictValueParserStonePurchaseSuccessNotification(): DictionaryValue<StonePurchaseSuccessNotification> {
+  return {
+    serialize: (src, builder) => {
+      builder.storeRef(
+        beginCell().store(storeStonePurchaseSuccessNotification(src)).endCell(),
+      );
+    },
+    parse: (src) => {
+      return loadStonePurchaseSuccessNotification(src.loadRef().beginParse());
+    },
+  };
+}
+
 export type PurchaseStone$Data = {
   $$type: 'PurchaseStone$Data';
   owner: Address;
@@ -1064,7 +1130,7 @@ function initPurchaseStone_init_args(src: PurchaseStone_init_args) {
 
 async function PurchaseStone_init(owner: Address, uniqueId: bigint) {
   const __code = Cell.fromHex(
-    'b5ee9c724102080100013a0003feff008e88f4a413f4bcf2c80bed53208f6a3001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21821098a3c5f1bae3023220820b93b1cebae3026c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c082e1ed43d901060702027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f10008410235f03810101d700fa4030f8416f24303220812eea04c70513f2f4817a8d03ba12f2f4707270136d5520c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0000685b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0004c45f84',
+    'b5ee9c724102080100014c0003feff008e88f4a413f4bcf2c80bed53208f6a3001d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f953101d31f02de21821098a3c5f1bae3023220820b93b1cebae3026c12c00001c121b08e10f842c8cf8508ce70cf0b6ec98042fb00e0f2c082e1ed43d901060702027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f1000a810235f03810101d700fa40d431d430d0f8416f24303220812eea05c70514f2f4817a8d04ba13f2f401c8018210da95b00d58cb1f01c8cecdc970727014c8cf8580ca00cf8440ce01fa02806acf40f400c901fb0000685b8168c9f84222c705f2f482089896808010fb027f01708306036d5033c8cf8580ca00cf8440ce01fa02806acf40f400c901fb00322aef8e',
   );
   const builder = beginCell();
   initPurchaseStone_init_args({
@@ -1384,6 +1450,16 @@ const PurchaseStone_types: ABIType[] = [
     ],
   },
   {
+    name: 'StonePurchaseSuccessNotification',
+    header: 3667243021,
+    fields: [
+      {
+        name: 'queryId',
+        type: { kind: 'simple', type: 'string', optional: false },
+      },
+    ],
+  },
+  {
     name: 'PurchaseStone$Data',
     header: null,
     fields: [
@@ -1403,6 +1479,7 @@ const PurchaseStone_opcodes = {
   Withdraw: 60010958,
   StonePurchasedNotification: 1,
   StonePurchase: 2560869873,
+  StonePurchaseSuccessNotification: 3667243021,
 };
 
 const PurchaseStone_getters: ABIGetter[] = [

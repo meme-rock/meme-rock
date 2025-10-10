@@ -18,7 +18,7 @@ export class TonPayments {
   @Prop({ type: String, default: ETonPaymentStatus.PENDING })
   status: ETonPaymentStatus;
 
-  @Prop({ type: Date, default: Date.now, expires: 200 })
+  @Prop({ type: Date, default: Date.now, expires: 900 })
   expires_at: Date;
 }
 

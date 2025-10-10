@@ -6,11 +6,13 @@ import {
   TonPayments,
   TonPaymentsSchema,
 } from 'src/schemas/ton-payments.schema';
+import { User, UserSchema } from 'src/schemas/user.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: TonPayments.name, schema: TonPaymentsSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [TonController],

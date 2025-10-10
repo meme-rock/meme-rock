@@ -28,8 +28,14 @@ export class TonController {
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  async handleTonApiNotification(@Body() body: any) {
-    this.logger.log(`Received TON API notification: ${JSON.stringify(body)}`);
+  async handleTonApiNotification(
+    @Body() body: { account_id: string; lt: string; tx_hash: string },
+  ) {
+    return await this.tonService.handleTonPayment(
+      body.account_id,
+      body.lt,
+      body.tx_hash,
+    );
   }
 
   @Post('decode-payload')

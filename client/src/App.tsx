@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { LoadingScreen } from "./components/LoadingScreen";
+import { LoadingScreen } from "./components/loading/LoadingScreen";
 import { TopBar } from "./components/TopBar";
 import { Navbar } from "./components/Navbar";
 import { MainPage } from "./pages/MainPage";
