@@ -87,3 +87,10 @@ export interface IBooster {
   is_unlocked: boolean;
   __v?: number;
 }
+
+export interface IMiner {
+  _id: string;
+  level: string;
+  stones_income: number;
+  spent_stones_to_upgrade: number;
+}

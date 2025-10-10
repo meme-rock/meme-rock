@@ -28,31 +28,33 @@ export class UserService {
       }
 
       // Use findOneAndUpdate with upsert to handle race conditions
-      const updatedUser = await this.userModel.findOneAndUpdate(
-        { _id: _id }, // Filter
-        {
-          // Update telegram data always
-          $set: {
-            telegram_data: user.telegram_data,
-          },
-          // Set game_data only if it doesn't exist (for new users)
-          $setOnInsert: {
-            game_data: {
-              miner: level1Miner._id,
-              stones: 0,
-              level: 0,
-              profit_per_hour: 0,
-              is_premium: false,
-              auto_collector: false,
+      const updatedUser = await this.userModel
+        .findOneAndUpdate(
+          { _id: _id }, // Filter
+          {
+            // Update telegram data always
+            $set: {
+              telegram_data: user.telegram_data,
+            },
+            // Set game_data only if it doesn't exist (for new users)
+            $setOnInsert: {
+              game_data: {
+                miner: level1Miner._id,
+                stones: 0,
+                level: 0,
+                profit_per_hour: 0,
+                is_premium: false,
+                auto_collector: false,
+              },
             },
           },
-        },
-        {
-          upsert: true, // Create if doesn't exist
-          new: true, // Return updated document
-          setDefaultsOnInsert: true, // Apply schema defaults
-        },
-      );
+          {
+            upsert: true, // Create if doesn't exist
+            new: true, // Return updated document
+            setDefaultsOnInsert: true, // Apply schema defaults
+          },
+        )
+        .populate('game_data.miner');
 
       console.log('User loaded/updated successfully:', _id);
       return {

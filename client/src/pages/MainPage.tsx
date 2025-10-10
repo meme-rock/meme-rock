@@ -3,19 +3,21 @@ import { MinerLevelThumbnails } from "../components/main/MinerLevelThumbnails";
 import { MinerDisplay } from "../components/main/MinerDisplay";
 import { MineButton } from "../components/main/MineButton";
 import { UpgradeRequirements } from "../components/main/UpgradeRequirements";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 export const MainPage = () => {
+  const miner = useSelector((state: RootState) => state.miner);
+  console.log("miner: ", miner);
   // TODO: Bu veriler Redux'tan gelecek
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [userStones, setUserStones] = useState(50000);
+  const currentLevel = Number(miner.level.split("_")[1]);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   // Mine button handler
   const handleMine = () => {
     if (cooldownRemaining > 0) return;
 
-    // Claim stones
-    setUserStones((prev) => prev + 500);
+    // TODO: Backend'e mine isteği gönder
 
     // Start 24 hour cooldown
     setCooldownRemaining(86400); // 24 hours in seconds
@@ -32,38 +34,16 @@ export const MainPage = () => {
     return () => clearInterval(timer);
   }, [cooldownRemaining]);
 
-  // Upgrade requirements for next level
-  const upgradeRequirements = [
-    {
-      type: "stones" as const,
-      label: "Collect Stones",
-      current: userStones,
-      required: 100000,
-      completed: userStones >= 100000,
-    },
-    {
-      type: "level" as const,
-      label: "Complete Daily Tasks",
-      current: 5,
-      required: 10,
-      completed: false,
-    },
-    {
-      type: "task" as const,
-      label: "Mining Streak",
-      current: 3,
-      required: 7,
-      completed: false,
-    },
-  ];
+  // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
+  const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
+  const spent_stones_to_upgrade = miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
 
   const handleUpgrade = () => {
-    const canUpgrade = upgradeRequirements.every((req) => req.completed);
+    const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
     if (!canUpgrade) return;
 
-    setCurrentLevel((prev) => prev + 1);
-    setUserStones((prev) => prev - 100000);
-    // TODO: Backend'e upgrade isteği gönder
+    // TODO: Backend'e upgrade isteği gönder (level artacak)
+    console.log("Upgrading to level", currentLevel + 1);
   };
 
   return (
@@ -81,14 +61,14 @@ export const MainPage = () => {
 
           {/* Miner display */}
           <div className="mt-2">
-            <MinerDisplay level={1} />
+            <MinerDisplay level={currentLevel} />
           </div>
 
           {/* Mine button */}
           <div className="mt-4">
             <MineButton
               onMine={handleMine}
-              reward={500}
+              reward={miner.stones_income}
               cooldownRemaining={cooldownRemaining}
             />
           </div>
@@ -96,10 +76,10 @@ export const MainPage = () => {
           {/* Upgrade requirements */}
           <div className="w-full px-4">
             <UpgradeRequirements
-              currentLevel={currentLevel}
               nextLevel={currentLevel + 1}
-              requirements={upgradeRequirements}
-              canUpgrade={upgradeRequirements.every((req) => req.completed)}
+              stonesSpent={stonesSpent}
+              spent_stones_to_upgrade={spent_stones_to_upgrade}
+              canUpgrade={stonesSpent >= spent_stones_to_upgrade}
               onUpgrade={handleUpgrade}
             />
           </div>
