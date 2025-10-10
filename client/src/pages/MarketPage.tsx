@@ -67,7 +67,7 @@ export const MarketPage = ({}: MarketPageProps) => {
               <div className="w-10 h-10">
                 <Lottie animationData={star} />
               </div>
-              <span>Telegram Stars</span>
+              <span>Stars</span>
             </button>
             <button
               onClick={() => setSelectedCurrency("ton")}
@@ -177,7 +177,7 @@ export const MarketPage = ({}: MarketPageProps) => {
               </h3>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {selectedCurrency === "stars"
-                  ? "Telegram Stars purchases are processed instantly. Stars can be purchased from Telegram Premium or earned through activities."
+                  ? "Stars purchases are processed instantly. Stars can be purchased from Telegram Premium or earned through activities."
                   : "TON purchases include 20% bonus stones. All transactions are processed securely through The Open Network."}
               </p>
             </div>
