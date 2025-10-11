@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { MinerLevelThumbnails } from "../components/main/MinerLevelThumbnails";
-import { MinerDisplay } from "../components/main/MinerDisplay";
+import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
+import { HiltiDisplay } from "../components/rock/HiltiDisplay";
 import { MineButton } from "../components/main/MineButton";
 import { UpgradeRequirements } from "../components/main/UpgradeRequirements";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 
-export const MainPage = () => {
+export const RockPage = () => {
   const miner = useSelector((state: RootState) => state.miner);
   console.log("miner: ", miner);
   // TODO: Bu veriler Redux'tan gelecek
@@ -57,11 +57,11 @@ export const MainPage = () => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-start pt-2">
           {/* Level thumbnails */}
-          <MinerLevelThumbnails currentLevel={currentLevel} maxLevel={5} />
+          <HiltiLevelThumbnails currentLevel={currentLevel} maxLevel={5} />
 
           {/* Miner display */}
           <div className="mt-2">
-            <MinerDisplay level={currentLevel} />
+            <HiltiDisplay level={currentLevel} />
           </div>
 
           {/* Mine button */}

@@ -1,0 +1,37 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
+import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
+
+export type HiltiDocument = HydratedDocument<Hilti>;
+
+// Gereksinimlerin yapısını belirleyen özel bir Interface tanımlayalım (isteğe bağlı)
+interface HiltiUpgradeRequirements {
+  invitesRequired?: number;
+
+  stonesRequired?: number;
+
+  gemsRequired?: number;
+
+  playerLevelRequired?: number;
+  // Gelecekte eklenecek her türlü yeni gereksinim (örn. 'itemA_count', 'mission_completed' vb.)
+  [key: string]: any;
+}
+
+@Schema({ timestamps: true, _id: false })
+export class Hilti {
+  @Prop({ type: String, required: true })
+  _id: EHiltiLevel;
+
+  @Prop({ type: Number, required: true })
+  energy: number;
+
+  @Prop({ type: Date, required: true })
+  last_energy_refill: Date;
+
+  // YENİ ALAN: Bir sonraki seviyeye geçmek için gerekenler.
+  // Bu alanda, her Hilti seviyesi için farklı gereksinimler tanımlanabilir.
+  @Prop({ type: Object, default: {} }) // MongoDB'de esnek bir Object (veya Map) olarak saklanır
+  upgradeRequirements: HiltiUpgradeRequirements;
+}
+
+export const HiltiSchema = SchemaFactory.createForClass(Hilti);

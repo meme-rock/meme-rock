@@ -1,4 +1,4 @@
-import { EUserTaskStatus } from "./enums";
+import { EMinerLevel, EUserTaskStatus } from "./enums";
 
 export interface ITelegramData {
   username: string;
@@ -89,8 +89,7 @@ export interface IBooster {
 }
 
 export interface IMiner {
-  _id: string;
-  level: string;
+  _id: EMinerLevel;
   stones_income: number;
   spent_stones_to_upgrade: number;
 }

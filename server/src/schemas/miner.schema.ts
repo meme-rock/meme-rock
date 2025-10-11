@@ -4,10 +4,10 @@ import { EMinerLevel } from 'src/common/enums/miners.enum';
 
 export type MinerDocument = HydratedDocument<Miner>;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, _id: false })
 export class Miner {
-  @Prop({ type: String, required: true, enum: EMinerLevel, unique: true })
-  level: EMinerLevel;
+  @Prop({ type: String, required: true })
+  _id: EMinerLevel;
 
   @Prop({ type: Number, required: true })
   stones_income: number;

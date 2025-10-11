@@ -45,8 +45,8 @@ class GameData {
   @Prop({ type: Boolean, default: false })
   auto_collector: boolean;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Miner' })
-  miner: mongoose.Types.ObjectId;
+  @Prop({ type: String, ref: 'Miner' })
+  miner: string;
 }
 
 @Schema({ timestamps: true, _id: false })

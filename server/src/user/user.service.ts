@@ -19,8 +19,8 @@ export class UserService {
       console.log('Loading service started for user:', _id);
 
       // Find LEVEL_1 miner first
-      const level1Miner = await this.minerModel.findOne({
-        level: EMinerLevel.LEVEL_1,
+      const level1Miner = await this.minerModel.findById({
+        _id: EMinerLevel.LEVEL_1,
       });
 
       if (!level1Miner) {

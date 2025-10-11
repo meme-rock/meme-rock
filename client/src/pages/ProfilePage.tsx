@@ -3,13 +3,16 @@ import { AirdropStats } from "../components/profile/AirdropStats";
 import { InviteSection } from "../components/profile/InviteSection";
 import { WalletConnection } from "../components/profile/WalletConnection";
 import { UserStats } from "../components/profile/UserStats";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 export const ProfilePage = () => {
+  const user = useSelector((state: RootState) => state.user);
   // TODO: Bu veriler Redux'tan ve backend'den gelecek
   const userData = {
-    username: "CryptoMiner",
-    photoUrl: undefined,
-    userId: "5075071123",
+    username: user.telegram_data.username,
+    photoUrl: user.telegram_data.photo_url,
+    userId: user._id,
   };
 
   const airdropData = {
@@ -20,7 +23,7 @@ export const ProfilePage = () => {
 
   const inviteData = {
     inviteCount: 12,
-    inviteLink: "https://t.me/memerock_bot?start=ref_5075071123",
+    inviteLink: `https://t.me/testforbilal_bot/testforbilal?startapp=${user._id}`,
     bonusPerInvite: 1000,
   };
 

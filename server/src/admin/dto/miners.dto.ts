@@ -9,7 +9,7 @@ import { EMinerLevel } from 'src/common/enums/miners.enum';
 
 export class CreateMinerDto {
   @IsEnum(EMinerLevel)
-  level: EMinerLevel;
+  _id: EMinerLevel;
 
   @IsNumber()
   stones_income: number;

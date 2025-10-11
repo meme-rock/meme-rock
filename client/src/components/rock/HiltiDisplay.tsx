@@ -1,31 +1,31 @@
 import { motion } from "framer-motion";
 
-interface MinerDisplayProps {
+interface HiltiDisplayProps {
   level: number;
-  minerImage?: string;
+  hiltiImage?: string;
 }
 
-export const MinerDisplay = ({ level, minerImage }: MinerDisplayProps) => {
-  const imageSrc = minerImage || `/assets/miners/miner-level-${level}.svg`;
+export const HiltiDisplay = ({ level, hiltiImage }: HiltiDisplayProps) => {
+  const imageSrc = hiltiImage || `/assets/hiltis/hilti-level-${level}.svg`;
 
   return (
     <div className="relative flex flex-col items-center mb-3">
-      {/* Miner character container */}
+      {/* Hilti container */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, type: "spring" }}
         className="relative"
       >
-        {/* Miner image - tight fit for transparent background */}
+        {/* Hilti image - tight fit for transparent background */}
         <img
           src={imageSrc}
-          alt={`Miner Level ${level}`}
+          alt={`Hilti Level ${level}`}
           className="w-80 h-80 object-contain"
           style={{ imageRendering: "crisp-edges" }}
           onError={(e) => {
             (e.target as HTMLImageElement).src =
-              "/assets/miners/miner-level-1.svg";
+              "/assets/hiltis/hilti-level-1.svg";
           }}
         />
 

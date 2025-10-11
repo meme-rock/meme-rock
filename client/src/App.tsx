@@ -4,7 +4,7 @@ import { LoadingScreen } from "./components/loading/LoadingScreen";
 import { TopBar } from "./components/TopBar";
 import { Navbar } from "./components/Navbar";
 import { MainPage } from "./pages/MainPage";
-import { BoostersPage } from "./pages/BoostersPage";
+import { RockPage } from "./pages/RockPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
@@ -37,7 +37,7 @@ function App() {
             <main className="flex-1 pb-16">
               <Routes>
                 <Route path="/" element={<MainPage />} />
-                <Route path="/boosters" element={<BoostersPage />} />
+                <Route path="/rock" element={<RockPage />} />
                 <Route
                   path="/market"
                   element={<MarketPage stones={stones} />}

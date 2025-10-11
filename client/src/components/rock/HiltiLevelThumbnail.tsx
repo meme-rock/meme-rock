@@ -1,23 +1,23 @@
 import { motion } from "framer-motion";
 
-interface MinerLevel {
+interface HiltiLevel {
   level: number;
   image: string;
   locked: boolean;
 }
 
-interface MinerLevelThumbnailsProps {
+interface HiltiLevelThumbnailsProps {
   currentLevel: number;
   maxLevel?: number;
 }
 
-export const MinerLevelThumbnails = ({
+export const HiltiLevelThumbnails = ({
   currentLevel,
   maxLevel = 5,
-}: MinerLevelThumbnailsProps) => {
-  const levels: MinerLevel[] = Array.from({ length: maxLevel }, (_, i) => ({
+}: HiltiLevelThumbnailsProps) => {
+  const levels: HiltiLevel[] = Array.from({ length: maxLevel }, (_, i) => ({
     level: i + 1,
-    image: `/assets/miners/miner-level-${i + 1}.svg`,
+    image: `/assets/hiltis/hilti-level-${i + 1}.svg`,
     locked: i + 1 > currentLevel,
   }));
 
@@ -48,7 +48,7 @@ export const MinerLevelThumbnails = ({
                 onError={(e) => {
                   // Fallback if image doesn't exist
                   (e.target as HTMLImageElement).src =
-                    "assets/miners/miner-LEVEL_1.svg";
+                    "assets/hiltis/hilti-level-1.svg";
                 }}
               />
               {levelData.locked && (

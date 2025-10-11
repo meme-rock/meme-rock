@@ -1,4 +1,4 @@
-import { Home, Zap, User, ShoppingCart } from "lucide-react";
+import { Home, User, ShoppingCart } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const Navbar = () => {
@@ -7,7 +7,8 @@ export const Navbar = () => {
 
   const navItems = [
     { id: "main", label: "Main", icon: Home, path: "/" },
-    { id: "boosters", label: "Boosters", icon: Zap, path: "/boosters" },
+    // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
+    { id: "rock", label: "$ROCK", icon: "/rock.svg", path: "/rock" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
   ];
@@ -17,7 +18,21 @@ export const Navbar = () => {
       <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isSvgPath = typeof Icon === "string";
           const isActive = location.pathname === item.path;
+
+          // 1. Varsayılan boyut (Lucide ikonları için): w-6 h-6
+          let iconSizeClasses = `w-6 h-6`;
+
+          // 2. Eğer ikon rock.svg ise, boyutu w-8 h-8 olarak özelleştirin
+          if (item.id === "boosters" && isSvgPath) {
+            iconSizeClasses = `w-8 h-8`; // Özel boyut burada!
+          }
+
+          // Ortak sınıfları ekleyin
+          const iconClasses = `${iconSizeClasses} mb-1 transition-transform duration-300 ${
+            isActive ? "scale-110" : ""
+          }`;
 
           return (
             <button
@@ -29,11 +44,13 @@ export const Navbar = () => {
                   : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
               }`}
             >
-              <Icon
-                className={`w-6 h-6 mb-1 transition-transform duration-300 ${
-                  isActive ? "scale-110" : ""
-                }`}
-              />
+              {isSvgPath ? (
+                // SVG için <img> etiketi (Özel boyut bu kısma yansıyor)
+                <img src={Icon} alt={item.label} className={iconClasses} />
+              ) : (
+                // Bileşen ikonları (Lucide) (Varsayılan boyutta kalıyor)
+                <Icon className={iconClasses} />
+              )}
               <span className="text-xs font-medium">{item.label}</span>
             </button>
           );
