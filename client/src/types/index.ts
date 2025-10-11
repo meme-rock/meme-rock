@@ -1,4 +1,4 @@
-import { EMinerLevel, EUserTaskStatus } from "./enums";
+import { EHiltiLevel, EMinerLevel, EUserTaskStatus } from "./enums";
 
 export interface ITelegramData {
   username: string;
@@ -79,12 +79,12 @@ export interface ICard {
 export interface IBooster {
   _id: string;
   title: string;
-  stars_price: number;
-  image_url: string;
-  profit_per_hour: number;
+  unlock_price: number;
+  required_hilti_level: EHiltiLevel;
+  boost_rate: number;
+  description?: string;
   createdAt: string;
   updatedAt: string;
-  is_unlocked: boolean;
   __v?: number;
 }
 
@@ -92,4 +92,15 @@ export interface IMiner {
   _id: EMinerLevel;
   stones_income: number;
   spent_stones_to_upgrade: number;
+}
+
+export interface IHilti {
+  hilti: {
+    _id: EHiltiLevel;
+    max_energy: number;
+    rock_income: number;
+    upgrade_requirements: Record<string, any>;
+  };
+  current_energy: number;
+  last_energy_refill: Date;
 }

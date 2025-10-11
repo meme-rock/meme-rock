@@ -1,56 +1,45 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
-import { MineButton } from "../components/main/MineButton";
-import { UpgradeRequirements } from "../components/main/UpgradeRequirements";
+import { EnergyDisplay } from "../components/rock/EnergyDisplay";
+import { HiltiRequirements } from "../components/rock/HiltiRequirements";
+import { BoostersList } from "../components/rock/BoostersList";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 
 export const RockPage = () => {
-  const miner = useSelector((state: RootState) => state.miner);
-  console.log("miner: ", miner);
-  // TODO: Bu veriler Redux'tan gelecek
-  const currentLevel = Number(miner._id.split("_")[1]);
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const hilti_data = useSelector((state: RootState) => state.hilti);
+  console.log("hilti: ", hilti_data);
 
-  // Mine button handler
-  const handleMine = () => {
-    if (cooldownRemaining > 0) return;
+  const currentLevel = Number(hilti_data.hilti._id.split("_")[1]);
+  const [currentEnergy, setCurrentEnergy] = useState(hilti_data.current_energy);
 
-    // TODO: Backend'e mine isteği gönder
+  const maxEnergy = hilti_data.hilti.max_energy; // Her level için farklı max energy olabilir
 
-    // Start 24 hour cooldown
-    setCooldownRemaining(86400); // 24 hours in seconds
+  // Handle mine/drill action
+  const handleDrill = () => {
+    if (currentEnergy <= 0) return;
+
+    // TODO: Backend'e drill isteği gönder
+    setCurrentEnergy((prev) => Math.max(0, prev - 1));
+    console.log("Drilling rock, current energy:", currentEnergy - 1);
   };
 
-  // Cooldown timer
-  useEffect(() => {
-    if (cooldownRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setCooldownRemaining((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [cooldownRemaining]);
-
-  // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
-  const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
-  const spent_stones_to_upgrade = miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
-
+  // Handle upgrade
   const handleUpgrade = () => {
-    const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
-    if (!canUpgrade) return;
-
-    // TODO: Backend'e upgrade isteği gönder (level artacak)
-    console.log("Upgrading to level", currentLevel + 1);
+    // TODO: Backend'e upgrade isteği gönder
+    console.log("Upgrading hilti to level", currentLevel + 1);
   };
+
+  // TODO: Bu kontrol backend'den gelecek gerçek verilerle yapılacak
+  const canUpgrade =
+    Object.keys(hilti_data.hilti.upgrade_requirements || {}).length === 0;
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden pb-20">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
 
       {/* Content container */}
       <div className="relative container mx-auto px-4 py-1">
@@ -59,27 +48,44 @@ export const RockPage = () => {
           {/* Level thumbnails */}
           <HiltiLevelThumbnails currentLevel={currentLevel} maxLevel={5} />
 
-          {/* Miner display */}
+          {/* Hilti display */}
           <div className="mt-2">
-            <HiltiDisplay level={currentLevel} />
-          </div>
-
-          {/* Mine button */}
-          <div className="mt-4">
-            <MineButton
-              onMine={handleMine}
-              reward={miner.stones_income}
-              cooldownRemaining={cooldownRemaining}
+            <HiltiDisplay
+              level={currentLevel}
+              rockIncome={hilti_data.hilti.rock_income}
             />
           </div>
 
+          {/* Energy display */}
+          <div className="mt-4 w-full">
+            <EnergyDisplay
+              currentEnergy={currentEnergy}
+              maxEnergy={maxEnergy}
+            />
+          </div>
+
+          {/* Drill button */}
+          <button
+            onClick={handleDrill}
+            disabled={currentEnergy <= 0}
+            className={`mt-4 px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
+              currentEnergy > 0
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/50 active:scale-95"
+                : "bg-gray-800 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {currentEnergy > 0 ? "⚡ Drill Rock" : "No Energy"}
+          </button>
+
+          {/* Boosters section */}
+          <BoostersList currentLevel={currentLevel} />
+
           {/* Upgrade requirements */}
           <div className="w-full px-4">
-            <UpgradeRequirements
+            <HiltiRequirements
+              requirements={hilti_data.hilti.upgrade_requirements}
               nextLevel={currentLevel + 1}
-              stonesSpent={stonesSpent}
-              spent_stones_to_upgrade={spent_stones_to_upgrade}
-              canUpgrade={stonesSpent >= spent_stones_to_upgrade}
+              canUpgrade={canUpgrade}
               onUpgrade={handleUpgrade}
             />
           </div>

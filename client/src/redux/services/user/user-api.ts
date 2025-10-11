@@ -3,6 +3,7 @@ import { initDataHeader } from "../init-data-header";
 import type { IUser } from "../../../types";
 import { loadingUser } from "../../slices/userSlice";
 import { getMinerOnLoading } from "../../slices/minerSlice";
+import { getHiltiOnLoading } from "../../slices/hiltiSlice";
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/user`),
@@ -22,6 +23,7 @@ export const userApi = createApi({
           // userSlice'tan gelen updateUserData action'ını çağır
           dispatch(loadingUser(data.user));
           dispatch(getMinerOnLoading(data.user.game_data.miner));
+          dispatch(getHiltiOnLoading(data.user.game_data.hilti_data));
         } catch (error) {
           console.log("error: ", error);
         }

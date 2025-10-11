@@ -6,13 +6,6 @@ export type HiltiDocument = HydratedDocument<Hilti>;
 
 // Gereksinimlerin yapısını belirleyen özel bir Interface tanımlayalım (isteğe bağlı)
 interface HiltiUpgradeRequirements {
-  invitesRequired?: number;
-
-  stonesRequired?: number;
-
-  gemsRequired?: number;
-
-  playerLevelRequired?: number;
   // Gelecekte eklenecek her türlü yeni gereksinim (örn. 'itemA_count', 'mission_completed' vb.)
   [key: string]: any;
 }
@@ -23,15 +16,15 @@ export class Hilti {
   _id: EHiltiLevel;
 
   @Prop({ type: Number, required: true })
-  energy: number;
+  max_energy: number;
 
-  @Prop({ type: Date, required: true })
-  last_energy_refill: Date;
+  @Prop({ type: Number, required: true })
+  rock_income: number;
 
   // YENİ ALAN: Bir sonraki seviyeye geçmek için gerekenler.
   // Bu alanda, her Hilti seviyesi için farklı gereksinimler tanımlanabilir.
   @Prop({ type: Object, default: {} }) // MongoDB'de esnek bir Object (veya Map) olarak saklanır
-  upgradeRequirements: HiltiUpgradeRequirements;
+  upgrade_requirements: HiltiUpgradeRequirements;
 }
 
 export const HiltiSchema = SchemaFactory.createForClass(Hilti);

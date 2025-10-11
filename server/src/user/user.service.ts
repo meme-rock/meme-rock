@@ -5,12 +5,15 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { EMinerLevel } from 'src/common/enums/miners.enum';
+import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
+import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
+    @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
   ) {}
 
   //! Loading Service
@@ -18,13 +21,17 @@ export class UserService {
     try {
       console.log('Loading service started for user:', _id);
 
-      // Find LEVEL_1 miner first
-      const level1Miner = await this.minerModel.findById({
+      // Find LEVEL_1 miner and hilti first
+      const level1Miner = await this.minerModel.findOne({
         _id: EMinerLevel.LEVEL_1,
       });
 
-      if (!level1Miner) {
-        throw new Error('LEVEL_1 miner not found in database');
+      const level1Hilti = await this.hiltiModel.findOne({
+        _id: EHiltiLevel.LEVEL_1,
+      });
+
+      if (!level1Miner || !level1Hilti) {
+        throw new Error('LEVEL_1 miner or hilti not found in database');
       }
 
       // Use findOneAndUpdate with upsert to handle race conditions
@@ -45,6 +52,10 @@ export class UserService {
                 profit_per_hour: 0,
                 is_premium: false,
                 auto_collector: false,
+                hilti_data: {
+                  hilti: level1Hilti._id,
+                  last_energy_refill: new Date(),
+                },
               },
             },
           },
@@ -54,14 +65,16 @@ export class UserService {
             setDefaultsOnInsert: true, // Apply schema defaults
           },
         )
-        .populate('game_data.miner');
+        .populate('game_data.miner')
+        .populate('game_data.hilti_data.hilti');
 
       console.log('User loaded/updated successfully:', _id);
       return {
         user: updatedUser,
-        message: updatedUser.game_data?.miner
-          ? 'User updated successfully'
-          : 'User created successfully',
+        message:
+          updatedUser.game_data?.miner && updatedUser.game_data?.hilti_data
+            ? 'User updated successfully'
+            : 'User created successfully',
       };
     } catch (error) {
       console.error('Error in loading service:', error);
