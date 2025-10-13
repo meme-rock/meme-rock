@@ -22,7 +22,7 @@ export const userApi = createApi({
           console.log("loading data: ", data);
           // userSlice'tan gelen updateUserData action'ını çağır
           dispatch(loadingUser(data.user));
-          dispatch(getMinerOnLoading(data.user.game_data.miner));
+          dispatch(getMinerOnLoading(data.user.game_data.miner_data));
           dispatch(getHiltiOnLoading(data.user.game_data.hilti_data));
         } catch (error) {
           console.log("error: ", error);

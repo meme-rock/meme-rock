@@ -27,6 +27,15 @@ class TelegramData {
   @Prop({ type: Boolean })
   allows_write_to_pm: boolean;
 }
+//? Miner için ayrı bir alt şema oluşturuyoruz. GameData'ya bağlıyoruz.
+@Schema({ _id: false })
+class MinerData {
+  @Prop({ type: String, ref: 'Miner' })
+  miner: string;
+
+  @Prop({ type: Date, default: Date.now() })
+  last_mine: Date;
+}
 
 //? Hilti için ayrı bir alt şema oluşturuyoruz. GameData'ya bağlıyoruz.
 @Schema({ _id: false })
@@ -59,8 +68,8 @@ class GameData {
   @Prop({ type: Boolean, default: false })
   auto_collector: boolean;
 
-  @Prop({ type: String, ref: 'Miner' })
-  miner: string;
+  @Prop({ type: MinerData })
+  miner_data: MinerData;
 
   @Prop({ type: HiltiData })
   hilti_data: HiltiData;

@@ -46,12 +46,15 @@ export class UserService {
             // Set game_data only if it doesn't exist (for new users)
             $setOnInsert: {
               game_data: {
-                miner: level1Miner._id,
                 stones: 0,
                 level: 0,
                 profit_per_hour: 0,
                 is_premium: false,
                 auto_collector: false,
+                miner_data: {
+                  miner: level1Miner._id,
+                  last_mine: new Date(),
+                },
                 hilti_data: {
                   hilti: level1Hilti._id,
                   last_energy_refill: new Date(),
@@ -65,14 +68,14 @@ export class UserService {
             setDefaultsOnInsert: true, // Apply schema defaults
           },
         )
-        .populate('game_data.miner')
+        .populate('game_data.miner_data.miner')
         .populate('game_data.hilti_data.hilti');
 
       console.log('User loaded/updated successfully:', _id);
       return {
         user: updatedUser,
         message:
-          updatedUser.game_data?.miner && updatedUser.game_data?.hilti_data
+          updatedUser.game_data?.miner_data && updatedUser.game_data?.hilti_data
             ? 'User updated successfully'
             : 'User created successfully',
       };

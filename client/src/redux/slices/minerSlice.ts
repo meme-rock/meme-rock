@@ -5,9 +5,13 @@ import { EMinerLevel } from "../../types/enums";
 type MinerState = IMiner;
 
 const initialState: MinerState = {
-  _id: EMinerLevel.LEVEL_1,
-  stones_income: 0,
-  spent_stones_to_upgrade: 0,
+  miner: {
+    _id: EMinerLevel.LEVEL_1,
+    stones_income: 0,
+    spent_stones_to_upgrade: 0,
+    upgrade_requirements: {},
+  },
+  last_mine: new Date(),
 };
 
 export const minerSlice = createSlice({

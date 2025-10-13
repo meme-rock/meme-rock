@@ -7,10 +7,12 @@ import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 
 export const MainPage = () => {
-  const miner = useSelector((state: RootState) => state.miner);
-  console.log("miner: ", miner);
+  const miner_data = useSelector((state: RootState) => state.miner);
+  console.log("miner: ", miner_data);
   // TODO: Bu veriler Redux'tan gelecek
-  const currentLevel = Number(miner._id.split("_")[1]);
+  const currentLevel = Number(miner_data.miner._id.split("_")[1]);
+  const upgrade_requirements = miner_data.miner.upgrade_requirements;
+
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   // Mine button handler
@@ -36,7 +38,7 @@ export const MainPage = () => {
 
   // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
   const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
-  const spent_stones_to_upgrade = miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
+  const spent_stones_to_upgrade = miner_data.miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
 
   const handleUpgrade = () => {
     const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
@@ -68,21 +70,27 @@ export const MainPage = () => {
           <div className="mt-4">
             <MineButton
               onMine={handleMine}
-              reward={miner.stones_income}
+              reward={miner_data.miner.stones_income}
               cooldownRemaining={cooldownRemaining}
             />
           </div>
 
           {/* Upgrade requirements */}
-          <div className="w-full px-4">
-            <UpgradeRequirements
-              nextLevel={currentLevel + 1}
-              stonesSpent={stonesSpent}
-              spent_stones_to_upgrade={spent_stones_to_upgrade}
-              canUpgrade={stonesSpent >= spent_stones_to_upgrade}
-              onUpgrade={handleUpgrade}
-            />
-          </div>
+          {currentLevel < 5 && (
+            <div className="w-full px-4">
+              <UpgradeRequirements
+                nextLevel={currentLevel + 1}
+                inviteCount={7} // Kullanıcının yaptığı davet sayısı
+                requiredInvites={upgrade_requirements.invite} // Gerekli davet sayısı
+                dustSpent={999} // Harcanan dust
+                requiredDust={upgrade_requirements.spend_dust} // Gerekli dust
+                stonesSpent={1000} // Harcanan stone
+                requiredStones={upgrade_requirements.spend_stone} // Gerekli stone
+                canUpgrade={true}
+                onUpgrade={handleUpgrade}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

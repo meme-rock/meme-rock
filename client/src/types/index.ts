@@ -89,9 +89,13 @@ export interface IBooster {
 }
 
 export interface IMiner {
-  _id: EMinerLevel;
-  stones_income: number;
-  spent_stones_to_upgrade: number;
+  miner: {
+    _id: EMinerLevel;
+    stones_income: number;
+    spent_stones_to_upgrade: number;
+    upgrade_requirements: Record<string, any>;
+  };
+  last_mine: Date;
 }
 
 export interface IHilti {
