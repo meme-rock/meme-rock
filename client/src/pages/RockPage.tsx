@@ -2,20 +2,34 @@ import { useState } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
 import { EnergyDisplay } from "../components/rock/EnergyDisplay";
-import { HiltiRequirements } from "../components/rock/HiltiRequirements";
-import { BoostersList } from "../components/rock/BoostersList";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import { UpgradeRequirements } from "../components/rock/UpgradeRequirements";
+import { BoosterPage } from "../components/rock/BoosterPage";
+import boosterAnimation from "../../public/animated-booster.json";
+import Lottie from "lottie-react";
+import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
 
 export const RockPage = () => {
-  const hilti_data = useSelector((state: RootState) => state.hilti);
-  console.log("hilti: ", hilti_data);
+  const [getBoosters] = useGetBoostersMutation();
 
+  const hilti_data = useSelector((state: RootState) => state.hilti);
+  const boosters = useSelector((state: RootState) => state.booster);
+  console.log("boosters: ", boosters);
   const currentLevel = Number(hilti_data.hilti._id.split("_")[1]);
   const [currentEnergy, setCurrentEnergy] = useState(hilti_data.current_energy);
+  const [showBoosterPage, setShowBoosterPage] = useState(false);
 
   const maxEnergy = hilti_data.hilti.max_energy; // Her level için farklı max energy olabilir
 
+  const handleBoosterClick = async () => {
+    setShowBoosterPage(true);
+    if (boosters.length === 0) {
+      console.log("boosters is empty, fetching boosters");
+      await getBoosters({}).unwrap().then();
+      console.log("boosters2: ", boosters);
+    }
+  };
   // Handle mine/drill action
   const handleDrill = () => {
     if (currentEnergy <= 0) return;
@@ -34,6 +48,16 @@ export const RockPage = () => {
   // TODO: Bu kontrol backend'den gelecek gerçek verilerle yapılacak
   const canUpgrade =
     Object.keys(hilti_data.hilti.upgrade_requirements || {}).length === 0;
+
+  // If booster page is shown, render it instead
+  if (showBoosterPage) {
+    return (
+      <BoosterPage
+        currentHiltiLevel={currentLevel}
+        onClose={() => setShowBoosterPage(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden pb-20">
@@ -56,6 +80,17 @@ export const RockPage = () => {
             />
           </div>
 
+          {/* Booster button */}
+          <button
+            onClick={handleBoosterClick}
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/30 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <div className="w-8 h-8">
+              <Lottie animationData={boosterAnimation} loop={true} />
+            </div>
+            <span>Boosters</span>
+          </button>
+
           {/* Energy display */}
           <div className="mt-4 w-full">
             <EnergyDisplay
@@ -70,20 +105,22 @@ export const RockPage = () => {
             disabled={currentEnergy <= 0}
             className={`mt-4 px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
               currentEnergy > 0
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/50 active:scale-95"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/50 active:scale-95"
                 : "bg-gray-800 text-gray-500 cursor-not-allowed"
             }`}
           >
             {currentEnergy > 0 ? "⚡ Drill Rock" : "No Energy"}
           </button>
 
-          {/* Boosters section */}
-          <BoostersList currentLevel={currentLevel} />
-
           {/* Upgrade requirements */}
           <div className="w-full px-4">
-            <HiltiRequirements
-              requirements={hilti_data.hilti.upgrade_requirements}
+            <UpgradeRequirements
+              inviteCount={7} // Kullanıcının yaptığı davet sayısı
+              requiredInvites={2} // Gerekli davet sayısı
+              dustSpent={999} // Harcanan dust
+              requiredDust={3} // Gerekli dust
+              stonesSpent={1000} // Harcanan stone
+              requiredStones={3} // Gerekli stone
               nextLevel={currentLevel + 1}
               canUpgrade={canUpgrade}
               onUpgrade={handleUpgrade}

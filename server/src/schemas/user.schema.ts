@@ -50,6 +50,25 @@ class HiltiData {
   last_energy_refill: Date;
 }
 
+//? Booster için ayrı bir alt şema oluşturuyoruz. User'ın unlock ettiği ve level bilgisini tutar.
+@Schema({ _id: false })
+class UserBooster {
+  @Prop({ type: String, ref: 'Booster', required: true })
+  booster_id: string; // e.g., "booster_1_1"
+
+  @Prop({ type: Number, default: 0 })
+  current_level: number; // Current level of this booster (0 = not unlocked)
+
+  @Prop({ type: Boolean, default: false })
+  is_unlocked: boolean;
+
+  @Prop({ type: Date })
+  unlocked_at?: Date;
+
+  @Prop({ type: Date })
+  last_upgraded_at?: Date;
+}
+
 //? GameData için ayrı bir alt şema oluşturuyoruz.
 @Schema({ _id: false })
 class GameData {
@@ -57,7 +76,20 @@ class GameData {
   stones: number;
 
   @Prop({ type: Number, default: 0 })
+  dust: number;
+
+  @Prop({ type: Number, default: 0 })
+  rocks: number;
+
+  @Prop({ type: Number, default: 0 })
   level: number;
+
+  // Spending tracking for unlock requirements
+  @Prop({ type: Number, default: 0 })
+  spent_dust: number;
+
+  @Prop({ type: Number, default: 0 })
+  spent_stone: number;
 
   @Prop({ type: Number, default: 0 })
   profit_per_hour: number;
@@ -73,6 +105,9 @@ class GameData {
 
   @Prop({ type: HiltiData })
   hilti_data: HiltiData;
+
+  @Prop({ type: [UserBooster], default: [] })
+  boosters: UserBooster[]; // Array of user's boosters with their levels
 }
 
 @Schema({ timestamps: true, _id: false })

@@ -7,6 +7,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { EMinerLevel } from 'src/common/enums/miners.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
+import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 
 @Injectable()
 export class UserService {
@@ -14,13 +15,14 @@ export class UserService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
+    @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
   ) {}
 
   //! Loading Service
   async loading(_id: string, user: CreateUserDto) {
     try {
       console.log('Loading service started for user:', _id);
-
+      const boosters = await this.boosterModel.find();
       // Find LEVEL_1 miner and hilti first
       const level1Miner = await this.minerModel.findOne({
         _id: EMinerLevel.LEVEL_1,
@@ -74,6 +76,7 @@ export class UserService {
       console.log('User loaded/updated successfully:', _id);
       return {
         user: updatedUser,
+        boosters: boosters,
         message:
           updatedUser.game_data?.miner_data && updatedUser.game_data?.hilti_data
             ? 'User updated successfully'
@@ -92,6 +95,15 @@ export class UserService {
         };
       }
 
+      throw error;
+    }
+  }
+  async getBoosters() {
+    try {
+      const boosters = await this.boosterModel.find();
+      return boosters;
+    } catch (error) {
+      console.error('Error in getBoosters service:', error);
       throw error;
     }
   }

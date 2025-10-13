@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Put, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateMinerDto } from './dto/miners.dto';
 import { CreateHiltiDto } from './dto/hiltis.dto';
+import { CreateBoosterDto } from './dto/boosters.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -37,5 +38,24 @@ export class AdminController {
   @Put('update-miner/:id')
   async updateMiner(@Param('id') id: string, @Body() miner: CreateMinerDto) {
     return this.adminService.updateMiner(id, miner);
+  }
+
+  //! Boosters
+  @Get('get-boosters')
+  async getBoosters() {
+    return this.adminService.getBoosters();
+  }
+
+  @Post('create-booster')
+  async createBooster(@Body() booster: CreateBoosterDto) {
+    return this.adminService.createBooster(booster);
+  }
+
+  @Put('update-booster/:id')
+  async updateBooster(
+    @Param('id') id: string,
+    @Body() booster: CreateBoosterDto,
+  ) {
+    return this.adminService.updateBooster(id, booster);
   }
 }

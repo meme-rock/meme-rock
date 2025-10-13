@@ -5,12 +5,15 @@ import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { CreateMinerDto } from './dto/miners.dto';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { CreateHiltiDto } from './dto/hiltis.dto';
+import { CreateBoosterDto } from './dto/boosters.dto';
+import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
+    @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
   ) {}
 
   //! HILTIS
@@ -97,6 +100,53 @@ export class AdminService {
       return {
         miner: updatedMiner,
         message: 'Miner updated successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  //! BOOSTERS
+
+  async getBoosters() {
+    try {
+      return this.boosterModel.find();
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+  async createBooster(booster: CreateBoosterDto) {
+    try {
+      const createdBooster = await this.boosterModel.create(booster);
+      return {
+        booster: createdBooster,
+        message: 'Booster created successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+  async updateBooster(id: string, booster: CreateBoosterDto) {
+    try {
+      const updatedBooster = await this.boosterModel.findOneAndUpdate(
+        { _id: id },
+        booster,
+        {
+          new: true,
+        },
+      );
+      return {
+        booster: updatedBooster,
+        message: 'Booster updated successfully',
       };
     } catch (error) {
       console.log('Error: ', error);

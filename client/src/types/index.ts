@@ -76,15 +76,25 @@ export interface ICard {
   __v?: number;
 }
 
+export interface IBoosterLevelData {
+  level: number;
+  upgrade_cost: number;
+  profit_per_hour: number;
+}
+
 export interface IBooster {
   _id: string;
   title: string;
-  unlock_price: number;
-  required_hilti_level: EHiltiLevel;
-  boost_rate: number;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
+  required_hilti_level: EHiltiLevel | string;
+  max_level: number;
+  unlock_requirements: {
+    stone_pay?: number;
+    [key: string]: any;
+  };
+  level_data: IBoosterLevelData[];
+  image_url: string;
+  createdAt?: string;
+  updatedAt?: string;
   __v?: number;
 }
 

@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { Miner, MinerSchema } from 'src/schemas/miner.schema';
 import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
+import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
       { name: User.name, schema: UserSchema },
       { name: Miner.name, schema: MinerSchema },
       { name: Hilti.name, schema: HiltiSchema },
+      { name: Booster.name, schema: BoosterSchema },
     ]),
   ],
   controllers: [UserController],

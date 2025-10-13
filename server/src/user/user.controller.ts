@@ -10,4 +10,9 @@ export class UserController {
   async loading(@Param('_id') _id: string, @Body() user: CreateUserDto) {
     return await this.userService.loading(_id, user);
   }
+
+  @Get('get-boosters')
+  async getBoosters() {
+    return await this.userService.getBoosters();
+  }
 }
