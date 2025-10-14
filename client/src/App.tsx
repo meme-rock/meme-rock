@@ -8,11 +8,12 @@ import { RockPage } from "./pages/RockPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
+import { useSelector } from "react-redux";
+import { RootState } from "./redux/store";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [stones] = useState(50000);
-
+  const user = useSelector((state: RootState) => state.user);
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };
@@ -32,7 +33,7 @@ function App() {
       <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
         <Router>
           <div className="min-h-screen bg-black text-white flex flex-col">
-            <TopBar stones={stones} />
+            <TopBar stones={user.game_data.stones} dust={user.game_data.dust} />
 
             <main className="flex-1 pb-16">
               <Routes>
@@ -40,7 +41,7 @@ function App() {
                 <Route path="/rock" element={<RockPage />} />
                 <Route
                   path="/market"
-                  element={<MarketPage stones={stones} />}
+                  element={<MarketPage stones={user.game_data.stones} />}
                 />
                 <Route path="/profile" element={<ProfilePage />} />
               </Routes>

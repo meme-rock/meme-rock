@@ -10,20 +10,36 @@ export interface ITelegramData {
   allows_write_to_pm: boolean;
 }
 
+export interface IMinerData {
+  miner: string;
+  last_mine: Date;
+}
+
+export interface IHiltiData {
+  hilti: string;
+  current_energy: number;
+  last_energy_refill: Date;
+}
+
+export interface IUserBooster {
+  booster_id: string;
+  current_level: number;
+  unlocked_at?: Date;
+  last_upgraded_at?: Date;
+}
+
 export interface IGameData {
   stones: number;
-  level: number;
+  dust: number;
+  rocks: number;
+  spent_dust: number;
+  spent_stone: number;
   profit_per_hour: number;
   is_premium: boolean;
   auto_collector: boolean;
-}
-
-export interface IUserCards {
-  owner_id: string;
-  card_id: string;
-  level: number;
-  level_up_price: number;
-  profit: number;
+  miner_data: IMinerData;
+  hilti_data: IHiltiData;
+  boosters: IUserBooster[];
 }
 
 export interface IUser {
@@ -31,7 +47,6 @@ export interface IUser {
   _id: string;
   telegram_data: ITelegramData;
   game_data: IGameData;
-  userCards: IUserCards[];
   invited_by: string | null;
   invite_count: number;
   createdAt: string;
@@ -54,33 +69,12 @@ export interface ITask {
   status: EUserTaskStatus;
 }
 
-export interface ICardCategory {
-  _id: string;
-  title: string;
-}
-
-export interface ICard {
-  _id: string;
-  title: string;
-  level?: number;
-  max_level: number;
-  image_url: string;
-  profit_per_hour: number;
-  level_up_price: number;
-  level_up_multiplier: number;
-  card_category: ICardCategory | string;
-  requirements: string | null;
-  createdAt: string;
-  updatedAt: string;
-  is_unlocked: boolean;
-  __v?: number;
-}
-
 export interface IBoosterLevelData {
   level: number;
   upgrade_cost: number;
   profit_per_hour: number;
 }
+[];
 
 export interface IBooster {
   _id: string;
@@ -89,32 +83,13 @@ export interface IBooster {
   max_level: number;
   unlock_requirements: {
     stone_pay?: number;
-    [key: string]: any;
+    [key: string]: string | number | undefined;
   };
   level_data: IBoosterLevelData[];
   image_url: string;
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
-}
-
-export interface IMiner {
-  miner: {
-    _id: EMinerLevel;
-    stones_income: number;
-    spent_stones_to_upgrade: number;
-    upgrade_requirements: Record<string, any>;
-  };
-  last_mine: Date;
-}
-
-export interface IHilti {
-  hilti: {
-    _id: EHiltiLevel;
-    max_energy: number;
-    rock_income: number;
-    upgrade_requirements: Record<string, any>;
-  };
-  current_energy: number;
-  last_energy_refill: Date;
+  is_unlocked: boolean;
+  current_level: number;
 }

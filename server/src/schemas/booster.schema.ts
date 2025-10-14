@@ -6,9 +6,11 @@ export type BoosterDocument = HydratedDocument<Booster>;
 
 // Unlock requirements interface
 export interface BoosterUnlockRequirements {
-  invite?: number;
-  spend_dust?: number;
-  spend_stone?: number;
+  stone_pay?: number;
+  dust_pay?: number;
+  min_profit_per_hour?: number; // Minimum toplam kazanç kontrolü
+  min_invite_count?: number; // Minimum davet sayısı
+  min_spent_stone?: number;
   [key: string]: any; // Future extensibility
 }
 

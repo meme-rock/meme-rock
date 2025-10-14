@@ -19,12 +19,24 @@ const initialState: UserState = {
   },
   game_data: {
     stones: 0,
-    level: 0,
+    dust: 0,
+    rocks: 0,
+    spent_dust: 0,
+    spent_stone: 0,
     profit_per_hour: 0,
     is_premium: false,
     auto_collector: false,
+    miner_data: {
+      miner: "",
+      last_mine: new Date(),
+    },
+    hilti_data: {
+      hilti: "",
+      current_energy: 0,
+      last_energy_refill: new Date(),
+    },
+    boosters: [],
   },
-  userCards: [],
   createdAt: "",
   updatedAt: "",
 };
@@ -33,7 +45,7 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<UserState>) => {
+    setUser: (_state, action: PayloadAction<UserState>) => {
       return action.payload;
     },
     loadingUser: (state, action: PayloadAction<UserState>) => {
@@ -41,10 +53,7 @@ export const userSlice = createSlice({
       console.log("loadingUser state before: ", state);
       return action.payload;
     },
-    updateUserforUnlockCard: (
-      state,
-      action: PayloadAction<{ stones: number }>
-    ) => {
+    updateUserStones: (state, action: PayloadAction<{ stones: number }>) => {
       state.game_data.stones = action.payload.stones;
     },
     updateUserforCompleteTask: (
@@ -53,14 +62,18 @@ export const userSlice = createSlice({
     ) => {
       state.game_data.stones = action.payload.stones;
     },
+    updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
+      state.game_data.boosters = action.payload.boosters;
+    },
   },
 });
 
 export const {
   setUser,
   loadingUser,
-  updateUserforUnlockCard,
+  updateUserStones,
   updateUserforCompleteTask,
+  updateUserBoosters,
 } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -18,12 +18,12 @@ interface UpgradeRequirementsProps {
 
 export const UpgradeRequirements = ({
   nextLevel,
-  inviteCount,
-  requiredInvites,
-  dustSpent,
-  requiredDust,
-  stonesSpent,
-  requiredStones,
+  inviteCount = 0,
+  requiredInvites = 0,
+  dustSpent = 0,
+  requiredDust = 0,
+  stonesSpent = 0,
+  requiredStones = 0,
   canUpgrade,
   onUpgrade,
 }: UpgradeRequirementsProps) => {

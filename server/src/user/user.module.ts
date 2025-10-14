@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { UserController } from './user.controller';
+import { UserBoosterController, UserController } from './user.controller';
 import { UserService } from './user.service';
 import { TelegramInitDataMiddleware } from './middleware/telegram-initdata.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -7,6 +7,7 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { Miner, MinerSchema } from 'src/schemas/miner.schema';
 import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
 import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
+import { UserBoosterService } from './user-booster.service';
 
 @Module({
   imports: [
@@ -17,8 +18,8 @@ import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
       { name: Booster.name, schema: BoosterSchema },
     ]),
   ],
-  controllers: [UserController],
-  providers: [UserService],
+  controllers: [UserController, UserBoosterController],
+  providers: [UserService, UserBoosterService],
 })
 export class UserModule {}
 

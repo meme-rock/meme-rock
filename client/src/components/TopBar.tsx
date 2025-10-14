@@ -30,7 +30,7 @@ export const TopBar = ({ stones, dust }: TopBarProps) => {
           />
           <span className="text-yellow-300 font-bold text-lg">
             {/* Buradaki stones.toLocaleString() hatasını düzelterek dust prop'unu kullandık */}
-            {stones.toLocaleString()}
+            {dust.toLocaleString()}
           </span>
         </div>
       </div>

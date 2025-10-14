@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import { Lock, Unlock, TrendingUp, Zap } from "lucide-react";
 import { IBooster } from "../../types";
+import { useUnlockBoosterMutation } from "../../redux/services/booster/booster-api";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -8,13 +11,19 @@ interface BoosterCardProps {
 }
 
 export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
+  const user = useSelector((state: RootState) => state.user);
+  const [unlockBooster] = useUnlockBoosterMutation();
   // TODO: Kullanıcının bu booster'ı açıp açmadığı ve seviyesi backend'den gelecek
-  const currentLevel = 0; // Şimdilik 0, backend'den gelecek
-  const isUnlocked = false; // Şimdilik false, backend'den gelecek
+  const currentLevel = booster.current_level!; // Şimdilik 0, backend'den gelecek
+  const isUnlocked = booster.is_unlocked; // Şimdilik false, backend'den gelecek
 
-  const handleUnlock = () => {
+  const handleUnlock = async () => {
     // TODO: Backend'e unlock isteği gönder
     console.log("Unlocking booster:", booster._id);
+    await unlockBooster({
+      user_id: user._id,
+      booster_id: booster._id,
+    }).unwrap();
   };
 
   const handleUpgrade = () => {
@@ -94,11 +103,6 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
             <h3 className="text-white font-bold text-lg mb-1">
               {booster.title}
             </h3>
-            <div className="flex items-center gap-2">
-              <span className="text-xs bg-gradient-to-r from-cyan-600/30 to-blue-600/30 text-cyan-300 px-2.5 py-1 rounded-full border border-cyan-500/30 font-medium">
-                {booster.required_hilti_level.replace("_", " ")}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -121,25 +125,14 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
             <span className="text-xs text-gray-400 font-semibold">
               Level {currentLevel} / {booster.max_level}
             </span>
-            <span className="text-xs text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-bold">
-              {progressPercentage.toFixed(0)}%
-            </span>
           </div>
           <div className="relative w-full h-2.5 bg-gray-800 rounded-full overflow-hidden border border-gray-700/50">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="h-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 relative"
-            >
-              {/* Shine effect */}
-              <motion.div
-                initial={{ x: "-100%" }}
-                animate={{ x: "200%" }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-              />
-            </motion.div>
+              className="h-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600"
+            />
           </div>
         </div>
       )}

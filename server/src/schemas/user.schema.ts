@@ -59,9 +59,6 @@ class UserBooster {
   @Prop({ type: Number, default: 0 })
   current_level: number; // Current level of this booster (0 = not unlocked)
 
-  @Prop({ type: Boolean, default: false })
-  is_unlocked: boolean;
-
   @Prop({ type: Date })
   unlocked_at?: Date;
 
@@ -80,9 +77,6 @@ class GameData {
 
   @Prop({ type: Number, default: 0 })
   rocks: number;
-
-  @Prop({ type: Number, default: 0 })
-  level: number;
 
   // Spending tracking for unlock requirements
   @Prop({ type: Number, default: 0 })

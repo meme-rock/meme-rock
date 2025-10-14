@@ -12,7 +12,7 @@ import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
 
 export const RockPage = () => {
   const [getBoosters] = useGetBoostersMutation();
-
+  const user = useSelector((state: RootState) => state.user);
   const hilti_data = useSelector((state: RootState) => state.hilti);
   const boosters = useSelector((state: RootState) => state.booster);
   console.log("boosters: ", boosters);
@@ -26,7 +26,7 @@ export const RockPage = () => {
     setShowBoosterPage(true);
     if (boosters.length === 0) {
       console.log("boosters is empty, fetching boosters");
-      await getBoosters({}).unwrap().then();
+      await getBoosters({ user_id: user._id }).unwrap().then();
       console.log("boosters2: ", boosters);
     }
   };

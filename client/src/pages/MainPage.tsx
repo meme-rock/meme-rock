@@ -11,7 +11,7 @@ export const MainPage = () => {
   console.log("miner: ", miner_data);
   // TODO: Bu veriler Redux'tan gelecek
   const currentLevel = Number(miner_data.miner._id.split("_")[1]);
-  const upgrade_requirements = miner_data.miner.upgrade_requirements;
+  const upgrade_requirements = miner_data.miner.upgrade_requirements || {};
 
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
@@ -81,11 +81,11 @@ export const MainPage = () => {
               <UpgradeRequirements
                 nextLevel={currentLevel + 1}
                 inviteCount={7} // Kullanıcının yaptığı davet sayısı
-                requiredInvites={upgrade_requirements.invite} // Gerekli davet sayısı
+                requiredInvites={upgrade_requirements.invite || 0} // Gerekli davet sayısı
                 dustSpent={999} // Harcanan dust
-                requiredDust={upgrade_requirements.spend_dust} // Gerekli dust
+                requiredDust={upgrade_requirements.spend_dust || 0} // Gerekli dust
                 stonesSpent={1000} // Harcanan stone
-                requiredStones={upgrade_requirements.spend_stone} // Gerekli stone
+                requiredStones={upgrade_requirements.spend_stone || 0} // Gerekli stone
                 canUpgrade={true}
                 onUpgrade={handleUpgrade}
               />
