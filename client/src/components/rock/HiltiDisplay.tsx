@@ -118,7 +118,7 @@ export const HiltiDisplay = ({
         transition={{ delay: 0.5 }}
         className="mt-6 flex gap-4 items-center"
       >
-        {/* Hilti Income */}
+        {/* Jackhammer Income */}
         <div
           className={`px-4 py-2 rounded-lg border ${
             isLocked
@@ -132,7 +132,7 @@ export const HiltiDisplay = ({
                 isLocked ? "text-gray-400" : "text-cyan-400"
               }`}
             >
-              Hilti Income
+              Jackhammer
             </span>
             <div className="flex items-center gap-1.5">
               <img
@@ -210,22 +210,6 @@ export const HiltiDisplay = ({
             </div>
           </motion.div>
         )}
-
-      {/* Max Energy Info */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="mt-3 flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/40 px-4 py-2 rounded-lg"
-      >
-        <span className="text-yellow-400 text-xl">⚡</span>
-        <div className="flex flex-col">
-          <span className="text-xs text-gray-400">Max Energy</span>
-          <span className="text-white font-bold text-sm">
-            {selectedHilti.max_energy.toLocaleString()}
-          </span>
-        </div>
-      </motion.div>
     </div>
   );
 };

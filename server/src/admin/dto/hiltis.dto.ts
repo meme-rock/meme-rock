@@ -16,7 +16,4 @@ export class CreateHiltiDto {
 
   @IsObject()
   upgrade_requirements: Record<string, any>;
-
-  @IsNumber()
-  max_energy: number;
 }

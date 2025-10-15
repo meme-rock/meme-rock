@@ -16,9 +16,6 @@ export class Hilti {
   _id: EHiltiLevel;
 
   @Prop({ type: Number, required: true })
-  max_energy: number;
-
-  @Prop({ type: Number, required: true })
   rock_income: number;
 
   // YENİ ALAN: Bir sonraki seviyeye geçmek için gerekenler.

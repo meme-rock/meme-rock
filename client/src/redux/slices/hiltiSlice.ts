@@ -6,11 +6,9 @@ const initialState: IUserHiltiState = {
   current_hilti: {
     _id: EHiltiLevel.LEVEL_1,
     rock_income: 0,
-    max_energy: 0,
     upgrade_requirements: {},
   },
-  current_energy: 0,
-  last_energy_refill: new Date(),
+  last_claim: new Date(),
   all_hiltis: [],
 };
 
@@ -22,21 +20,19 @@ export const hiltiSlice = createSlice({
       state,
       action: PayloadAction<{
         current_hilti: IHiltiDetail;
-        current_energy: number;
-        last_energy_refill: Date;
+        last_claim: Date;
         all_hiltis: IHiltiDetail[];
       }>
     ) => {
       state.current_hilti = action.payload.current_hilti;
-      state.current_energy = action.payload.current_energy;
-      state.last_energy_refill = action.payload.last_energy_refill;
+      state.last_claim = action.payload.last_claim;
       state.all_hiltis = action.payload.all_hiltis;
     },
-    updateEnergy: (state, action: PayloadAction<number>) => {
-      state.current_energy = action.payload;
+    updateLastClaim: (state, action: PayloadAction<Date>) => {
+      state.last_claim = action.payload;
     },
   },
 });
 
-export const { setHiltiData, updateEnergy } = hiltiSlice.actions;
+export const { setHiltiData, updateLastClaim } = hiltiSlice.actions;
 export default hiltiSlice.reducer;

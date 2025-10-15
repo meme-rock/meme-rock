@@ -6,9 +6,9 @@ export type UserDocument = HydratedDocument<User>;
 // Airdrop için ayrı bir alt şema
 @Schema({ _id: false })
 class AirdropData {
-  @Prop({ type: Number })
+  @Prop({ type: Number, default: 0 })
   rock_coins: number;
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   wallet_address: string;
 }
 
@@ -52,11 +52,8 @@ class HiltiData {
   @Prop({ type: String, ref: 'Hilti' })
   hilti: string;
 
-  @Prop({ type: Number, default: 0 })
-  current_energy: number;
-
   @Prop({ type: Date, default: Date.now() })
-  last_energy_refill: Date;
+  last_claim: Date;
 }
 
 //? Booster için ayrı bir alt şema oluşturuyoruz. User'ın unlock ettiği ve level bilgisini tutar.

@@ -187,17 +187,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       {/* Action buttons */}
       <div className="flex items-center gap-2 relative z-10">
         {isLevelLocked ? (
-          <button
-            disabled
-            className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700/50 text-gray-500 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-not-allowed relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-700 opacity-30"></div>
-            <Lock className="w-4 h-4 relative z-10" />
-            <span className="relative z-10 text-sm">
-              Requires Level{" "}
-              {parseInt(booster.required_hilti_level.split("_")[1] || "1")}
-            </span>
-          </button>
+          <div></div>
         ) : !isUnlocked ? (
           <button
             onClick={handleUnlock}
@@ -292,15 +282,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
 
       {/* Additional info */}
       {isLevelLocked ? (
-        <div className="mt-4 pt-4 border-t border-gray-800/50 relative z-10">
-          <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <Lock className="w-4 h-4 text-yellow-500/70 flex-shrink-0" />
-            <p className="text-xs text-yellow-500/80 font-medium">
-              Available at Hilti Level{" "}
-              {parseInt(booster.required_hilti_level.split("_")[1] || "1")}
-            </p>
-          </div>
-        </div>
+        <div></div>
       ) : (
         !isUnlocked && (
           <div className="mt-4 pt-4 border-t border-gray-800/50 relative z-10">

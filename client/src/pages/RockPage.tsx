@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
-import { EnergyDisplay } from "../components/rock/EnergyDisplay";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { UpgradeRequirements } from "../components/rock/UpgradeRequirements";
@@ -9,6 +8,7 @@ import { BoosterPage } from "../components/rock/BoosterPage";
 import boosterAnimation from "../../public/animated-booster.json";
 import Lottie from "lottie-react";
 import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
+import { RockCounter } from "../components/rock/RockCounter";
 
 export const RockPage = () => {
   const [getBoosters] = useGetBoostersMutation();
@@ -36,10 +36,7 @@ export const RockPage = () => {
     [selectedHiltiLevel, hilti_data.all_hiltis, hilti_data.current_hilti]
   );
 
-  const [currentEnergy, setCurrentEnergy] = useState(hilti_data.current_energy);
   const [showBoosterPage, setShowBoosterPage] = useState(false);
-
-  const maxEnergy = hilti_data.current_hilti.max_energy;
 
   // Handle level selection
   const handleLevelSelect = useCallback((level: number) => {
@@ -52,14 +49,6 @@ export const RockPage = () => {
       await getBoosters({ user_id: user._id }).unwrap();
     }
   }, [boosters.length, getBoosters, user._id]);
-
-  // Handle mine/drill action
-  const handleDrill = useCallback(() => {
-    if (currentEnergy <= 0) return;
-
-    // TODO: Backend'e drill isteği gönder
-    setCurrentEnergy((prev: number) => Math.max(0, prev - 1));
-  }, [currentEnergy]);
 
   // Handle upgrade
   const handleUpgrade = useCallback(() => {
@@ -95,6 +84,9 @@ export const RockPage = () => {
       <div className="relative container mx-auto px-4 py-1">
         {/* Main content */}
         <div className="flex flex-col items-center justify-start pt-2">
+          {/* Rock Counter */}
+          <RockCounter />
+
           {/* Level thumbnails */}
           <HiltiLevelThumbnails
             currentLevel={currentUserHiltiLevel}
@@ -121,27 +113,6 @@ export const RockPage = () => {
               <Lottie animationData={boosterAnimation} loop={true} />
             </div>
             <span>Boosters</span>
-          </button>
-
-          {/* Energy display */}
-          <div className="mt-4 w-full">
-            <EnergyDisplay
-              currentEnergy={currentEnergy}
-              maxEnergy={maxEnergy}
-            />
-          </div>
-
-          {/* Drill button */}
-          <button
-            onClick={handleDrill}
-            disabled={currentEnergy <= 0}
-            className={`mt-4 px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-              currentEnergy > 0
-                ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/50 active:scale-95"
-                : "bg-gray-800 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {currentEnergy > 0 ? "⚡ Drill Rock" : "No Energy"}
           </button>
 
           {/* Upgrade requirements - Only show for current level */}

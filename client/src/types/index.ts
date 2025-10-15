@@ -1,4 +1,4 @@
-import { EHiltiLevel, EMinerLevel, EUserTaskStatus } from "./enums";
+import { EHiltiLevel, EUserTaskStatus } from "./enums";
 
 export interface ITelegramData {
   username: string;
@@ -18,7 +18,6 @@ export interface IMinerData {
 export interface IHiltiDetail {
   _id: EHiltiLevel;
   rock_income: number;
-  max_energy: number;
   upgrade_requirements?: {
     [key: string]: any;
   };
@@ -29,14 +28,12 @@ export interface IHiltiDetail {
 
 export interface IHiltiData {
   hilti: string;
-  current_energy: number;
-  last_energy_refill: Date;
+  last_claim: Date;
 }
 
 export interface IUserHiltiState {
   current_hilti: IHiltiDetail;
-  current_energy: number;
-  last_energy_refill: Date;
+  last_claim: Date;
   all_hiltis: IHiltiDetail[];
 }
 
@@ -50,7 +47,6 @@ export interface IUserBooster {
 export interface IGameData {
   stones: number;
   dust: number;
-  rocks: number;
   spent_dust: number;
   spent_stone: number;
   profit_per_hour: number;
@@ -61,15 +57,21 @@ export interface IGameData {
   boosters: IUserBooster[];
 }
 
+export interface IAirdropData {
+  rock_coins: number;
+  wallet_address: string | null;
+}
+
 export interface IUser {
   __v: number;
   _id: string;
-  telegram_data: ITelegramData;
-  game_data: IGameData;
   invited_by: string | null;
   invite_count: number;
   createdAt: string;
   updatedAt: string;
+  telegram_data: ITelegramData;
+  game_data: IGameData;
+  airdrop_data: IAirdropData;
 }
 
 export interface ITask {

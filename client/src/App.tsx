@@ -10,10 +10,15 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
+import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const user = useSelector((state: RootState) => state.user);
+
+  // Initialize global rock counter (runs across all pages)
+  useGlobalRockCounter();
+
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };

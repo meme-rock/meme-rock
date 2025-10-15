@@ -1,7 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { IUser } from "../../types";
 
-type UserState = IUser;
+type UserState = IUser & {
+  // Real-time counter state (persists across page navigation)
+  displayRocks: number;
+  lastCounterUpdate: number;
+};
 
 const initialState: UserState = {
   __v: 0,
@@ -20,7 +24,7 @@ const initialState: UserState = {
   game_data: {
     stones: 0,
     dust: 0,
-    rocks: 0,
+
     spent_dust: 0,
     spent_stone: 0,
     profit_per_hour: 0,
@@ -32,13 +36,18 @@ const initialState: UserState = {
     },
     hilti_data: {
       hilti: "",
-      current_energy: 0,
-      last_energy_refill: new Date(),
+      last_claim: new Date(),
     },
     boosters: [],
   },
+  airdrop_data: {
+    rock_coins: 0,
+    wallet_address: null,
+  },
   createdAt: "",
   updatedAt: "",
+  displayRocks: 0,
+  lastCounterUpdate: Date.now(),
 };
 
 export const userSlice = createSlice({
@@ -48,10 +57,17 @@ export const userSlice = createSlice({
     setUser: (_state, action: PayloadAction<UserState>) => {
       return action.payload;
     },
-    loadingUser: (state, action: PayloadAction<UserState>) => {
+    loadingUser: (state, action: PayloadAction<IUser>) => {
       console.log("loadingUser action.payload: ", action.payload);
       console.log("loadingUser state before: ", state);
-      return action.payload;
+
+      // Initialize displayRocks from backend data
+      const newState = {
+        ...action.payload,
+        displayRocks: action.payload.airdrop_data.rock_coins,
+        lastCounterUpdate: Date.now(),
+      };
+      return newState;
     },
     updateUserStones: (state, action: PayloadAction<{ stones: number }>) => {
       state.game_data.stones = action.payload.stones;
@@ -69,12 +85,17 @@ export const userSlice = createSlice({
       // Booster unlock/upgrade sonrası tüm user data'yı güncelle
       state.game_data.stones = action.payload.game_data.stones;
       state.game_data.dust = action.payload.game_data.dust;
-      state.game_data.rocks = action.payload.game_data.rocks;
+      state.airdrop_data.rock_coins = action.payload.airdrop_data.rock_coins;
       state.game_data.spent_stone = action.payload.game_data.spent_stone;
       state.game_data.spent_dust = action.payload.game_data.spent_dust;
       state.game_data.profit_per_hour =
         action.payload.game_data.profit_per_hour;
       state.game_data.boosters = action.payload.game_data.boosters;
+    },
+    // Update display rocks (called every 5 seconds)
+    updateDisplayRocks: (state, action: PayloadAction<number>) => {
+      state.displayRocks = action.payload;
+      state.lastCounterUpdate = Date.now();
     },
   },
 });
@@ -86,6 +107,7 @@ export const {
   updateUserforCompleteTask,
   updateUserBoosters,
   updateUserFromBoosterAction,
+  updateDisplayRocks,
 } = userSlice.actions;
 
 export default userSlice.reducer;

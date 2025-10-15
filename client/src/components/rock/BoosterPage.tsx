@@ -124,7 +124,7 @@ export const BoosterPage = ({
             <div className="mt-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 max-w-md mx-auto">
               <p className="text-sm text-yellow-400 flex items-center justify-center gap-2">
                 <Lock className="w-4 h-4" />
-                Upgrade Hilti to Level {selectedLevel} to unlock these boosters
+                Unlocks at Level {selectedLevel} Jackhammer
               </p>
             </div>
           )}

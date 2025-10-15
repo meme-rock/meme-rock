@@ -37,10 +37,8 @@ export const userApi = createApi({
           dispatch(
             setHiltiData({
               current_hilti: data.user.game_data.hilti_data
-                .hilti as IHiltiDetail,
-              current_energy: data.user.game_data.hilti_data.current_energy,
-              last_energy_refill:
-                data.user.game_data.hilti_data.last_energy_refill,
+                .hilti as unknown as IHiltiDetail,
+              last_claim: data.user.game_data.hilti_data.last_claim,
               all_hiltis: data.hiltis,
             })
           );
