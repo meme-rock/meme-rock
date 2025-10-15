@@ -3,7 +3,16 @@ import mongoose, { HydratedDocument } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
-// Telegram InitData için ayrı bir alt şema oluşturabilirsiniz.
+// Airdrop için ayrı bir alt şema
+@Schema({ _id: false })
+class AirdropData {
+  @Prop({ type: Number })
+  rock_coins: number;
+  @Prop({ type: String })
+  wallet_address: string;
+}
+
+// Telegram InitData için ayrı bir alt şema
 @Schema({ _id: false })
 class TelegramData {
   @Prop({ type: String })
@@ -75,9 +84,6 @@ class GameData {
   @Prop({ type: Number, default: 0 })
   dust: number;
 
-  @Prop({ type: Number, default: 0 })
-  rocks: number;
-
   // Spending tracking for unlock requirements
   @Prop({ type: Number, default: 0 })
   spent_dust: number;
@@ -120,6 +126,30 @@ export class User {
 
   @Prop({ type: Number, default: 0 })
   invite_count: number;
+
+  @Prop({ type: AirdropData })
+  airdrop_data: AirdropData;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// --- İNDEX TANIMLARI ---
+
+// 1. Multikey İndeks: Booster Varlığı/Eşleşmesi Kontrolünü Hızlandırır
+UserSchema.index(
+  { _id: 1, 'game_data.boosters.booster_id': 1 },
+  { name: 'userBoosterAccess' },
+);
+
+// 2. Saatlik Kâr Sıralaması İndeksi
+UserSchema.index(
+  { 'game_data.profit_per_hour': -1 },
+  { name: 'profitPerHourSort' },
+);
+
+// 3. KRİTİK LİDERLİK İNDEKSİ: Canlı rank sorgularını hızlandırır ve tie-breaker sağlar.
+// Rock Coin'i büyükten küçüğe sırala (-1) ve eşitlik durumunda _id'ye göre sırala (1).
+UserSchema.index(
+  { 'airdrop_data.rock_coins': -1, _id: 1 },
+  { name: 'rockCoinRankSort' },
+);

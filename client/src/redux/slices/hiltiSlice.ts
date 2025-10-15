@@ -1,31 +1,42 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { IHilti } from "../../types";
+import { IUserHiltiState, IHiltiDetail } from "../../types";
 import { EHiltiLevel } from "../../types/enums";
 
-type HiltiState = IHilti;
-
-const initialState: HiltiState = {
-  hilti: {
+const initialState: IUserHiltiState = {
+  current_hilti: {
     _id: EHiltiLevel.LEVEL_1,
     rock_income: 0,
-    upgrade_requirements: {},
     max_energy: 0,
+    upgrade_requirements: {},
   },
   current_energy: 0,
   last_energy_refill: new Date(),
+  all_hiltis: [],
 };
 
 export const hiltiSlice = createSlice({
   name: "hilti",
   initialState,
   reducers: {
-    getHiltiOnLoading: (state, action: PayloadAction<HiltiState>) => {
-      console.log("getHiltiOnLoading action.payload: ", action.payload);
-      console.log("getHiltiOnLoading state before: ", state);
-      return action.payload;
+    setHiltiData: (
+      state,
+      action: PayloadAction<{
+        current_hilti: IHiltiDetail;
+        current_energy: number;
+        last_energy_refill: Date;
+        all_hiltis: IHiltiDetail[];
+      }>
+    ) => {
+      state.current_hilti = action.payload.current_hilti;
+      state.current_energy = action.payload.current_energy;
+      state.last_energy_refill = action.payload.last_energy_refill;
+      state.all_hiltis = action.payload.all_hiltis;
+    },
+    updateEnergy: (state, action: PayloadAction<number>) => {
+      state.current_energy = action.payload;
     },
   },
 });
 
-export const { getHiltiOnLoading } = hiltiSlice.actions;
+export const { setHiltiData, updateEnergy } = hiltiSlice.actions;
 export default hiltiSlice.reducer;

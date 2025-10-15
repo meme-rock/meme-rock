@@ -65,6 +65,17 @@ export const userSlice = createSlice({
     updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
       state.game_data.boosters = action.payload.boosters;
     },
+    updateUserFromBoosterAction: (state, action: PayloadAction<IUser>) => {
+      // Booster unlock/upgrade sonrası tüm user data'yı güncelle
+      state.game_data.stones = action.payload.game_data.stones;
+      state.game_data.dust = action.payload.game_data.dust;
+      state.game_data.rocks = action.payload.game_data.rocks;
+      state.game_data.spent_stone = action.payload.game_data.spent_stone;
+      state.game_data.spent_dust = action.payload.game_data.spent_dust;
+      state.game_data.profit_per_hour =
+        action.payload.game_data.profit_per_hour;
+      state.game_data.boosters = action.payload.game_data.boosters;
+    },
   },
 });
 
@@ -74,6 +85,7 @@ export const {
   updateUserStones,
   updateUserforCompleteTask,
   updateUserBoosters,
+  updateUserFromBoosterAction,
 } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
-import { getBoosters } from "../../slices/boosterSlice";
+import { getBoosters, updateSingleBooster } from "../../slices/boosterSlice";
+import { updateUserFromBoosterAction } from "../../slices/userSlice";
 
 export const boosterApi = createApi({
   reducerPath: "boosterApi",
@@ -14,13 +15,13 @@ export const boosterApi = createApi({
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           // Mutasyon başarıyla tamamlandığında
-          console.log("Arg: ", arg);
+          console.log("📥 getBoosters Arg: ", arg);
           const { data } = await queryFulfilled;
-          console.log("loading data: ", data);
+          console.log("✅ getBoosters data received:", data.length, "boosters");
           // boosterSlice'tan gelen getBoosters action'ını çağır
           dispatch(getBoosters(data));
         } catch (error) {
-          console.log("error: ", error);
+          console.log("❌ getBoosters error: ", error);
         }
       },
     }),
@@ -36,17 +37,65 @@ export const boosterApi = createApi({
         method: "POST",
         body: { booster_id },
       }),
-      async onQueryStarted(_arg, { queryFulfilled }) {
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          console.log("Booster unlocked successfully: ", data);
-          // Başarılı unlock sonrası user data'yı güncelleyebilirsiniz
+          console.log("✅ Booster unlocked successfully:", data);
+
+          // User data'yı güncelle (bakiye, profit vb.)
+          if (data.user) {
+            dispatch(updateUserFromBoosterAction(data.user));
+          }
+
+          // Backend'den gelen güncellenmiş booster bilgisi ile state'i güncelle
+          if (data.booster) {
+            dispatch(updateSingleBooster(data.booster));
+            console.log("🔄 Single booster updated:", data.booster);
+          }
         } catch (error) {
-          console.error("Error unlocking booster: ", error);
+          console.error("❌ Error unlocking booster:", error);
+          throw error;
+        }
+      },
+    }),
+    upgradeBooster: builder.mutation({
+      query: ({
+        user_id,
+        booster_id,
+      }: {
+        user_id: string;
+        booster_id: string;
+      }) => ({
+        url: `/upgrade-booster/${user_id}`,
+        method: "POST",
+        body: { booster_id },
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("✅ Booster upgraded successfully:", data);
+
+          // User data'yı güncelle (bakiye, profit vb.)
+          if (data.user) {
+            dispatch(updateUserFromBoosterAction(data.user));
+          }
+
+          // Backend'den gelen güncellenmiş booster bilgisi ile state'i güncelle
+          if (data.booster) {
+            dispatch(updateSingleBooster(data.booster));
+            console.log("🔄 Single booster updated:", data.booster);
+          }
+        } catch (error) {
+          console.error("❌ Error upgrading booster:", error);
+          throw error;
         }
       },
     }),
   }),
 });
 
-export const { useGetBoostersMutation, useUnlockBoosterMutation } = boosterApi;
+export const {
+  useGetBoostersMutation,
+  useUnlockBoosterMutation,
+  useUpgradeBoosterMutation,
+} = boosterApi;

@@ -22,7 +22,7 @@ export class UserService {
   async loading(_id: string, user: CreateUserDto) {
     try {
       console.log('Loading service started for user:', _id);
-      const boosters = await this.boosterModel.find();
+      const hiltis = await this.hiltiModel.find();
       // Find LEVEL_1 miner and hilti first
       const level1Miner = await this.minerModel.findOne({
         _id: EMinerLevel.LEVEL_1,
@@ -76,7 +76,7 @@ export class UserService {
       console.log('User loaded/updated successfully:', _id);
       return {
         user: updatedUser,
-        boosters: boosters,
+        hiltis: hiltis,
         message:
           updatedUser.game_data?.miner_data && updatedUser.game_data?.hilti_data
             ? 'User updated successfully'

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
 import { EnergyDisplay } from "../components/rock/EnergyDisplay";
@@ -15,45 +15,71 @@ export const RockPage = () => {
   const user = useSelector((state: RootState) => state.user);
   const hilti_data = useSelector((state: RootState) => state.hilti);
   const boosters = useSelector((state: RootState) => state.booster);
-  console.log("boosters: ", boosters);
-  const currentLevel = Number(hilti_data.hilti._id.split("_")[1]);
+
+  // Current user's hilti level
+  const currentUserHiltiLevel = useMemo(
+    () => parseInt(hilti_data.current_hilti._id.split("_")[1]),
+    [hilti_data.current_hilti._id]
+  );
+
+  // Selected hilti state (for browsing)
+  const [selectedHiltiLevel, setSelectedHiltiLevel] = useState(
+    currentUserHiltiLevel
+  );
+
+  // Get selected hilti from all_hiltis
+  const selectedHilti = useMemo(
+    () =>
+      hilti_data.all_hiltis.find(
+        (h) => h._id === `LEVEL_${selectedHiltiLevel}`
+      ) || hilti_data.current_hilti,
+    [selectedHiltiLevel, hilti_data.all_hiltis, hilti_data.current_hilti]
+  );
+
   const [currentEnergy, setCurrentEnergy] = useState(hilti_data.current_energy);
   const [showBoosterPage, setShowBoosterPage] = useState(false);
 
-  const maxEnergy = hilti_data.hilti.max_energy; // Her level için farklı max energy olabilir
+  const maxEnergy = hilti_data.current_hilti.max_energy;
 
-  const handleBoosterClick = async () => {
+  // Handle level selection
+  const handleLevelSelect = useCallback((level: number) => {
+    setSelectedHiltiLevel(level);
+  }, []);
+
+  const handleBoosterClick = useCallback(async () => {
     setShowBoosterPage(true);
     if (boosters.length === 0) {
-      console.log("boosters is empty, fetching boosters");
-      await getBoosters({ user_id: user._id }).unwrap().then();
-      console.log("boosters2: ", boosters);
+      await getBoosters({ user_id: user._id }).unwrap();
     }
-  };
+  }, [boosters.length, getBoosters, user._id]);
+
   // Handle mine/drill action
-  const handleDrill = () => {
+  const handleDrill = useCallback(() => {
     if (currentEnergy <= 0) return;
 
     // TODO: Backend'e drill isteği gönder
-    setCurrentEnergy((prev) => Math.max(0, prev - 1));
-    console.log("Drilling rock, current energy:", currentEnergy - 1);
-  };
+    setCurrentEnergy((prev: number) => Math.max(0, prev - 1));
+  }, [currentEnergy]);
 
   // Handle upgrade
-  const handleUpgrade = () => {
+  const handleUpgrade = useCallback(() => {
     // TODO: Backend'e upgrade isteği gönder
-    console.log("Upgrading hilti to level", currentLevel + 1);
-  };
+    console.log("Upgrading hilti to level", currentUserHiltiLevel + 1);
+  }, [currentUserHiltiLevel]);
 
-  // TODO: Bu kontrol backend'den gelecek gerçek verilerle yapılacak
-  const canUpgrade =
-    Object.keys(hilti_data.hilti.upgrade_requirements || {}).length === 0;
+  // Check if can upgrade
+  const canUpgrade = useMemo(
+    () =>
+      Object.keys(hilti_data.current_hilti.upgrade_requirements || {})
+        .length === 0,
+    [hilti_data.current_hilti.upgrade_requirements]
+  );
 
   // If booster page is shown, render it instead
   if (showBoosterPage) {
     return (
       <BoosterPage
-        currentHiltiLevel={currentLevel}
+        currentHiltiLevel={currentUserHiltiLevel}
         onClose={() => setShowBoosterPage(false)}
       />
     );
@@ -70,13 +96,19 @@ export const RockPage = () => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-start pt-2">
           {/* Level thumbnails */}
-          <HiltiLevelThumbnails currentLevel={currentLevel} maxLevel={5} />
+          <HiltiLevelThumbnails
+            currentLevel={currentUserHiltiLevel}
+            selectedLevel={selectedHiltiLevel}
+            maxLevel={5}
+            onLevelSelect={handleLevelSelect}
+          />
 
           {/* Hilti display */}
           <div className="mt-2">
             <HiltiDisplay
-              level={currentLevel}
-              rockIncome={hilti_data.hilti.rock_income}
+              selectedHilti={selectedHilti}
+              currentUserHiltiLevel={currentUserHiltiLevel}
+              userProfitPerHour={user.game_data.profit_per_hour}
             />
           </div>
 
@@ -112,20 +144,29 @@ export const RockPage = () => {
             {currentEnergy > 0 ? "⚡ Drill Rock" : "No Energy"}
           </button>
 
-          {/* Upgrade requirements */}
-          <div className="w-full px-4">
-            <UpgradeRequirements
-              inviteCount={7} // Kullanıcının yaptığı davet sayısı
-              requiredInvites={2} // Gerekli davet sayısı
-              dustSpent={999} // Harcanan dust
-              requiredDust={3} // Gerekli dust
-              stonesSpent={1000} // Harcanan stone
-              requiredStones={3} // Gerekli stone
-              nextLevel={currentLevel + 1}
-              canUpgrade={canUpgrade}
-              onUpgrade={handleUpgrade}
-            />
-          </div>
+          {/* Upgrade requirements - Only show for current level */}
+          {selectedHiltiLevel === currentUserHiltiLevel && (
+            <div className="w-full px-4">
+              <UpgradeRequirements
+                inviteCount={user.invite_count}
+                requiredInvites={
+                  hilti_data.current_hilti.upgrade_requirements?.invites || 0
+                }
+                dustSpent={user.game_data.spent_dust}
+                requiredDust={
+                  hilti_data.current_hilti.upgrade_requirements?.spent_dust || 0
+                }
+                stonesSpent={user.game_data.spent_stone}
+                requiredStones={
+                  hilti_data.current_hilti.upgrade_requirements?.spent_stones ||
+                  0
+                }
+                nextLevel={currentUserHiltiLevel + 1}
+                canUpgrade={canUpgrade}
+                onUpgrade={handleUpgrade}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

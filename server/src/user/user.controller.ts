@@ -34,8 +34,14 @@ export class UserBoosterController {
     );
   }
 
-  @Get('get-user-boosters/:user_id')
-  async getUserBoosters(@Param('user_id') user_id: string) {
-    return await this.userBoosterService.getUserBoosters(user_id);
+  @Post('upgrade-booster/:user_id')
+  async upgradeBooster(
+    @Param('user_id') user_id: string,
+    @Body() booster: UnlockUserBoosterDto,
+  ) {
+    return await this.userBoosterService.upgradeUserBooster(
+      user_id,
+      booster.booster_id,
+    );
   }
 }

@@ -15,10 +15,29 @@ export interface IMinerData {
   last_mine: Date;
 }
 
+export interface IHiltiDetail {
+  _id: EHiltiLevel;
+  rock_income: number;
+  max_energy: number;
+  upgrade_requirements?: {
+    [key: string]: any;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
 export interface IHiltiData {
   hilti: string;
   current_energy: number;
   last_energy_refill: Date;
+}
+
+export interface IUserHiltiState {
+  current_hilti: IHiltiDetail;
+  current_energy: number;
+  last_energy_refill: Date;
+  all_hiltis: IHiltiDetail[];
 }
 
 export interface IUserBooster {
