@@ -8,7 +8,7 @@ import { RootState } from "../redux/store";
 
 export const MainPage = () => {
   const miner_data = useSelector((state: RootState) => state.miner);
-  console.log("miner: ", miner_data);
+  console.log("minerrr: ", miner_data);
   // TODO: Bu veriler Redux'tan gelecek
   const currentLevel = Number(miner_data.miner._id.split("_")[1]);
   const upgrade_requirements = miner_data.miner.upgrade_requirements || {};

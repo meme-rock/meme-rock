@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { StoneTodustExchange } from "../components/dust/StoneTodustExchange";
+import { StoneTodustExchange } from "../components/dust/Exchange";
 import { AdRewardSection } from "../components/dust/AdRewardSection";
 import { SpinWheelButton } from "../components/dust/SpinWheelButton";
 import { SpinWheelModal } from "../components/dust/SpinWheelModal";
