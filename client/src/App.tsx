@@ -5,6 +5,7 @@ import { TopBar } from "./components/TopBar";
 import { Navbar } from "./components/Navbar";
 import { MainPage } from "./pages/MainPage";
 import { RockPage } from "./pages/RockPage";
+import { DustPage } from "./pages/DustPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
@@ -44,6 +45,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<MainPage />} />
                 <Route path="/rock" element={<RockPage />} />
+                <Route path="/dust" element={<DustPage />} />
                 <Route
                   path="/market"
                   element={<MarketPage stones={user.game_data.stones} />}

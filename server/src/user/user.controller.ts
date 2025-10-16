@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserBoosterService } from './user-booster.service';
@@ -11,6 +11,19 @@ export class UserController {
   @Post('loading/:_id')
   async loading(@Param('_id') _id: string, @Body() user: CreateUserDto) {
     return await this.userService.loading(_id, user);
+  }
+
+  /**
+   * Webhook endpoint for ad providers
+   * Example: GET http://localhost:8080/user/ad-reward?userid=123456789&token=meme_rock_ad_secret_2024
+   * URL for Adsgram: http://localhost:8080/user/ad-reward?userid=[userId]&token=meme_rock_ad_secret_2024
+   */
+  @Get('ad-reward')
+  async adRewardWebhook(
+    @Query('userid') userid: string,
+    @Query('token') token: string,
+  ) {
+    return await this.userService.adRewardWebhook(userid, token);
   }
 }
 

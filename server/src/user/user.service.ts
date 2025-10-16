@@ -204,4 +204,65 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * Webhook endpoint for ad providers (Adsgram/AdExtra)
+   * Called by ad provider's server when user completes an ad
+   * @param user_id - User's Telegram ID
+   * @param token - Security token to verify request authenticity
+   * @returns Success status
+   */
+  async adRewardWebhook(user_id: string, token: string) {
+    try {
+      // Validate inputs
+      if (!user_id) {
+        throw new Error('user_id is required');
+      }
+
+      if (!token) {
+        throw new Error('token is required');
+      }
+
+      // Verify token (use env variable in production)
+      const WEBHOOK_TOKEN =
+        process.env.AD_WEBHOOK_TOKEN || 'meme_rock_ad_secret_2024';
+
+      if (token !== WEBHOOK_TOKEN) {
+        console.error(`❌ Invalid token attempt for user ${user_id}`);
+        throw new Error('Invalid token');
+      }
+
+      const DUST_REWARD = 10;
+
+      // Atomic update to prevent race conditions
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(
+          user_id,
+          {
+            $inc: { 'game_data.dust': DUST_REWARD },
+          },
+          { new: true },
+        )
+        .select('_id game_data.dust')
+        .lean()
+        .exec();
+
+      if (!updatedUser) {
+        console.error(`❌ User not found: ${user_id}`);
+        throw new Error('User not found');
+      }
+
+      console.log(
+        `✅ Ad reward webhook: User ${user_id} received ${DUST_REWARD} dust (new balance: ${updatedUser.game_data.dust})`,
+      );
+
+      return {
+        success: true,
+        message: 'Reward processed successfully',
+      };
+    } catch (error) {
+      console.error('❌ Ad reward webhook error:', error);
+      throw error;
+    }
+  }
 }

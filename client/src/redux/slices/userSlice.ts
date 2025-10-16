@@ -92,7 +92,7 @@ export const userSlice = createSlice({
         action.payload.game_data.profit_per_hour;
       state.game_data.boosters = action.payload.game_data.boosters;
     },
-    // Update display rocks (called every 5 seconds)
+    // Update display rocks (called every 2 seconds)
     updateDisplayRocks: (state, action: PayloadAction<number>) => {
       state.displayRocks = action.payload;
       state.lastCounterUpdate = Date.now();
