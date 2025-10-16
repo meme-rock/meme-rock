@@ -97,6 +97,11 @@ export const userSlice = createSlice({
       state.displayRocks = action.payload;
       state.lastCounterUpdate = Date.now();
     },
+    // Update dust balance (set from backend after ad reward)
+    updateUserDust: (state, action: PayloadAction<number>) => {
+      state.game_data.dust = action.payload;
+      console.log(`💰 Dust balance updated: ${action.payload}`);
+    },
   },
 });
 
@@ -108,6 +113,7 @@ export const {
   updateUserBoosters,
   updateUserFromBoosterAction,
   updateDisplayRocks,
+  updateUserDust,
 } = userSlice.actions;
 
 export default userSlice.reducer;

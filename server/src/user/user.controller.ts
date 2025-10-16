@@ -26,6 +26,11 @@ export class UserController {
   ) {
     return await this.userService.adRewardWebhook(userid, token, provider);
   }
+
+  @Get('get-balance-after-ad-reward/:user_id')
+  async getBalanceAfterAdReward(@Param('user_id') user_id: string) {
+    return await this.userService.getBalanceAfterAdReward(user_id);
+  }
 }
 
 @Controller('user-booster')

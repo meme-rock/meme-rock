@@ -12,6 +12,7 @@ import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
+import { TestPage } from "./pages/TestPage";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -51,6 +52,7 @@ function App() {
                   element={<MarketPage stones={user.game_data.stones} />}
                 />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/test" element={<TestPage />} />
               </Routes>
             </main>
 

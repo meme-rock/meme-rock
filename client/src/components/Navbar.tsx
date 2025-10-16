@@ -1,4 +1,4 @@
-import { Home, User, ShoppingCart } from "lucide-react";
+import { Home, User, ShoppingCart, TestTube } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const Navbar = () => {
@@ -12,6 +12,7 @@ export const Navbar = () => {
     { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
+    { id: "test", label: "Test", icon: TestTube, path: "/test" },
   ];
 
   return (

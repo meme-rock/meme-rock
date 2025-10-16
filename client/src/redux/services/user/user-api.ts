@@ -1,7 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
 import type { IUser, IHiltiDetail } from "../../../types";
-import { loadingUser } from "../../slices/userSlice";
+import { loadingUser, updateUserDust } from "../../slices/userSlice";
 import { getMinerOnLoading } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
 
@@ -22,7 +22,7 @@ export const userApi = createApi({
         method: "POST",
         body: body.user,
       }),
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
           console.log("Loading data received:", data);
@@ -47,7 +47,23 @@ export const userApi = createApi({
         }
       },
     }),
+    updateUserDustAfterAdReward: builder.mutation({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/get-balance-after-ad-reward/${user_id}`,
+        method: "GET",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Update user dust data received:", data);
+          dispatch(updateUserDust(data));
+        } catch (error) {
+          console.error("Error updating user dust data:", error);
+        }
+      },
+    }),
   }),
 });
 
-export const { useLoadingMutation } = userApi;
+export const { useLoadingMutation, useUpdateUserDustAfterAdRewardMutation } =
+  userApi;

@@ -270,4 +270,21 @@ export class UserService {
       throw error;
     }
   }
+
+  async getBalanceAfterAdReward(user_id: string) {
+    try {
+      const user = await this.userModel
+        .findById(user_id)
+        .select('game_data.dust')
+        .lean()
+        .exec();
+      if (!user) {
+        throw new Error('User not found');
+      }
+      return user.game_data.dust;
+    } catch (error) {
+      console.error('Error in getBalanceAfterAdReward service:', error);
+      throw error;
+    }
+  }
 }
