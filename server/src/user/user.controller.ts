@@ -22,8 +22,9 @@ export class UserController {
   async adRewardWebhook(
     @Query('userid') userid: string,
     @Query('token') token: string,
+    @Query('provider') provider: string,
   ) {
-    return await this.userService.adRewardWebhook(userid, token);
+    return await this.userService.adRewardWebhook(userid, token, provider);
   }
 }
 

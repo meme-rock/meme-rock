@@ -212,7 +212,7 @@ export class UserService {
    * @param token - Security token to verify request authenticity
    * @returns Success status
    */
-  async adRewardWebhook(user_id: string, token: string) {
+  async adRewardWebhook(user_id: string, token: string, provider: string) {
     try {
       // Validate inputs
       if (!user_id) {
@@ -231,8 +231,13 @@ export class UserService {
         console.error(`❌ Invalid token attempt for user ${user_id}`);
         throw new Error('Invalid token');
       }
-
-      const DUST_REWARD = 10;
+      console.log(
+        'Ad reward webhook received for user:',
+        user_id,
+        'provider:',
+        provider,
+      );
+      const DUST_REWARD = 5;
 
       // Atomic update to prevent race conditions
       const updatedUser = await this.userModel

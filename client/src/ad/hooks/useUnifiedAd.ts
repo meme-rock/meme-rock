@@ -1,27 +1,27 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useAdExtra } from "./useAdExtra";
 import { useAdsgram } from "./useAdsgram";
 
 /**
- * Unified Ad Hook - AdExtra öncelikli, fallback olarak Adsgram
- * AdExtra hazırsa onu gösterir, değilse Adsgram'a geçer
+ * Unified Ad Hook - MAXIMUM PROTECTION
+ * Absolute guarantee: Only ONE ad shows at a time
  */
 export const useUnifiedAd = (adsgramBlockId: string) => {
   const [isWatching, setIsWatching] = useState(false);
   const adExtra = useAdExtra();
   const adsgram = useAdsgram(adsgramBlockId);
 
-  /**
-   * Check if any ad is ready
-   * Returns true if at least one network has ads available
-   */
+  // Triple lock system
+  const lockRef = useRef({
+    isLocked: false,
+    currentNetwork: null as "adextra" | "adsgram" | null,
+    lockTime: 0,
+  });
+
   const isAdReady = useMemo(() => {
     return adExtra.isReady || adsgram.isReady;
   }, [adExtra.isReady, adsgram.isReady]);
 
-  /**
-   * Check which network is ready
-   */
   const availableNetwork = useMemo(() => {
     if (adExtra.isReady) return "adextra";
     if (adsgram.isReady) return "adsgram";
@@ -29,60 +29,157 @@ export const useUnifiedAd = (adsgramBlockId: string) => {
   }, [adExtra.isReady, adsgram.isReady]);
 
   /**
-   * Show ad from available network
-   * Priority: AdExtra > Adsgram
+   * Acquire lock - returns true if lock acquired, false if already locked
+   */
+  const acquireLock = useCallback((network: "adextra" | "adsgram"): boolean => {
+    const now = Date.now();
+
+    // Check if already locked
+    if (lockRef.current.isLocked) {
+      const timeSinceLock = now - lockRef.current.lockTime;
+      console.log(
+        `🔒 LOCKED by ${lockRef.current.currentNetwork} (${timeSinceLock}ms ago)`
+      );
+      return false;
+    }
+
+    // Acquire lock
+    lockRef.current = {
+      isLocked: true,
+      currentNetwork: network,
+      lockTime: now,
+    };
+    console.log(`🔓 LOCK ACQUIRED by ${network}`);
+    return true;
+  }, []);
+
+  /**
+   * Release lock
+   */
+  const releaseLock = useCallback(() => {
+    if (lockRef.current.isLocked) {
+      console.log(`🔓 LOCK RELEASED by ${lockRef.current.currentNetwork}`);
+    }
+    lockRef.current = {
+      isLocked: false,
+      currentNetwork: null,
+      lockTime: 0,
+    };
+  }, []);
+
+  /**
+   * Show ad with MAXIMUM protection
    */
   const showAd = useCallback(async (): Promise<{
     success: boolean;
     network: "adextra" | "adsgram" | "none";
   }> => {
+    // Guard 1: State check
     if (isWatching) {
+      console.log("⚠️ Already watching, ABORT");
+      return { success: false, network: "none" };
+    }
+
+    // Guard 2: Lock check
+    if (lockRef.current.isLocked) {
+      console.log("⚠️ System LOCKED, ABORT");
       return { success: false, network: "none" };
     }
 
     if (!isAdReady) {
-      console.log("⚠️ No ads available from any network");
+      console.log("⚠️ No networks available");
       return { success: false, network: "none" };
     }
 
     setIsWatching(true);
+    console.log(`\n🎯 === AD REQUEST START === `);
+    console.log(
+      `Networks: AdExtra ${adExtra.isReady ? "✅" : "❌"} | Adsgram ${
+        adsgram.isReady ? "✅" : "❌"
+      }`
+    );
 
     try {
-      // Try AdExtra first (priority)
+      // TRY 1: AdExtra (200ms timeout)
       if (adExtra.isReady) {
-        console.log("📺 Showing AdExtra...");
-        const adExtraResult = await adExtra.showAd();
-
-        if (adExtraResult) {
-          console.log("✅ AdExtra ad completed");
+        if (!acquireLock("adextra")) {
           setIsWatching(false);
-          return { success: true, network: "adextra" };
+          return { success: false, network: "none" };
         }
 
-        console.log("⚠️ AdExtra failed, trying Adsgram...");
+        console.log("📺 [1/2] Trying AdExtra...");
+
+        try {
+          const adExtraResult = await adExtra.showAd();
+
+          if (adExtraResult.adOpened) {
+            console.log("✅ AdExtra opened window");
+            releaseLock();
+            setIsWatching(false);
+            console.log(`=== AD REQUEST END (AdExtra) ===\n`);
+
+            return {
+              success: adExtraResult.success,
+              network: "adextra",
+            };
+          }
+
+          // No ad opened, release lock and try Adsgram
+          console.log("❌ AdExtra: No ads");
+          releaseLock();
+        } catch (error) {
+          console.error("❌ AdExtra error:", error);
+          releaseLock();
+        }
       }
 
-      // Fallback to Adsgram
-      if (adsgram.isReady) {
-        console.log("📺 Showing Adsgram...");
-        const adsgramResult = await adsgram.showAd();
-
+      // Check lock before Adsgram
+      if (lockRef.current.isLocked) {
+        console.log("⚠️ Lock still held, cannot try Adsgram");
         setIsWatching(false);
+        return { success: false, network: "none" };
+      }
 
-        if (adsgramResult.success) {
-          console.log("✅ Adsgram ad completed");
-          return { success: true, network: "adsgram" };
+      // TRY 2: Adsgram (fallback)
+      if (adsgram.isReady) {
+        if (!acquireLock("adsgram")) {
+          setIsWatching(false);
+          return { success: false, network: "none" };
+        }
+
+        console.log("📺 [2/2] Trying Adsgram...");
+
+        try {
+          const adsgramResult = await adsgram.showAd();
+
+          releaseLock();
+          setIsWatching(false);
+          console.log(`=== AD REQUEST END (Adsgram) ===\n`);
+
+          return {
+            success: adsgramResult.success,
+            network: "adsgram",
+          };
+        } catch (error) {
+          console.error("❌ Adsgram error:", error);
+          releaseLock();
+          setIsWatching(false);
+          return { success: false, network: "adsgram" };
         }
       }
 
+      // No ads available
+      releaseLock();
       setIsWatching(false);
+      console.log(`=== AD REQUEST END (No ads) ===\n`);
       return { success: false, network: "none" };
     } catch (error) {
-      console.error("❌ Ad show error:", error);
+      console.error("❌ CRITICAL ERROR:", error);
+      releaseLock();
       setIsWatching(false);
       return { success: false, network: "none" };
     }
-  }, [isWatching, isAdReady, adExtra, adsgram]);
+  }, [isWatching, isAdReady, adExtra, adsgram, acquireLock, releaseLock]);
 
   return {
     isWatching: isWatching || adExtra.isLoading || adsgram.isLoading,
