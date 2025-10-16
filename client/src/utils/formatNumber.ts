@@ -1,28 +1,17 @@
 /**
- * Format large numbers with K, M, B suffixes
+ * Format numbers with thousand separators (commas)
  * @param num - Number to format
  * @param decimals - Number of decimal places
- * @returns Formatted string
+ * @returns Formatted string (e.g., "1,000,000.02")
  */
 export const formatLargeNumber = (
   num: number,
   decimals: number = 2
 ): string => {
-  const absNum = Math.abs(num);
-
-  if (absNum >= 1_000_000_000) {
-    return `${(num / 1_000_000_000).toFixed(decimals)}B`;
-  } else if (absNum >= 1_000_000) {
-    return `${(num / 1_000_000).toFixed(decimals)}M`;
-  } else if (absNum >= 10_000) {
-    return `${(num / 1_000).toFixed(decimals)}K`;
-  } else {
-    // For numbers under 10K, show with comma separator
-    return num.toLocaleString("en-US", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  }
+  return num.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 };
 
 /**
@@ -32,10 +21,14 @@ export const formatLargeNumber = (
  */
 export const getResponsiveFontSize = (num: number): string => {
   const formatted = formatLargeNumber(num, 2);
-  const length = formatted.length;
+  // Remove separators to count actual digits
+  const digitsOnly = formatted.replace(/[,.]/g, "");
+  const length = digitsOnly.length;
 
-  if (length <= 8) return "text-4xl";
-  if (length <= 10) return "text-3xl";
-  if (length <= 12) return "text-2xl";
-  return "text-xl";
+  // Adjust based on actual digit count
+  if (length <= 6) return "text-4xl"; // Up to 999,999.99
+  if (length <= 8) return "text-3xl"; // Up to 99,999,999.99
+  if (length <= 10) return "text-2xl"; // Up to 9,999,999,999.99
+  if (length <= 12) return "text-xl"; // Up to 999,999,999,999.99
+  return "text-lg"; // Larger numbers
 };

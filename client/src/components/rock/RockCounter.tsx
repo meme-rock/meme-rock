@@ -23,8 +23,8 @@ export const RockCounter = () => {
       transition={{ duration: 0.5 }}
       className="w-full flex flex-col items-center gap-3 px-4 py-4"
     >
-      {/* Main Display Card - Fixed size to prevent layout shift */}
-      <div className="relative bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-purple-900/40 border-2 border-purple-500/50 rounded-2xl px-8 py-6 shadow-2xl shadow-purple-500/20 min-w-[280px]">
+      {/* Main Display Card - Responsive container */}
+      <div className="relative bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-purple-900/40 border-2 border-purple-500/50 rounded-2xl px-6 py-6 shadow-2xl shadow-purple-500/20">
         {/* Glow effect */}
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-xl" />
 
@@ -51,13 +51,12 @@ export const RockCounter = () => {
           </motion.div>
 
           {/* Number Display - Responsive container */}
-          <div className="flex flex-col items-center min-w-[140px] max-w-[240px]">
-            <div className="h-12 flex items-center justify-center w-full">
+          <div className="flex flex-col items-center">
+            <div className="h-12 flex items-center justify-center">
               <AnimatedNumber
                 value={displayRocks}
                 decimals={2}
-                useShortFormat={true}
-                className={`text-white ${fontSizeClass} font-black tracking-tight drop-shadow-lg`}
+                className={`text-white ${fontSizeClass} font-black tracking-tight drop-shadow-lg whitespace-nowrap`}
               />
             </div>
           </div>
