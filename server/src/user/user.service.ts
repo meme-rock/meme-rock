@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
@@ -285,6 +290,70 @@ export class UserService {
     } catch (error) {
       console.error('Error in getBalanceAfterAdReward service:', error);
       throw error;
+    }
+  }
+
+  async stoneToDustExchange(user_id: string, stones: number) {
+    if (stones <= 0) {
+      throw new BadRequestException('Stones must be greater than 0');
+    }
+    try {
+      const updatedBalance = await this.userModel
+        .findByIdAndUpdate(
+          {
+            _id: user_id,
+            'game_data.stones': { $gte: stones },
+          },
+          {
+            $inc: { 'game_data.dust': stones * 3, 'game_data.stones': -stones },
+          },
+          { new: true },
+        )
+        .select('game_data.dust game_data.stones')
+        .lean()
+        .exec();
+      if (!updatedBalance) {
+        throw new NotFoundException('User not found or insufficient stones');
+      }
+      return updatedBalance;
+    } catch (error) {
+      console.error('Error in stoneToDustExchange service:', error);
+      throw new InternalServerErrorException(
+        'Error in stoneToDustExchange service',
+      );
+    }
+  }
+
+  async dustToStoneExchange(user_id: string, dust: number) {
+    if (dust < 100 || dust % 100 !== 0) {
+      throw new BadRequestException(
+        'Dust must be greater than 100 and a multiple of 100',
+      );
+    }
+    try {
+      const updatedBalance = await this.userModel
+        .findByIdAndUpdate(
+          {
+            _id: user_id,
+            'game_data.dust': { $gte: dust },
+          },
+          {
+            $inc: { 'game_data.dust': -dust, 'game_data.stones': dust / 100 },
+          },
+          { new: true },
+        )
+        .select('game_data.dust game_data.stones')
+        .lean()
+        .exec();
+      if (!updatedBalance) {
+        throw new NotFoundException('User not found or insufficient dust');
+      }
+      return updatedBalance;
+    } catch (error) {
+      console.error('Error in dustToStoneExchange service:', error);
+      throw new InternalServerErrorException(
+        'Error in dustToStoneExchange service',
+      );
     }
   }
 }

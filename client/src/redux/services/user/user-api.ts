@@ -1,7 +1,12 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
 import type { IUser, IHiltiDetail } from "../../../types";
-import { loadingUser, updateUserDust } from "../../slices/userSlice";
+import {
+  loadingUser,
+  updateUserDust,
+  updateUserOnDustToStoneExchange,
+  updateUserOnStoneToDustExchange,
+} from "../../slices/userSlice";
 import { getMinerOnLoading } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
 
@@ -62,8 +67,66 @@ export const userApi = createApi({
         }
       },
     }),
+    StoneToDustExchange: builder.mutation({
+      query: ({ user_id, stones }: { user_id: string; stones: number }) => ({
+        url: `/stone-to-dust-exchange/${user_id}`,
+        method: "POST",
+        body: { stones },
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log(
+            "Update user on stone to dust exchange data received:",
+            data
+          );
+          dispatch(
+            updateUserOnStoneToDustExchange({
+              dust: data.game_data.dust,
+              stones: data.game_data.stones,
+            })
+          );
+        } catch (error) {
+          console.error(
+            "Error updating user on stone to dust exchange data:",
+            error
+          );
+        }
+      },
+    }),
+    DustToStoneExchange: builder.mutation({
+      query: ({ user_id, dust }: { user_id: string; dust: number }) => ({
+        url: `/dust-to-stone-exchange/${user_id}`,
+        method: "POST",
+        body: { dust },
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log(
+            "Update user on dust to stone exchange data received:",
+            data
+          );
+          dispatch(
+            updateUserOnDustToStoneExchange({
+              dust: data.game_data.dust,
+              stones: data.game_data.stones,
+            })
+          );
+        } catch (error) {
+          console.error(
+            "Error updating user on dust to stone exchange data:",
+            error
+          );
+        }
+      },
+    }),
   }),
 });
 
-export const { useLoadingMutation, useUpdateUserDustAfterAdRewardMutation } =
-  userApi;
+export const {
+  useLoadingMutation,
+  useUpdateUserDustAfterAdRewardMutation,
+  useStoneToDustExchangeMutation,
+  useDustToStoneExchangeMutation,
+} = userApi;

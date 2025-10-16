@@ -102,6 +102,20 @@ export const userSlice = createSlice({
       state.game_data.dust = action.payload;
       console.log(`💰 Dust balance updated: ${action.payload}`);
     },
+    updateUserOnStoneToDustExchange: (
+      state,
+      action: PayloadAction<{ dust: number; stones: number }>
+    ) => {
+      state.game_data.dust = action.payload.dust;
+      state.game_data.stones = action.payload.stones;
+    },
+    updateUserOnDustToStoneExchange: (
+      state,
+      action: PayloadAction<{ dust: number; stones: number }>
+    ) => {
+      state.game_data.dust = action.payload.dust;
+      state.game_data.stones = action.payload.stones;
+    },
   },
 });
 
@@ -114,6 +128,8 @@ export const {
   updateUserFromBoosterAction,
   updateDisplayRocks,
   updateUserDust,
+  updateUserOnStoneToDustExchange,
+  updateUserOnDustToStoneExchange,
 } = userSlice.actions;
 
 export default userSlice.reducer;

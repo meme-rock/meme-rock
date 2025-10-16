@@ -31,6 +31,22 @@ export class UserController {
   async getBalanceAfterAdReward(@Param('user_id') user_id: string) {
     return await this.userService.getBalanceAfterAdReward(user_id);
   }
+
+  @Post('stone-to-dust-exchange/:user_id')
+  async stoneToDustExchange(
+    @Param('user_id') user_id: string,
+    @Body() { stones }: { stones: number },
+  ) {
+    return await this.userService.stoneToDustExchange(user_id, stones);
+  }
+
+  @Post('dust-to-stone-exchange/:user_id')
+  async dustToStoneExchange(
+    @Param('user_id') user_id: string,
+    @Body() { dust }: { dust: number },
+  ) {
+    return await this.userService.dustToStoneExchange(user_id, dust);
+  }
 }
 
 @Controller('user-booster')

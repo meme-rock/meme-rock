@@ -1,3 +1,5 @@
+import { AnimatedNumber } from "./rock/AnimatedNumber";
+
 interface TopBarProps {
   stones: number;
   dust: number;
@@ -15,9 +17,9 @@ export const TopBar = ({ stones, dust }: TopBarProps) => {
             alt="Dust"
             className="w-[28px] h-[28px] filter drop-shadow-sm"
           />
-          <span className="text-yellow-300 font-bold text-lg">
-            {dust.toLocaleString()}
-          </span>
+          <div className="text-yellow-300 font-bold text-lg min-w-[60px]">
+            <AnimatedNumber value={dust} decimals={0} />
+          </div>
         </div>
         {/* 2. Stone Bakiyesi */}
         <div className="flex items-center space-x-2 bg-blue-700/20 px-3 py-1.5 rounded-full">
@@ -26,9 +28,9 @@ export const TopBar = ({ stones, dust }: TopBarProps) => {
             alt="Stone"
             className="w-[28px] h-[28px] filter brightness-110 drop-shadow-sm"
           />
-          <span className="text-blue-300 font-bold text-lg">
-            {stones.toLocaleString()}
-          </span>
+          <div className="text-blue-300 font-bold text-lg min-w-[60px]">
+            <AnimatedNumber value={stones} decimals={0} />
+          </div>
         </div>
       </div>
     </div>

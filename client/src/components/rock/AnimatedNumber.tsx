@@ -63,9 +63,9 @@ export const AnimatedNumber = ({
                 exit={{ y: 20, opacity: 0 }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 25,
-                  mass: 0.5,
+                  stiffness: 200,
+                  damping: 30,
+                  mass: 0.8,
                 }}
                 className="absolute inset-0 flex items-center justify-center"
               >
