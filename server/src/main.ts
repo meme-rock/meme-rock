@@ -7,6 +7,9 @@ import { Telegraf } from 'telegraf';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Trust proxy ayarı (IP adreslerini doğru almak için)
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
+
   // CORS ayarlarını etkinleştir
   app.enableCors({
     origin: true, // Tüm origin'lere izin ver (development için)

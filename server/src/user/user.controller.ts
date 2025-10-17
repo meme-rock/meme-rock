@@ -1,16 +1,31 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserBoosterService } from './user-booster.service';
 import { UnlockUserBoosterDto } from './dto/user-boosters.dto';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('loading/:_id')
-  async loading(@Param('_id') _id: string, @Body() user: CreateUserDto) {
-    return await this.userService.loading(_id, user);
+  @Post('loading/:user_id')
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ default: { limit: 1, ttl: 2000 } }) // Sadece bu endpoint'te throttling
+  async loading(
+    @Param('user_id') user_id: string,
+    @Body() user: CreateUserDto,
+  ) {
+    return await this.userService.loading(user_id, user);
   }
 
   /**
@@ -19,6 +34,7 @@ export class UserController {
    * URL for Adsgram: http://localhost:8080/user/ad-reward?userid=[userId]&token=meme_rock_ad_secret_2024
    */
   @Get('ad-reward')
+  @SkipThrottle()
   async adRewardWebhook(
     @Query('userid') userid: string,
     @Query('token') token: string,
@@ -33,6 +49,8 @@ export class UserController {
   }
 
   @Post('stone-to-dust-exchange/:user_id')
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ strict: { limit: 1, ttl: 1000 } }) // Kritik işlem - sıkı throttling
   async stoneToDustExchange(
     @Param('user_id') user_id: string,
     @Body() { stones }: { stones: number },
@@ -41,6 +59,8 @@ export class UserController {
   }
 
   @Post('dust-to-stone-exchange/:user_id')
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ strict: { limit: 1, ttl: 1000 } }) // Kritik işlem - sıkı throttling
   async dustToStoneExchange(
     @Param('user_id') user_id: string,
     @Body() { dust }: { dust: number },
@@ -49,6 +69,7 @@ export class UserController {
   }
 }
 
+@UseGuards(CustomThrottlerGuard)
 @Controller('user-booster')
 export class UserBoosterController {
   constructor(private readonly userBoosterService: UserBoosterService) {}
@@ -59,6 +80,7 @@ export class UserBoosterController {
   }
 
   @Post('unlock-booster/:user_id')
+  @Throttle({ strict: { limit: 1, ttl: 1000 } })
   async unlockBooster(
     @Param('user_id') user_id: string,
     @Body() booster: UnlockUserBoosterDto,
@@ -70,6 +92,7 @@ export class UserBoosterController {
   }
 
   @Post('upgrade-booster/:user_id')
+  @Throttle({ strict: { limit: 1, ttl: 1000 } })
   async upgradeBooster(
     @Param('user_id') user_id: string,
     @Body() booster: UnlockUserBoosterDto,
