@@ -31,7 +31,29 @@ export class BotController implements OnModuleInit {
   }
   @Start()
   async startCommand(@Ctx() ctx: Context) {
-    await ctx.reply('Hello World');
+    ctx.reply(
+      `🎉 **Welcome to ROCK!**\n\n🎮 Press **Play** to dive into an ROCK Airdrop 🚀!\n\n📖 Tap Whitepaper to discover how it all works.`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '🎮 Play',
+                url: 'https://t.me/memerockBot/playrock',
+                // WebApp URL'si
+              },
+              {
+                text: '📖 Whitepaper',
+                url: 'https://deep-dapp-store.gitbook.io/rock',
+              },
+            ],
+            [{ text: '📢 Join Channel', url: 'https://t.me/thememerock' }],
+            [{ text: '💬 Join Chat', url: 'https://t.me/meme_rock_chat' }],
+          ],
+        },
+      },
+    );
   }
 
   //! Broadcast komutları
