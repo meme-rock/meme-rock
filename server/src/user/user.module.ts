@@ -9,6 +9,8 @@ import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
 import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 import { UserBoosterService } from './user-booster.service';
 
+import { BotModule } from 'src/bot/bot.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -17,6 +19,7 @@ import { UserBoosterService } from './user-booster.service';
       { name: Hilti.name, schema: HiltiSchema },
       { name: Booster.name, schema: BoosterSchema },
     ]),
+    BotModule, // BotService'i kullanabilmek için
   ],
   controllers: [UserController, UserBoosterController],
   providers: [UserService, UserBoosterService],

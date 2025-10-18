@@ -5,6 +5,7 @@ import hiltiReducer from "./slices/hiltiSlice";
 import { userApi } from "./services/user/user-api";
 import boosterReducer from "./slices/boosterSlice";
 import { boosterApi } from "./services/booster/booster-api";
+import { marketApi } from "./services/market/market-api";
 
 export const store = configureStore({
   reducer: {
@@ -14,9 +15,14 @@ export const store = configureStore({
     booster: boosterReducer,
     [userApi.reducerPath]: userApi.reducer,
     [boosterApi.reducerPath]: boosterApi.reducer,
+    [marketApi.reducerPath]: marketApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(userApi.middleware, boosterApi.middleware),
+    getDefaultMiddleware().concat(
+      userApi.middleware,
+      boosterApi.middleware,
+      marketApi.middleware
+    ),
 });
 
 // Infer the type of store

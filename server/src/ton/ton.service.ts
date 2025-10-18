@@ -5,7 +5,7 @@ import {
   loadStonePurchase,
   StonePurchase,
   storeStonePurchase,
-} from './contract/PurchaseStone_PurchaseStone';
+} from '../market/contract/PurchaseStone_PurchaseStone';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   TonPayments,

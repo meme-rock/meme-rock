@@ -3,8 +3,36 @@ import Lottie from "lottie-react";
 import starAnimation from "../../public/animated-star.json";
 import tonAnimation from "../../public/animated-ton.json";
 import star from "../../public/star.json";
+import {
+  useLoadStonesMarketDataQuery,
+  useStarsToStonesMutation,
+  useTonToStonesMutation,
+} from "../redux/services/market/market-api";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
+import WebApp from "@twa-dev/sdk";
+import "buffer";
+import {
+  useTonConnectUI,
+  useTonAddress,
+  SendTransactionRequest,
+} from "@tonconnect/ui-react";
 
 type CurrencyType = "stars" | "ton";
+
+interface StarMarketItem {
+  stars_price: number;
+  stone_amount: number;
+  stone_bonus: number;
+  total_stones: number;
+}
+
+interface TonMarketItem {
+  ton_price: number;
+  stone_amount: number;
+  stone_bonus: number;
+  total_stones: number;
+}
 
 interface PricingItem {
   id: string;
@@ -18,32 +46,135 @@ interface MarketPageProps {
 }
 
 export const MarketPage = ({}: MarketPageProps) => {
+  const [tonConnectUI] = useTonConnectUI();
+  const walletAddress = useTonAddress();
+  const [transaction, setTransaction] = useState<SendTransactionRequest | null>(
+    null
+  );
+  const [loading, setLoading] = useState(false);
+  const user = useSelector((state: RootState) => state.user);
+  const [starsToStonesMutation] = useStarsToStonesMutation();
+  const [tonToStonesMutation] = useTonToStonesMutation();
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyType>("stars");
 
-  const starsPricing: PricingItem[] = [
-    { id: "stars-100", currency: 100, stones: 100 },
-    { id: "stars-500", currency: 500, stones: 600, bonus: 100 },
-    { id: "stars-1000", currency: 1000, stones: 1300, bonus: 300 },
-    { id: "stars-2500", currency: 2500, stones: 3500, bonus: 1000 },
-  ];
+  // API'den market verilerini çek
+  const {
+    data: marketData,
+    isLoading,
+    error,
+  } = useLoadStonesMarketDataQuery({});
 
-  const tonPricing: PricingItem[] = [
-    { id: "ton-1", currency: 1.01, stones: 120, bonus: 20 },
-    { id: "ton-5", currency: 5.01, stones: 720, bonus: 220 },
-    { id: "ton-10", currency: 10.01, stones: 1500, bonus: 500 },
-    { id: "ton-25", currency: 25.01, stones: 4000, bonus: 1400 },
-  ];
+  // Backend'den gelen verileri PricingItem formatına çevir
+  const starsPricing: PricingItem[] =
+    marketData?.star_market?.map((item: StarMarketItem) => ({
+      id: `stars-${item.stars_price}`,
+      currency: item.stars_price,
+      stones: item.total_stones,
+      bonus: item.stone_bonus,
+    })) || [];
 
-  const handlePurchase = (item: PricingItem) => {
-    console.log(
-      `Purchasing ${item.stones} stones for ${item.currency} ${selectedCurrency}`
-    );
+  const tonPricing: PricingItem[] =
+    marketData?.ton_market?.map((item: TonMarketItem) => ({
+      id: `ton-${item.ton_price}`,
+      currency: item.ton_price,
+      stones: item.total_stones,
+      bonus: item.stone_bonus,
+    })) || [];
+
+  const handlePurchase = async (item: PricingItem) => {
+    switch (selectedCurrency) {
+      case "stars":
+        try {
+          const { invoice_link } = await starsToStonesMutation({
+            user_id: user._id,
+            stars_price: item.currency,
+          }).unwrap();
+
+          console.log("invoiceLink: ", invoice_link);
+
+          if (!invoice_link) {
+            WebApp.showAlert("Something went wrong during invoice generation.");
+            return;
+          }
+
+          // WebApp objesinin Telegram Web App içinden erişilebilir olduğunu varsayıyoruz
+          WebApp.openInvoice(invoice_link);
+        } catch (error) {
+          console.error("❌ Stars to Stones error:", error);
+          // Hata ayrıntılarını kullanıcıya göstermek isteyebilirsiniz
+          WebApp.showAlert("Failed to create invoice. Please try again.");
+        }
+        break;
+
+      case "ton":
+        try {
+          console.log(`${item.currency} TON'a tıklandı`);
+          if (!walletAddress) {
+            WebApp.showAlert("Please connect your wallet first!");
+            tonConnectUI.openModal();
+            return;
+          }
+          const response = await tonToStonesMutation({
+            user_id: user._id,
+            stone_amount: item.stones,
+            wallet_address: walletAddress,
+          }).unwrap();
+          console.log("response: ", response);
+          if (!response) {
+            throw new Error("Failed to create transaction");
+          }
+          setTransaction(response as SendTransactionRequest);
+          console.log("Backend'den Gelen Payload İçeriği ", response);
+          await tonConnectUI.sendTransaction(
+            response as SendTransactionRequest
+          );
+        } catch (error) {}
+        break;
+
+      default:
+        // selectedCurrency, ne 'stars' ne de 'ton' ise burası çalışır
+        console.warn(`Unknown currency selected: ${selectedCurrency}`);
+        WebApp.showAlert("Unknown currency type selected.");
+        break;
+    }
+    /* if (selectedCurrency === "stars") {
+      const { invoice_link } = await starsToStonesMutation({
+        user_id: user._id,
+        stars_price: item.currency,
+      }).unwrap();
+      console.log("invoiceLink: ", invoice_link);
+      if (!invoice_link) {
+        WebApp.showAlert("Something went wrong");
+        return;
+      }
+      WebApp.openInvoice(invoice_link);
+    } else {
+      console.log(`${item.currency} TON'a tıklandı`);
+    } */
     // Telegram Web App purchase logic would go here
   };
 
   const currentPricing =
     selectedCurrency === "stars" ? starsPricing : tonPricing;
+
+  // Loading durumu
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  // Error durumu
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-red-400 text-lg">Failed to load market data</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden pb-20">
@@ -128,11 +259,11 @@ export const MarketPage = ({}: MarketPageProps) => {
                           : item.currency.toFixed(2)}
                       </span>
                     </div>
-                    {item.bonus && (
+                    {item.bonus ? (
                       <div className="text-green-400 text-sm font-medium">
                         +{item.bonus} bonus stones
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex flex-col items-end space-y-1">
@@ -143,7 +274,7 @@ export const MarketPage = ({}: MarketPageProps) => {
                       className="w-5 h-5 filter brightness-110"
                     />
                     <div className="text-white font-bold text-xl">
-                      {item.stones.toLocaleString()}
+                      {item.stones}
                     </div>
                   </div>
                   <div className="text-gray-500 text-sm">stones</div>
@@ -151,37 +282,6 @@ export const MarketPage = ({}: MarketPageProps) => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Info Section */}
-        <div className="mt-6 p-4 bg-gray-900/30 border border-gray-800/50 rounded-xl">
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg
-                className="w-4 h-4 text-blue-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-1">
-                Purchase Information
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                {selectedCurrency === "stars"
-                  ? "Stars purchases are processed instantly. Stars can be purchased from Telegram Premium or earned through activities."
-                  : "TON purchases include 20% bonus stones. All transactions are processed securely through The Open Network."}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

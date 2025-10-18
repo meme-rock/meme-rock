@@ -7,7 +7,10 @@ export type TonPaymentsDocument = HydratedDocument<TonPayments>;
 @Schema({ timestamps: true })
 export class TonPayments {
   @Prop({ type: String, required: true })
-  amount: string;
+  stone_amount: number;
+
+  @Prop({ type: Number, required: true })
+  ton_amount: number;
 
   @Prop({ type: String, required: true })
   wallet_address: string;

@@ -12,6 +12,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ThrottleTestController } from './common/controllers/throttle-test.controller';
+import { MarketModule } from './market/market.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -60,6 +61,7 @@ if (!mongoUri) {
     TonModule,
     AdminModule,
     BotModule,
+    MarketModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],
