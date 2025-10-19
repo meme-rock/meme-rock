@@ -11,24 +11,104 @@ import { Context, Telegraf } from 'telegraf';
 import { COMMANDS } from './bot.commands';
 import { OnModuleInit } from '@nestjs/common';
 import { BroadcastService } from './jobs/broadcast.service';
+import { Message } from 'telegraf/types';
+import { BotService } from './bot.service';
+import {
+  StarMarketItem,
+  STONE_MARKET_STAR,
+  STONE_MARKET_TON,
+  TonMarketItem,
+} from 'src/common/config';
+import { UserService } from 'src/user/user.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from 'src/schemas/user.schema';
+import { Model } from 'mongoose';
 
 @Update()
 export class BotController implements OnModuleInit {
   constructor(
     @InjectBot() private readonly bot: Telegraf<Context>,
     private readonly broadcastService: BroadcastService,
+    private readonly botService: BotService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   onModuleInit() {
     // <-- setMyCommands buraya taşındı mı?
     this.bot.telegram.setMyCommands(COMMANDS);
   }
+
   @On('pre_checkout_query')
-  async handlePreCheckout(@Ctx() ctx: Context) {
-    return ctx.answerPreCheckoutQuery(true).catch(() => {
-      ctx.reply('Payment failed. Please try again.');
-    });
+  async onPreCheckout(@Ctx() ctx: Context) {
+    await ctx.answerPreCheckoutQuery(true); // ✅ doğru
   }
+
+  @On('successful_payment')
+  async handleSuccessfulPayment(@Ctx() ctx: Context) {
+    try {
+      console.log('Başarılı Ödeme geldi:', ctx);
+      const message = ctx.message as Message.SuccessfulPaymentMessage;
+      const paymentInfo = message.successful_payment;
+      const currency = paymentInfo.currency;
+      const amount = paymentInfo.total_amount;
+      if (currency !== 'XTR') {
+        await this.botService.refundStarsPayment(
+          ctx,
+          'Your payment refunded, you have to pay with Telegram stars',
+        );
+      }
+      const payload = paymentInfo.invoice_payload; // Link oluştururken verdiğiniz benzersiz veri
+
+      const user_id = message.from?.id;
+      console.log('message:', message);
+      console.log('paymentInfo:', paymentInfo);
+      console.log('payload:', payload);
+      console.log('amount:', amount);
+      console.log('userId:', user_id);
+      console.log(
+        `Başarılı Ödeme! Kullanıcı: ${user_id}, Payload: ${payload}, Miktar: ${amount}`,
+      );
+
+      const market_details = STONE_MARKET_STAR.find(
+        (item: StarMarketItem) =>
+          item.stars_price.toString() === amount.toString(),
+      );
+      if (!market_details) {
+        return await this.botService.refundStarsPayment(
+          ctx,
+          'Your payment refunded, Something went wrong',
+        );
+      }
+      //* Ödeme Başarılıysa
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        user_id,
+        {
+          $inc: {
+            'game_data.stones': market_details.total_stones,
+          },
+        },
+        { new: true },
+      );
+      if (!updatedUser) {
+        return await this.botService.refundStarsPayment(
+          ctx,
+          'Your payment refunded, User not found',
+        );
+      }
+      await ctx.reply(
+        `${amount.toString()} stars payment successful, you have received ${market_details.total_stones.toString()} stones`,
+      );
+      // 1. **Payload'ı kullanarak** veritabanınızda ilgili siparişi "Ödendi" olarak işaretleyin.
+      // 2. Kullanıcının hizmetini (premium erişim, ürün vb.) aktif hale getirin.
+      // 3. Kullanıcıya bir onay mesajı gönderin.
+      await this.botService.refundStarsPayment(ctx, 'Test Refund Successful');
+      return;
+      // Örneğin: await this.telegramService.activateUserService(userId, payload);
+    } catch (error) {
+      console.log('Başarılı Ödeme hatası:', error);
+    }
+  }
+
   @Start()
   async startCommand(@Ctx() ctx: Context) {
     ctx.reply(

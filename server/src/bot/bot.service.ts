@@ -72,12 +72,26 @@ export class BotService {
         .catch(() => {
           return ctx.reply('Refund Failed');
         });
-      console.log('Refund result:', result);
       return result;
     } catch (err) {
       console.error('Refund error:', err.response?.description ?? err);
       throw err;
     }
+  }
+
+  async testRefundStarsPayment(telegram_payment_charge_id: string) {
+    const result = await (this.bot.telegram as any)
+      .callApi('refundStarPayment', {
+        user_id: 5075071123,
+        telegram_payment_charge_id: telegram_payment_charge_id,
+      })
+      .then(() => {
+        return 'Refund Successful';
+      })
+      .catch(() => {
+        return 'Refund Failed';
+      });
+    return result;
   }
 
   async sendNotificationToUser(user_id: number, message: string) {

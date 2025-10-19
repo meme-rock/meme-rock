@@ -25,13 +25,13 @@ export type TonMarketItem = {
  */
 export const STONE_MARKET_STAR: StarMarketItem[] = [
   {
-    stars_price: 100,
+    stars_price: 1, // 100
     stone_amount: 100,
     stone_bonus: 0,
     total_stones: 100,
   },
   {
-    stars_price: 500,
+    stars_price: 2, // 500
     stone_amount: 500,
     stone_bonus: 25, // 500 * 0.05
     total_stones: 525,

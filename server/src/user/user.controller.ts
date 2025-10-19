@@ -13,10 +13,14 @@ import { UserBoosterService } from './user-booster.service';
 import { UnlockUserBoosterDto } from './dto/user-boosters.dto';
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { BotService } from 'src/bot/bot.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly botService: BotService,
+  ) {}
 
   @Post('loading/:user_id')
   @UseGuards(CustomThrottlerGuard)
@@ -66,6 +70,16 @@ export class UserController {
     @Body() { dust }: { dust: number },
   ) {
     return await this.userService.dustToStoneExchange(user_id, dust);
+  }
+
+  @Post('refund-stars-payment')
+  async refundStarsPayment(
+    @Body()
+    { telegram_payment_charge_id }: { telegram_payment_charge_id: string },
+  ) {
+    return await this.botService.testRefundStarsPayment(
+      telegram_payment_charge_id,
+    );
   }
 }
 
