@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { MarketService } from './market.service';
 import { Throttle } from '@nestjs/throttler';
 
@@ -41,5 +49,14 @@ export class MarketController {
       stone_amount,
       wallet_address,
     );
+  }
+
+  @Get('check-ton-payments')
+  async checkTonPayments(@Headers('x-api-key') api_key: string) {
+    console.log('api_key: ', api_key);
+    if (api_key !== process.env.TON_ENDPOINT_SECRET) {
+      throw new UnauthorizedException('Invalid Request');
+    }
+    return await this.marketService.checkTonPayments();
   }
 }
