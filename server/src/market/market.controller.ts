@@ -53,7 +53,6 @@ export class MarketController {
 
   @Get('check-ton-payments')
   async checkTonPayments(@Headers('x-api-key') api_key: string) {
-    console.log('api_key: ', api_key);
     if (api_key !== process.env.TON_ENDPOINT_SECRET) {
       throw new UnauthorizedException('Invalid Request');
     }

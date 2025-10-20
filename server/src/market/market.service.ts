@@ -151,9 +151,9 @@ export class MarketService {
       bounceable: true,
       testOnly: true,
     });
-    console.log('Last Address: ', lastAddress);
+
     const address = Address.parse(lastAddress);
-    console.log('Address: ', address);
+
     const realTonPrice = fromNano(ton_price);
     const amountNano = toNano(realTonPrice.toString());
 
@@ -164,12 +164,16 @@ export class MarketService {
       userId: user_id,
       objectId: object_id,
     };
-    console.log('Message: ', message);
+
     const body = beginCell().store(storeStonePurchase(message)).endCell();
     return body.toBoc().toString('base64');
   }
 
   //! TON PAYMENTS
+  escapeInlineCodeForMarkdownV2(text: string): string {
+    // Telegram'a giden string içinde ` ve \ karakterlerini kaçır
+    return text.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+  }
   async checkTonPayments() {
     try {
       // URL parametrelerini oluştur
@@ -187,6 +191,7 @@ export class MarketService {
         throw new BadRequestException('False response from TON Center');
       }
       const transactions = responseData.result;
+
       for (const transaction of transactions) {
         const in_msg = transaction.in_msg;
         const out_msgs = transaction.out_msgs;
@@ -200,7 +205,7 @@ export class MarketService {
         if (decodedPayload.opCode != '0x98A3C5F1') {
           continue;
         }
-        console.log('decodedPayload: ', decodedPayload);
+
         const { user_id, amount, payment_id } = decodedPayload.decodedData;
         const market_details = STONE_MARKET_TON.find(
           (item: TonMarketItem) =>
@@ -236,11 +241,23 @@ export class MarketService {
           this.logger.error('User not found');
           continue;
         }
-
-        console.log('Updated User: ', updatedUser);
-        console.log('Updated Payment: ', updatedPayment);
-        console.log('Decoded Payload: ' + JSON.stringify(decodedPayload));
+        console.log('payment found...');
+        await this.botService.sendNotificationToUser(
+          user_id,
+          [
+            // NOT: statik "!" karakterlerini Telegram için kaçırıyoruz: \!
+            '✅ *Payment Successful\\!*',
+            '',
+            // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
+            `💰 *Amount:* \`${this.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
+            `🪨 *Stones Added:* \`${this.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
+            '',
+            '🎉 Your balance has been *successfully updated\\!*',
+            '_Please refresh the app to see the latest changes\\._',
+          ].join('\n'),
+        );
       }
+
       return transactions;
       return {
         success: true,
@@ -262,7 +279,6 @@ export class MarketService {
 
       // 3. loadStonePurchase fonksiyonunu kullanarak veriyi çözme
       const decodedMessage = loadStonePurchase(slice);
-      console.log('decodedMessage: ', decodedMessage);
       // 4. Address'i string'e çevirip, bigint'i string'e çevirerek JSON-serializable hale getirme
       return {
         type: decodedMessage.$$type,
