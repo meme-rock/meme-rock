@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { MinerLevelThumbnails } from "../components/main/MinerLevelThumbnails";
 import { MinerDisplay } from "../components/main/MinerDisplay";
 import { MineButton } from "../components/main/MineButton";
@@ -10,11 +10,33 @@ export const MainPage = () => {
   const miner_data = useSelector((state: RootState) => state.miner);
   console.log("minerrr: ", miner_data);
   // TODO: Bu veriler Redux'tan gelecek
-  const currentLevel = Number(miner_data.miner._id.split("_")[1]);
-  const upgrade_requirements = miner_data.miner.upgrade_requirements || {};
+  // Current user's hilti level
+  const currentUserMinerLevel = useMemo(
+    () => parseInt(miner_data.current_miner._id.split("_")[1]),
+    [miner_data.current_miner._id]
+  );
+
+  // Selected hilti state (for browsing)
+  const [selectedMinerLevel, setSelectedMinerLevel] = useState(
+    currentUserMinerLevel
+  );
+  // Get selected hilti from all_hiltis
+  const selectedMiner = useMemo(
+    () =>
+      miner_data.all_miners.find(
+        (m) => m._id === `LEVEL_${selectedMinerLevel}`
+      ) || miner_data.current_miner,
+    [selectedMinerLevel, miner_data.all_miners, miner_data.current_miner]
+  );
+
+  const upgrade_requirements =
+    miner_data.current_miner.upgrade_requirements || {};
 
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
+  const handleLevelSelect = useCallback((level: number) => {
+    setSelectedMinerLevel(level);
+  }, []);
   // Mine button handler
   const handleMine = () => {
     if (cooldownRemaining > 0) return;
@@ -38,14 +60,15 @@ export const MainPage = () => {
 
   // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
   const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
-  const spent_stones_to_upgrade = miner_data.miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
+  const spent_stones_to_upgrade =
+    miner_data.current_miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
 
   const handleUpgrade = () => {
     const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
     if (!canUpgrade) return;
 
     // TODO: Backend'e upgrade isteği gönder (level artacak)
-    console.log("Upgrading to level", currentLevel + 1);
+    console.log("Upgrading to level", selectedMinerLevel + 1);
   };
 
   return (
@@ -59,27 +82,36 @@ export const MainPage = () => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-start pt-2">
           {/* Level thumbnails */}
-          <MinerLevelThumbnails currentLevel={currentLevel} maxLevel={5} />
+          <MinerLevelThumbnails
+            currentLevel={currentUserMinerLevel}
+            selectedLevel={selectedMinerLevel}
+            maxLevel={5}
+            onLevelSelect={handleLevelSelect}
+          />
 
           {/* Miner display */}
           <div className="mt-2">
-            <MinerDisplay level={currentLevel} />
+            <MinerDisplay
+              selectedMiner={selectedMiner}
+              currentUserMinerLevel={currentUserMinerLevel}
+            />
           </div>
 
-          {/* Mine button */}
+          {/* Mine button - show reward for all levels, but button only for current level */}
           <div className="mt-4">
             <MineButton
               onMine={handleMine}
-              reward={miner_data.miner.stones_income}
+              reward={selectedMiner.stones_income}
               cooldownRemaining={cooldownRemaining}
+              showButton={selectedMinerLevel === currentUserMinerLevel}
             />
           </div>
 
           {/* Upgrade requirements */}
-          {currentLevel < 5 && (
+          {selectedMinerLevel < 5 && (
             <div className="w-full px-4">
               <UpgradeRequirements
-                nextLevel={currentLevel + 1}
+                nextLevel={selectedMinerLevel + 1}
                 inviteCount={7} // Kullanıcının yaptığı davet sayısı
                 requiredInvites={upgrade_requirements.invite || 0} // Gerekli davet sayısı
                 dustSpent={999} // Harcanan dust

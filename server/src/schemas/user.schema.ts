@@ -3,17 +3,32 @@ import mongoose, { HydratedDocument } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
+@Schema({ _id: false, timestamps: false })
+class AdData {
+  @Prop({ type: Number, default: 0 })
+  ads_watched: number;
+
+  @Prop({ type: Date })
+  last_ad_watched: Date;
+
+  @Prop({ type: Number, default: 0 })
+  ads_watched_today: number;
+}
 // Airdrop için ayrı bir alt şema
-@Schema({ _id: false })
+@Schema({ _id: false, timestamps: false })
 class AirdropData {
   @Prop({ type: Number, default: 0 })
   rock_coins: number;
+
   @Prop({ type: String, default: null })
   wallet_address: string;
+
+  @Prop({ type: Number, default: 0 })
+  profit_per_hour: number;
 }
 
 // Telegram InitData için ayrı bir alt şema
-@Schema({ _id: false })
+@Schema({ _id: false, timestamps: false })
 class TelegramData {
   @Prop({ type: String })
   username: string;
@@ -37,7 +52,7 @@ class TelegramData {
   allows_write_to_pm: boolean;
 }
 //? Miner için ayrı bir alt şema oluşturuyoruz. GameData'ya bağlıyoruz.
-@Schema({ _id: false })
+@Schema({ _id: false, timestamps: false })
 class MinerData {
   @Prop({ type: String, ref: 'Miner' })
   miner: string;
@@ -47,64 +62,42 @@ class MinerData {
 }
 
 //? Hilti için ayrı bir alt şema oluşturuyoruz. GameData'ya bağlıyoruz.
-@Schema({ _id: false })
+@Schema({ _id: false, timestamps: false })
 class HiltiData {
   @Prop({ type: String, ref: 'Hilti' })
   hilti: string;
-
-  @Prop({ type: Date, default: Date.now() })
-  last_claim: Date;
 }
 
 //? Booster için ayrı bir alt şema oluşturuyoruz. User'ın unlock ettiği ve level bilgisini tutar.
-@Schema({ _id: false })
-class UserBooster {
-  @Prop({ type: String, ref: 'Booster', required: true })
-  booster_id: string; // e.g., "booster_1_1"
+@Schema({ _id: false, timestamps: false })
+class BoosterData {
+  @Prop({ type: String, ref: 'Booster', required: true, unique: true })
+  booster: string; // e.g., "booster_1_1"
 
   @Prop({ type: Number, default: 0 })
   current_level: number; // Current level of this booster (0 = not unlocked)
-
-  @Prop({ type: Date })
-  unlocked_at?: Date;
-
-  @Prop({ type: Date })
-  last_upgraded_at?: Date;
 }
 
-//? GameData için ayrı bir alt şema oluşturuyoruz.
+//? Balance için ayrı bir alt şema oluşturuyoruz.
 @Schema({ _id: false })
-class GameData {
+class BalanceData {
   @Prop({ type: Number, default: 0 })
-  stones: number;
+  stone: number;
 
   @Prop({ type: Number, default: 0 })
   dust: number;
+}
 
-  // Spending tracking for unlock requirements
+@Schema({ _id: false })
+class PaymentData {
   @Prop({ type: Number, default: 0 })
-  spent_dust: number;
+  total_star_payment: number;
 
   @Prop({ type: Number, default: 0 })
-  spent_stone: number;
+  total_ton_payment: number;
 
   @Prop({ type: Number, default: 0 })
-  profit_per_hour: number;
-
-  @Prop({ type: Boolean, default: false })
-  is_premium: boolean;
-
-  @Prop({ type: Boolean, default: false })
-  auto_collector: boolean;
-
-  @Prop({ type: MinerData })
-  miner_data: MinerData;
-
-  @Prop({ type: HiltiData })
-  hilti_data: HiltiData;
-
-  @Prop({ type: [UserBooster], default: [] })
-  boosters: UserBooster[]; // Array of user's boosters with their levels
+  last_payment_date: Date;
 }
 
 @Schema({ timestamps: true, _id: false })
@@ -115,8 +108,29 @@ export class User {
   @Prop({ type: TelegramData })
   telegram_data: TelegramData;
 
-  @Prop({ type: GameData })
-  game_data: GameData;
+  @Prop({ type: BalanceData })
+  balance_data: BalanceData;
+
+  @Prop({ type: PaymentData })
+  payment_data: PaymentData;
+
+  @Prop({ type: AirdropData })
+  airdrop_data: AirdropData;
+
+  @Prop({ type: AdData })
+  ad_data: AdData;
+
+  @Prop({ type: MinerData })
+  miner_data: MinerData;
+
+  @Prop({ type: HiltiData })
+  hilti_data: HiltiData;
+
+  @Prop({ type: [BoosterData], default: [] })
+  boosters: BoosterData[]; // Array of user's boosters with their levels
+
+  @Prop({ type: Boolean, default: false })
+  is_premium: boolean;
 
   @Prop({ type: String, default: null })
   invited_by: string;
@@ -124,8 +138,11 @@ export class User {
   @Prop({ type: Number, default: 0 })
   invite_count: number;
 
-  @Prop({ type: AirdropData })
-  airdrop_data: AirdropData;
+  @Prop({ type: Date, default: Date.now() })
+  created_at: Date;
+
+  @Prop({ type: Date, default: Date.now() })
+  last_online: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -134,13 +151,13 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 // 1. Multikey İndeks: Booster Varlığı/Eşleşmesi Kontrolünü Hızlandırır
 UserSchema.index(
-  { _id: 1, 'game_data.boosters.booster_id': 1 },
+  { _id: 1, 'boosters.booster': 1 },
   { name: 'userBoosterAccess' },
 );
 
 // 2. Saatlik Kâr Sıralaması İndeksi
 UserSchema.index(
-  { 'game_data.profit_per_hour': -1 },
+  { 'airdrop_data.profit_per_hour': -1 },
   { name: 'profitPerHourSort' },
 );
 

@@ -8,6 +8,7 @@ import {
   TonPayments,
   TonPaymentsSchema,
 } from 'src/schemas/ton-payments.schema';
+import { HelpersModule } from 'src/helpers/helpers.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import {
       { name: TonPayments.name, schema: TonPaymentsSchema },
     ]),
     BotModule,
+    HelpersModule,
   ],
   controllers: [MarketController],
   providers: [MarketService],

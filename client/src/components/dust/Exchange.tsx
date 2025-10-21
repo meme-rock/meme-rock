@@ -30,7 +30,7 @@ export const StoneTodustExchange = ({
   const stoneToDustRate = 3; // 1 stone = 3 dust
   const dustToStoneRate = 100; // 100 dust = 1 stone
 
-  const userDust = user.game_data.dust;
+  const userDust = user.balance_data.dust;
 
   // For dust-to-stone, calculate max in steps of 100
   const maxAmount =

@@ -100,7 +100,7 @@ export const RockPage = () => {
             <HiltiDisplay
               selectedHilti={selectedHilti}
               currentUserHiltiLevel={currentUserHiltiLevel}
-              userProfitPerHour={user.game_data.profit_per_hour}
+              userProfitPerHour={user.airdrop_data.profit_per_hour}
             />
           </div>
 
@@ -123,11 +123,11 @@ export const RockPage = () => {
                 requiredInvites={
                   hilti_data.current_hilti.upgrade_requirements?.invites || 0
                 }
-                dustSpent={user.game_data.spent_dust}
+                dustSpent={user.balance_data.dust}
                 requiredDust={
                   hilti_data.current_hilti.upgrade_requirements?.spent_dust || 0
                 }
-                stonesSpent={user.game_data.spent_stone}
+                stonesSpent={user.balance_data.stone}
                 requiredStones={
                   hilti_data.current_hilti.upgrade_requirements?.spent_stones ||
                   0

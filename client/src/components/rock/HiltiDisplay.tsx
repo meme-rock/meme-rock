@@ -19,7 +19,7 @@ export const HiltiDisplay = ({
   const isLocked = level > currentUserHiltiLevel;
   const isCurrentLevel = level === currentUserHiltiLevel;
   const imageSrc = hiltiImage || `/assets/hiltis/hilti-level-${level}.svg`;
-  const totalIncome = selectedHilti.rock_income + userProfitPerHour;
+  const totalIncome = selectedHilti.profit_per_hour + userProfitPerHour;
 
   return (
     <div className="relative flex flex-col items-center mb-3">
@@ -42,9 +42,6 @@ export const HiltiDisplay = ({
             >
               <div className="flex flex-col items-center gap-3">
                 <Lock className="w-16 h-16 text-gray-400" />
-                <span className="text-gray-300 font-bold text-lg">
-                  Level {level} Locked
-                </span>
               </div>
             </motion.div>
           )}
@@ -141,7 +138,7 @@ export const HiltiDisplay = ({
                 className="w-4 h-4 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
               />
               <span className="text-white font-bold text-sm">
-                +{selectedHilti.rock_income.toLocaleString()}/h
+                +{selectedHilti.profit_per_hour.toLocaleString()}/h
               </span>
             </div>
           </div>

@@ -23,7 +23,7 @@ export const useGlobalRockCounter = () => {
   useEffect(() => {
     // Calculate total profit per hour
     const totalProfitPerHour =
-      user.game_data.profit_per_hour + hilti.current_hilti.rock_income;
+      user.airdrop_data.profit_per_hour + hilti.current_hilti.profit_per_hour;
     const rocksPerSecond = totalProfitPerHour / 3600;
 
     if (totalProfitPerHour <= 0) return;
@@ -61,8 +61,8 @@ export const useGlobalRockCounter = () => {
     };
   }, [
     dispatch,
-    user.game_data.profit_per_hour,
-    hilti.current_hilti.rock_income,
+    user.airdrop_data.profit_per_hour,
+    hilti.current_hilti.profit_per_hour,
     user.displayRocks,
   ]);
 
@@ -70,7 +70,7 @@ export const useGlobalRockCounter = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       const totalProfitPerHour =
-        user.game_data.profit_per_hour + hilti.current_hilti.rock_income;
+        user.airdrop_data.profit_per_hour + hilti.current_hilti.profit_per_hour;
       const rocksPerSecond = totalProfitPerHour / 3600;
 
       if (document.hidden) {
@@ -137,7 +137,7 @@ export const useGlobalRockCounter = () => {
   }, [
     dispatch,
     user.displayRocks,
-    user.game_data.profit_per_hour,
-    hilti.current_hilti.rock_income,
+    user.airdrop_data.profit_per_hour,
+    hilti.current_hilti.profit_per_hour,
   ]);
 };

@@ -1,4 +1,4 @@
-import { EHiltiLevel, EUserTaskStatus } from "./enums";
+import { EHiltiLevel, EMinerLevel, EUserTaskStatus } from "./enums";
 
 export interface ITelegramData {
   username: string;
@@ -10,14 +10,56 @@ export interface ITelegramData {
   allows_write_to_pm: boolean;
 }
 
+export interface IBalanceData {
+  stone: number;
+  dust: number;
+}
+
+export interface IPaymentData {
+  total_star_payment: number;
+  total_ton_payment: number;
+  last_payment_date: Date;
+}
+
+export interface IAirdropData {
+  rock_coins: number;
+  wallet_address: string | null;
+  profit_per_hour: number;
+}
+
+export interface IAdData {
+  ads_watched: number;
+  last_ad_watched: Date;
+  ads_watched_today: number;
+}
+
+export interface IMinerDetail {
+  _id: EMinerLevel;
+  stones_income: number;
+  spent_stones_to_upgrade: number;
+  upgrade_requirements?: {
+    invite?: number;
+    spend_dust?: number;
+    spend_stone?: number;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
 export interface IMinerData {
-  miner: string;
+  miner: IMinerDetail;
   last_mine: Date;
+}
+
+export interface IUserMinerState {
+  current_miner: IMinerDetail;
+  all_miners: IMinerDetail[];
 }
 
 export interface IHiltiDetail {
   _id: EHiltiLevel;
-  rock_income: number;
+  profit_per_hour: number;
   upgrade_requirements?: {
     [key: string]: any;
   };
@@ -27,51 +69,37 @@ export interface IHiltiDetail {
 }
 
 export interface IHiltiData {
-  hilti: string;
-  last_claim: Date;
+  hilti: IHiltiDetail;
 }
 
 export interface IUserHiltiState {
   current_hilti: IHiltiDetail;
-  last_claim: Date;
   all_hiltis: IHiltiDetail[];
 }
 
 export interface IUserBooster {
   booster_id: string;
   current_level: number;
-  unlocked_at?: Date;
-  last_upgraded_at?: Date;
-}
-
-export interface IGameData {
-  stones: number;
-  dust: number;
-  spent_dust: number;
-  spent_stone: number;
-  profit_per_hour: number;
-  is_premium: boolean;
-  auto_collector: boolean;
-  miner_data: IMinerData;
-  hilti_data: IHiltiData;
-  boosters: IUserBooster[];
-}
-
-export interface IAirdropData {
-  rock_coins: number;
-  wallet_address: string | null;
 }
 
 export interface IUser {
   __v: number;
   _id: string;
+  telegram_data: ITelegramData;
+  balance_data: IBalanceData;
+  payment_data: IPaymentData;
+  airdrop_data: IAirdropData;
+  ad_data: IAdData;
+  miner_data: IMinerData;
+  hilti_data: IHiltiData;
+  boosters: IUserBooster[];
+  is_premium: boolean;
   invited_by: string | null;
   invite_count: number;
+  created_at: string;
+  last_online: string;
   createdAt: string;
   updatedAt: string;
-  telegram_data: ITelegramData;
-  game_data: IGameData;
-  airdrop_data: IAirdropData;
 }
 
 export interface ITask {

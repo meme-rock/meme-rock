@@ -25,6 +25,7 @@ import {
   storeStonePurchase,
 } from './contract/PurchaseStone_PurchaseStone';
 import { ETonPaymentStatus } from 'src/common/enums/ton-payments.enum';
+import { HelpersService } from 'src/helpers/helpers.service';
 
 @Injectable()
 export class MarketService {
@@ -37,6 +38,7 @@ export class MarketService {
     private readonly botService: BotService,
     @InjectModel(TonPayments.name)
     private tonPaymentsModel: Model<TonPaymentsDocument>,
+    private readonly helpersService: HelpersService,
   ) {}
 
   async getStonesMarketData() {
@@ -170,10 +172,6 @@ export class MarketService {
   }
 
   //! TON PAYMENTS
-  escapeInlineCodeForMarkdownV2(text: string): string {
-    // Telegram'a giden string içinde ` ve \ karakterlerini kaçır
-    return text.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
-  }
   async checkTonPayments() {
     try {
       // URL parametrelerini oluştur
@@ -249,8 +247,8 @@ export class MarketService {
             '✅ *Payment Successful\\!*',
             '',
             // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
-            `💰 *Amount:* \`${this.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
-            `🪨 *Stones Added:* \`${this.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
+            `*Deposit:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
+            `*Stones:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
             '',
             '🎉 Your balance has been *successfully updated\\!*',
             '_Please refresh the app to see the latest changes\\._',

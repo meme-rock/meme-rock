@@ -16,7 +16,7 @@ export class Hilti {
   _id: EHiltiLevel;
 
   @Prop({ type: Number, required: true })
-  rock_income: number;
+  profit_per_hour: number;
 
   // YENİ ALAN: Bir sonraki seviyeye geçmek için gerekenler.
   // Bu alanda, her Hilti seviyesi için farklı gereksinimler tanımlanabilir.

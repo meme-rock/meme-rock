@@ -48,7 +48,7 @@ export const DustPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <StoneTodustExchange userStones={user.game_data.stones} />
+          <StoneTodustExchange userStones={user.balance_data.stone} />
         </motion.div>
 
         {/* Ad Reward Section */}
@@ -67,7 +67,7 @@ export const DustPage = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <SpinWheelButton
-            userDust={user.game_data.dust}
+            userDust={user.balance_data.dust}
             onClick={() => setShowSpinWheel(true)}
           />
         </motion.div>
@@ -76,7 +76,7 @@ export const DustPage = () => {
       {/* Spin Wheel Modal */}
       {showSpinWheel && (
         <SpinWheelModal
-          userDust={user.game_data.dust}
+          userDust={user.balance_data.dust}
           onClose={() => setShowSpinWheel(false)}
         />
       )}

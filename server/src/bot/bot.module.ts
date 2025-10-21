@@ -9,6 +9,7 @@ import { BotService } from './bot.service';
 import { BotController } from './bot.controller';
 import { BroadcastService } from './jobs/broadcast.service';
 import { User, UserSchema } from 'src/schemas/user.schema';
+import { HelpersModule } from 'src/helpers/helpers.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { User, UserSchema } from 'src/schemas/user.schema';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    HelpersModule,
   ],
   providers: [BotController, BotService, BroadcastService],
   exports: [BotService],

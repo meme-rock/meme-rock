@@ -19,10 +19,7 @@ export class UserBoosterService {
     try {
       // PARALEL QUERY - 2 işlem aynı anda
       const [user, dbBoosters] = await Promise.all([
-        this.userModel
-          .findById(user_id, { 'game_data.boosters': 1 })
-          .lean()
-          .exec(),
+        this.userModel.findById(user_id, { boosters: 1 }).lean().exec(),
         this.boosterModel.find().lean().exec(),
       ]);
 
@@ -32,12 +29,10 @@ export class UserBoosterService {
 
       // 1. Kullanıcının booster map'i - O(1) erişim için
       const userBoosterMap = new Map(
-        user.game_data?.boosters?.map((ub) => [
-          ub.booster_id.toString(),
+        user.boosters?.map((ub) => [
+          ub.booster.toString(),
           {
             current_level: ub.current_level,
-            unlocked_at: ub.unlocked_at,
-            last_upgraded_at: ub.last_upgraded_at,
           },
         ]) || [],
       );
@@ -79,8 +74,6 @@ export class UserBoosterService {
           is_unlocked: !!userBoosterData,
           current_level: currentLevel,
           level_data: filteredLevelData,
-          unlocked_at: userBoosterData?.unlocked_at,
-          last_upgraded_at: userBoosterData?.last_upgraded_at,
         };
       });
 
@@ -108,16 +101,16 @@ export class UserBoosterService {
       // Önce mevcut user booster bilgisini alalım
       const user = await this.userModel
         .findOne(
-          { _id: user_id, 'game_data.boosters.booster_id': booster_id },
-          { 'game_data.boosters.$': 1, 'game_data.stones': 1 },
+          { _id: user_id, boosters: { $elemMatch: { booster: booster_id } } },
+          { 'boosters.$': 1, 'balance_data.stone': 1 },
         )
         .lean();
-
-      if (!user || !user.game_data?.boosters?.[0]) {
+      console.log('user: ', user);
+      if (!user || !user.boosters?.[0]) {
         throw new BadRequestException('Booster not unlocked yet');
       }
 
-      const userBooster = user.game_data.boosters[0];
+      const userBooster = user.boosters[0];
       const currentLevel = userBooster.current_level;
       const nextLevel = currentLevel + 1;
 
@@ -135,7 +128,7 @@ export class UserBoosterService {
       const upgradeCost = nextLevelData.upgrade_cost;
 
       // Stone kontrolü
-      if (user.game_data.stones < upgradeCost) {
+      if (user.balance_data.stone < upgradeCost) {
         throw new BadRequestException(
           `Insufficient stones. Required: ${upgradeCost.toLocaleString()}`,
         );
@@ -151,23 +144,22 @@ export class UserBoosterService {
       const updatedUser = await this.userModel.findOneAndUpdate(
         {
           _id: user_id,
-          'game_data.boosters': {
+          boosters: {
             $elemMatch: {
-              booster_id: booster_id,
+              booster: booster_id,
               current_level: currentLevel, // Race condition koruması
             },
           },
-          'game_data.stones': { $gte: upgradeCost }, // Stone yeterlilik kontrolü
+          'balance_data.stone': { $gte: upgradeCost }, // Stone yeterlilik kontrolü
         },
         {
           $inc: {
-            'game_data.stones': -upgradeCost,
-            'game_data.spent_stone': upgradeCost,
-            'game_data.profit_per_hour': profitIncrease,
+            'balance_data.stone': -upgradeCost,
+
+            'airdrop_data.profit_per_hour': profitIncrease,
           },
           $set: {
-            'game_data.boosters.$.current_level': nextLevel,
-            'game_data.boosters.$.last_upgraded_at': new Date(),
+            'boosters.$.current_level': nextLevel,
           },
         },
         { new: true },
@@ -177,18 +169,18 @@ export class UserBoosterService {
         // Detaylı hata mesajı için tekrar kontrol
         const userAfterFail = await this.userModel
           .findOne(
-            { _id: user_id, 'game_data.boosters.booster_id': booster_id },
-            { 'game_data.boosters.$': 1, 'game_data.stones': 1 },
+            { _id: user_id, boosters: { $elemMatch: { booster: booster_id } } },
+            { 'boosters.$': 1, 'balance_data.stone': 1 },
           )
           .lean();
 
-        if (!userAfterFail || !userAfterFail.game_data?.boosters?.[0]) {
+        if (!userAfterFail || !userAfterFail?.boosters?.[0]) {
           throw new BadRequestException(
             `❌ Booster not found in your inventory.`,
           );
         }
 
-        const currentUserBooster = userAfterFail.game_data.boosters[0];
+        const currentUserBooster = userAfterFail.boosters[0];
 
         // Level değişti mi? (Eş zamanlı upgrade)
         if (currentUserBooster.current_level !== currentLevel) {
@@ -198,9 +190,9 @@ export class UserBoosterService {
         }
 
         // Stone yetersiz mi?
-        if (userAfterFail.game_data.stones < upgradeCost) {
+        if (userAfterFail.balance_data.stone < upgradeCost) {
           throw new BadRequestException(
-            `❌ Insufficient stones. You have ${userAfterFail.game_data.stones.toLocaleString()}, but need ${upgradeCost.toLocaleString()}.`,
+            `❌ Insufficient stones. You have ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${upgradeCost.toLocaleString()}.`,
           );
         }
 
@@ -252,14 +244,14 @@ export class UserBoosterService {
         {
           _id: user_id,
           // Booster zaten unlock edilmiş mi kontrolü
-          'game_data.boosters.booster_id': { $ne: booster_id },
+          boosters: { $elemMatch: { booster: booster_id } },
           // Hilti level kontrolü
           $expr: {
             $gte: [
               {
                 $toInt: {
                   $arrayElemAt: [
-                    { $split: ['$game_data.hilti_data.hilti', '_'] },
+                    { $split: ['$hilti_data.hilti.level', '_'] },
                     1,
                   ],
                 },
@@ -268,25 +260,21 @@ export class UserBoosterService {
             ],
           },
           // Bakiye kontrolleri
-          'game_data.stones': { $gte: requiredStone },
-          'game_data.dust': { $gte: requiredDust },
+          'balance_data.stone': { $gte: requiredStone },
+          'balance_data.dust': { $gte: requiredDust },
           // Kazanım/Harcama kontrolleri
-          'game_data.profit_per_hour': { $gte: requiredMinProfit },
+          'airdrop_data.profit_per_hour': { $gte: requiredMinProfit },
           invite_count: { $gte: requiredMinInvites },
-          'game_data.spent_stone': { $gte: requiredMinSpentStone },
-          'game_data.spent_dust': { $gte: requiredMinSpentDust },
         },
         {
           $inc: {
-            'game_data.stones': -requiredStone,
-            'game_data.spent_stone': requiredStone,
-            'game_data.profit_per_hour': levelOneProfit,
+            'balance_data.stone': -requiredStone,
+            'airdrop_data.profit_per_hour': levelOneProfit,
           },
           $push: {
-            'game_data.boosters': {
-              booster_id: booster_id,
+            boosters: {
+              booster: booster_id,
               current_level: 1,
-              unlocked_at: new Date(),
             },
           },
         },
@@ -301,8 +289,8 @@ export class UserBoosterService {
         }
 
         // Detaylı hata mesajları - öncelik sırasına göre
-        const isAlreadyUnlocked = userAfterFail.game_data.boosters.some(
-          (b) => b.booster_id.toString() === booster_id,
+        const isAlreadyUnlocked = userAfterFail.boosters.some(
+          (b) => b.booster.toString() === booster_id,
         );
         if (isAlreadyUnlocked) {
           throw new BadRequestException(
@@ -311,7 +299,7 @@ export class UserBoosterService {
         }
 
         const userHiltiLevel = parseInt(
-          userAfterFail.game_data.hilti_data.hilti.split('_')[1],
+          userAfterFail.hilti_data.hilti.split('_')[1],
         );
         if (userHiltiLevel < requiredHiltiLevel) {
           throw new BadRequestException(
@@ -319,21 +307,21 @@ export class UserBoosterService {
           );
         }
 
-        if (userAfterFail.game_data.stones < requiredStone) {
+        if (userAfterFail.balance_data.stone < requiredStone) {
           throw new BadRequestException(
-            `Insufficient stones. You have ${userAfterFail.game_data.stones.toLocaleString()}, but need ${requiredStone.toLocaleString()}.`,
+            `Insufficient stones. You have ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${requiredStone.toLocaleString()}.`,
           );
         }
 
-        if (userAfterFail.game_data.dust < requiredDust) {
+        if (userAfterFail.balance_data.dust < requiredDust) {
           throw new BadRequestException(
-            `Insufficient dust. You have ${userAfterFail.game_data.dust.toLocaleString()}, but need ${requiredDust.toLocaleString()}.`,
+            `Insufficient dust. You have ${userAfterFail.balance_data.dust.toLocaleString()}, but need ${requiredDust.toLocaleString()}.`,
           );
         }
 
-        if (userAfterFail.game_data.profit_per_hour < requiredMinProfit) {
+        if (userAfterFail.airdrop_data.profit_per_hour < requiredMinProfit) {
           throw new BadRequestException(
-            `Profit/hour too low. You earn ${userAfterFail.game_data.profit_per_hour.toLocaleString()}/hour, but need ${requiredMinProfit.toLocaleString()}/hour.`,
+            `Profit/hour too low. You earn ${userAfterFail.airdrop_data.profit_per_hour.toLocaleString()}/hour, but need ${requiredMinProfit.toLocaleString()}/hour.`,
           );
         }
 
@@ -343,15 +331,15 @@ export class UserBoosterService {
           );
         }
 
-        if (userAfterFail.game_data.spent_stone < requiredMinSpentStone) {
+        if (userAfterFail.balance_data.stone < requiredMinSpentStone) {
           throw new BadRequestException(
-            `Haven't spent enough stones. You've spent ${userAfterFail.game_data.spent_stone.toLocaleString()}, but need ${requiredMinSpentStone.toLocaleString()}.`,
+            `Haven't spent enough stones. You've spent ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${requiredMinSpentStone.toLocaleString()}.`,
           );
         }
 
-        if (userAfterFail.game_data.spent_dust < requiredMinSpentDust) {
+        if (userAfterFail.balance_data.dust < requiredMinSpentDust) {
           throw new BadRequestException(
-            `Haven't spent enough dust. You've spent ${userAfterFail.game_data.spent_dust.toLocaleString()}, but need ${requiredMinSpentDust.toLocaleString()}.`,
+            `Haven't spent enough dust. You've spent ${userAfterFail.balance_data.dust.toLocaleString()}, but need ${requiredMinSpentDust.toLocaleString()}.`,
           );
         }
 

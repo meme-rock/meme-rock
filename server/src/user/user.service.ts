@@ -59,14 +59,16 @@ export class UserService {
       console.log('Loading service started for user:', _id);
 
       // Parallel fetching for optimal performance
-      const [hiltis, level1Miner, level1Hilti, existingUser] =
+      const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
         await Promise.all([
           this.hiltiModel.find().lean().exec(),
+          this.minerModel.find().lean().exec(),
           this.minerModel.findOne({ _id: EMinerLevel.LEVEL_1 }).lean().exec(),
           this.hiltiModel.findOne({ _id: EHiltiLevel.LEVEL_1 }).lean().exec(),
           this.userModel
             .findById(_id)
-            .populate('game_data.hilti_data.hilti')
+            .populate('hilti_data.hilti')
+            .populate('miner_data.miner')
             .lean()
             .exec(),
         ]);
@@ -80,57 +82,51 @@ export class UserService {
         const newUser = await this.userModel.create({
           _id,
           telegram_data: user.telegram_data,
-          game_data: {
-            stones: 0,
-            dust: 0,
-            spent_dust: 0,
-            spent_stone: 0,
-            profit_per_hour: 0,
-            is_premium: false,
-            auto_collector: false,
-            miner_data: {
-              miner: level1Miner._id,
-              last_mine: new Date(),
-            },
-            hilti_data: {
-              hilti: level1Hilti._id,
-              last_claim: new Date(),
-            },
-            boosters: [],
+          balance_data: {},
+          payment_data: {},
+          airdrop_data: {},
+          ad_data: {},
+          // ANCAK, Miner ve Hilti referanslarını manuel olarak atamalıyız.
+          miner_data: {
+            miner: level1Miner._id, // Başlangıç Miner referansı atanmalı
+            last_mine: new Date(), // MinerData içindeki varsayılan değerleri açıkça atamak daha güvenlidir.
           },
-          airdrop_data: {
-            rock_coins: 0,
-            wallet_address: null,
+          hilti_data: {
+            hilti: level1Hilti._id, // Başlangıç Hilti referansı atanmalı
           },
+          boosters: [],
+          is_premium: false,
           invited_by: null,
           invite_count: 0,
+          created_at: new Date(),
+          last_online: new Date(),
         });
 
         // Populate and return new user
         const populatedUser = await this.userModel
           .findById(_id)
-          .populate('game_data.miner_data.miner')
-          .populate('game_data.hilti_data.hilti')
+          .populate('miner_data.miner')
+          .populate('hilti_data.hilti')
           .exec();
 
         console.log('New user created:', _id);
         return {
           user: populatedUser,
           hiltis,
+          miners,
           message: 'User created successfully',
         };
       }
 
       // Existing user - calculate and claim pending rocks
-      const lastClaim =
-        existingUser.game_data?.hilti_data?.last_claim || new Date();
-      const profitPerHour = existingUser.game_data?.profit_per_hour || 0;
+      const lastClaim = existingUser.last_online || new Date();
+      const profitPerHour = existingUser.airdrop_data?.profit_per_hour || 0;
 
       // Extract hilti rock income (handle populated document)
-      const hiltiData = existingUser.game_data?.hilti_data?.hilti;
+      const hiltiData = existingUser.hilti_data.hilti;
       const hiltiRockIncome =
         typeof hiltiData === 'object' && hiltiData !== null
-          ? (hiltiData as any).rock_income || 0
+          ? (hiltiData as any).profit_per_hour || 0
           : 0;
 
       // Calculate pending rocks
@@ -147,7 +143,7 @@ export class UserService {
           {
             $set: {
               telegram_data: user.telegram_data,
-              'game_data.hilti_data.last_claim': new Date(),
+              last_online: new Date(),
             },
             $inc: {
               'airdrop_data.rock_coins': pendingRocks,
@@ -155,8 +151,8 @@ export class UserService {
           },
           { new: true },
         )
-        .populate('game_data.miner_data.miner')
-        .populate('game_data.hilti_data.hilti')
+        .populate('miner_data.miner')
+        .populate('hilti_data.hilti')
         .exec();
 
       // Log claim details
@@ -172,6 +168,7 @@ export class UserService {
       return {
         user: updatedUser,
         hiltis,
+        miners,
         message: 'User updated successfully',
       };
     } catch (error) {
@@ -180,18 +177,20 @@ export class UserService {
       // Handle duplicate key errors gracefully
       if (error.code === 11000) {
         console.log('Duplicate key error, fetching existing user');
-        const [existingUser, hiltis] = await Promise.all([
+        const [existingUser, hiltis, miners] = await Promise.all([
           this.userModel
             .findById(_id)
-            .populate('game_data.miner_data.miner')
-            .populate('game_data.hilti_data.hilti')
+            .populate('miner_data.miner')
+            .populate('hilti_data.hilti')
             .exec(),
           this.hiltiModel.find().lean().exec(),
+          this.minerModel.find().lean().exec(),
         ]);
 
         return {
           user: existingUser,
           hiltis,
+          miners,
           message: 'User already exists',
         };
       }
@@ -249,11 +248,11 @@ export class UserService {
         .findByIdAndUpdate(
           user_id,
           {
-            $inc: { 'game_data.dust': DUST_REWARD },
+            $inc: { 'balance_data.dust': DUST_REWARD },
           },
           { new: true },
         )
-        .select('_id game_data.dust')
+        .select('_id balance_data.dust')
         .lean()
         .exec();
 
@@ -263,7 +262,7 @@ export class UserService {
       }
 
       console.log(
-        `✅ Ad reward webhook: User ${user_id} received ${DUST_REWARD} dust (new balance: ${updatedUser.game_data.dust})`,
+        `✅ Ad reward webhook: User ${user_id} received ${DUST_REWARD} dust (new balance: ${updatedUser.balance_data.dust})`,
       );
 
       return {
@@ -280,13 +279,13 @@ export class UserService {
     try {
       const user = await this.userModel
         .findById(user_id)
-        .select('game_data.dust')
+        .select('balance_data.dust')
         .lean()
         .exec();
       if (!user) {
         throw new Error('User not found');
       }
-      return user.game_data.dust;
+      return user.balance_data.dust;
     } catch (error) {
       console.error('Error in getBalanceAfterAdReward service:', error);
       throw error;
@@ -302,14 +301,17 @@ export class UserService {
         .findByIdAndUpdate(
           {
             _id: user_id,
-            'game_data.stones': { $gte: stones },
+            'balance_data.stone': { $gte: stones },
           },
           {
-            $inc: { 'game_data.dust': stones * 3, 'game_data.stones': -stones },
+            $inc: {
+              'balance_data.dust': stones * 3,
+              'balance_data.stone': -stones,
+            },
           },
           { new: true },
         )
-        .select('game_data.dust game_data.stones')
+        .select('balance_data.dust balance_data.stone')
         .lean()
         .exec();
       if (!updatedBalance) {
@@ -335,14 +337,17 @@ export class UserService {
         .findByIdAndUpdate(
           {
             _id: user_id,
-            'game_data.dust': { $gte: dust },
+            'balance_data.dust': { $gte: dust },
           },
           {
-            $inc: { 'game_data.dust': -dust, 'game_data.stones': dust / 100 },
+            $inc: {
+              'balance_data.dust': -dust,
+              'balance_data.stone': dust / 100,
+            },
           },
           { new: true },
         )
-        .select('game_data.dust game_data.stones')
+        .select('balance_data.dust balance_data.stone')
         .lean()
         .exec();
       if (!updatedBalance) {

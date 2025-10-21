@@ -39,7 +39,10 @@ function App() {
       <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
         <Router>
           <div className="min-h-screen bg-black text-white flex flex-col">
-            <TopBar stones={user.game_data.stones} dust={user.game_data.dust} />
+            <TopBar
+              stones={user.balance_data.stone}
+              dust={user.balance_data.dust}
+            />
 
             <main className="flex-1 pb-16">
               <Routes>
@@ -48,7 +51,7 @@ function App() {
                 <Route path="/dust" element={<DustPage />} />
                 <Route
                   path="/market"
-                  element={<MarketPage stones={user.game_data.stones} />}
+                  element={<MarketPage stones={user.balance_data.stone} />}
                 />
                 <Route path="/profile" element={<ProfilePage />} />
               </Routes>

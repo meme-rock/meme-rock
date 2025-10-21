@@ -1,13 +1,13 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
-import type { IUser, IHiltiDetail } from "../../../types";
+import type { IUser, IHiltiDetail, IMinerDetail } from "../../../types";
 import {
   loadingUser,
   updateUserDust,
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
 } from "../../slices/userSlice";
-import { getMinerOnLoading } from "../../slices/minerSlice";
+import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
 
 export const userApi = createApi({
@@ -18,6 +18,7 @@ export const userApi = createApi({
       {
         user: IUser;
         hiltis: IHiltiDetail[];
+        miners: IMinerDetail[];
         message: string;
       },
       { user: Partial<IUser> }
@@ -36,14 +37,19 @@ export const userApi = createApi({
           dispatch(loadingUser(data.user));
 
           // Dispatch miner data
-          dispatch(getMinerOnLoading(data.user.game_data.miner_data));
+          dispatch(
+            setMinerData({
+              current_miner: data.user.miner_data
+                .miner as unknown as IMinerDetail,
+              all_miners: data.miners,
+            })
+          );
 
           // Dispatch hilti data with all hiltis
           dispatch(
             setHiltiData({
-              current_hilti: data.user.game_data.hilti_data
+              current_hilti: data.user.hilti_data
                 .hilti as unknown as IHiltiDetail,
-              last_claim: data.user.game_data.hilti_data.last_claim,
               all_hiltis: data.hiltis,
             })
           );

@@ -23,6 +23,7 @@ import { UserService } from 'src/user/user.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Model } from 'mongoose';
+import { HelpersService } from 'src/helpers/helpers.service';
 
 @Update()
 export class BotController implements OnModuleInit {
@@ -31,6 +32,7 @@ export class BotController implements OnModuleInit {
     private readonly broadcastService: BroadcastService,
     private readonly botService: BotService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly helpersService: HelpersService,
   ) {}
 
   onModuleInit() {
@@ -96,7 +98,17 @@ export class BotController implements OnModuleInit {
         );
       }
       await ctx.reply(
-        `${amount.toString()} stars payment successful, you have received ${market_details.total_stones.toString()} stones`,
+        [
+          // NOT: statik "!" karakterlerini Telegram için kaçırıyoruz: \!
+          '✅ *Payment Successful\\!*',
+          '',
+          // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
+          `*Deposit:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
+          `*Stones:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
+          '',
+          '🎉 Your balance has been *successfully updated\\!*',
+          '_Please refresh the app to see the latest changes\\._',
+        ].join('\n'),
       );
       // 1. **Payload'ı kullanarak** veritabanınızda ilgili siparişi "Ödendi" olarak işaretleyin.
       // 2. Kullanıcının hizmetini (premium erişim, ürün vb.) aktif hale getirin.

@@ -13,6 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ThrottleTestController } from './common/controllers/throttle-test.controller';
 import { MarketModule } from './market/market.module';
+import { HelpersModule } from './helpers/helpers.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -62,6 +63,7 @@ if (!mongoUri) {
     AdminModule,
     BotModule,
     MarketModule,
+    HelpersModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

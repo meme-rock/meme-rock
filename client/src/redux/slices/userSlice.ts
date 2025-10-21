@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { IUser } from "../../types";
+import { EHiltiLevel, EMinerLevel } from "../../types/enums";
 
 type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
@@ -10,8 +11,6 @@ type UserState = IUser & {
 const initialState: UserState = {
   __v: 0,
   _id: "",
-  invited_by: null,
-  invite_count: 0,
   telegram_data: {
     username: "",
     language_code: "",
@@ -21,31 +20,48 @@ const initialState: UserState = {
     is_telegram_premium: false,
     allows_write_to_pm: false,
   },
-  game_data: {
-    stones: 0,
+  balance_data: {
+    stone: 0,
     dust: 0,
-
-    spent_dust: 0,
-    spent_stone: 0,
-    profit_per_hour: 0,
-    is_premium: false,
-    auto_collector: false,
-    miner_data: {
-      miner: "",
-      last_mine: new Date(),
-    },
-    hilti_data: {
-      hilti: "",
-      last_claim: new Date(),
-    },
-    boosters: [],
+  },
+  payment_data: {
+    total_star_payment: 0,
+    total_ton_payment: 0,
+    last_payment_date: new Date(),
   },
   airdrop_data: {
     rock_coins: 0,
     wallet_address: null,
+    profit_per_hour: 0,
   },
+  ad_data: {
+    ads_watched: 0,
+    ads_watched_today: 0,
+    last_ad_watched: new Date(),
+  },
+  miner_data: {
+    miner: {
+      _id: EMinerLevel.LEVEL_1,
+      stones_income: 0,
+      spent_stones_to_upgrade: 0,
+    },
+    last_mine: new Date(),
+  },
+  hilti_data: {
+    hilti: {
+      _id: EHiltiLevel.LEVEL_1,
+      profit_per_hour: 0,
+    },
+  },
+  boosters: [],
+  is_premium: false,
+  invited_by: null,
+  invite_count: 0,
+  created_at: "",
+  last_online: "",
   createdAt: "",
   updatedAt: "",
+
   displayRocks: 0,
   lastCounterUpdate: Date.now(),
 };
@@ -70,27 +86,25 @@ export const userSlice = createSlice({
       return newState;
     },
     updateUserStones: (state, action: PayloadAction<{ stones: number }>) => {
-      state.game_data.stones = action.payload.stones;
+      state.balance_data.stone = action.payload.stones;
     },
     updateUserforCompleteTask: (
       state,
       action: PayloadAction<{ stones: number }>
     ) => {
-      state.game_data.stones = action.payload.stones;
+      state.balance_data.stone = action.payload.stones;
     },
     updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
-      state.game_data.boosters = action.payload.boosters;
+      state.boosters = action.payload.boosters;
     },
     updateUserFromBoosterAction: (state, action: PayloadAction<IUser>) => {
       // Booster unlock/upgrade sonrası tüm user data'yı güncelle
-      state.game_data.stones = action.payload.game_data.stones;
-      state.game_data.dust = action.payload.game_data.dust;
+      state.balance_data.stone = action.payload.balance_data.stone;
+      state.balance_data.dust = action.payload.balance_data.dust;
       state.airdrop_data.rock_coins = action.payload.airdrop_data.rock_coins;
-      state.game_data.spent_stone = action.payload.game_data.spent_stone;
-      state.game_data.spent_dust = action.payload.game_data.spent_dust;
-      state.game_data.profit_per_hour =
-        action.payload.game_data.profit_per_hour;
-      state.game_data.boosters = action.payload.game_data.boosters;
+      state.airdrop_data.profit_per_hour =
+        action.payload.airdrop_data.profit_per_hour;
+      state.boosters = action.payload.boosters;
     },
     // Update display rocks (called every 2 seconds)
     updateDisplayRocks: (state, action: PayloadAction<number>) => {
@@ -99,22 +113,22 @@ export const userSlice = createSlice({
     },
     // Update dust balance (set from backend after ad reward)
     updateUserDust: (state, action: PayloadAction<number>) => {
-      state.game_data.dust = action.payload;
+      state.balance_data.dust = action.payload;
       console.log(`💰 Dust balance updated: ${action.payload}`);
     },
     updateUserOnStoneToDustExchange: (
       state,
       action: PayloadAction<{ dust: number; stones: number }>
     ) => {
-      state.game_data.dust = action.payload.dust;
-      state.game_data.stones = action.payload.stones;
+      state.balance_data.dust = action.payload.dust;
+      state.balance_data.stone = action.payload.stones;
     },
     updateUserOnDustToStoneExchange: (
       state,
       action: PayloadAction<{ dust: number; stones: number }>
     ) => {
-      state.game_data.dust = action.payload.dust;
-      state.game_data.stones = action.payload.stones;
+      state.balance_data.dust = action.payload.dust;
+      state.balance_data.stone = action.payload.stones;
     },
   },
 });
