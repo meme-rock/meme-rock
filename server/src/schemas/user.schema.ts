@@ -71,7 +71,7 @@ class HiltiData {
 //? Booster için ayrı bir alt şema oluşturuyoruz. User'ın unlock ettiği ve level bilgisini tutar.
 @Schema({ _id: false, timestamps: false })
 class BoosterData {
-  @Prop({ type: String, ref: 'Booster', required: true, unique: true })
+  @Prop({ type: String, ref: 'Booster', required: true })
   booster: string; // e.g., "booster_1_1"
 
   @Prop({ type: Number, default: 0 })
@@ -150,6 +150,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // --- İNDEX TANIMLARI ---
 
 // 1. Multikey İndeks: Booster Varlığı/Eşleşmesi Kontrolünü Hızlandırır
+// Unique constraint removed to prevent duplicate key errors with null values
 UserSchema.index(
   { _id: 1, 'boosters.booster': 1 },
   { name: 'userBoosterAccess' },

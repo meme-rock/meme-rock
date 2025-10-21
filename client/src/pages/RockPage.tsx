@@ -8,7 +8,6 @@ import { BoosterPage } from "../components/rock/BoosterPage";
 import boosterAnimation from "../../public/animated-booster.json";
 import Lottie from "lottie-react";
 import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
-import { RockCounter } from "../components/rock/RockCounter";
 
 export const RockPage = () => {
   const [getBoosters] = useGetBoostersMutation();
@@ -84,9 +83,6 @@ export const RockPage = () => {
       <div className="relative container mx-auto px-4 py-1">
         {/* Main content */}
         <div className="flex flex-col items-center justify-start pt-2">
-          {/* Rock Counter */}
-          <RockCounter />
-
           {/* Level thumbnails */}
           <HiltiLevelThumbnails
             currentLevel={currentUserHiltiLevel}

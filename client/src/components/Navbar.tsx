@@ -1,4 +1,4 @@
-import { Home, User, ShoppingCart } from "lucide-react";
+import { Home, User, ShoppingCart, Pickaxe } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const Navbar = () => {
@@ -7,8 +7,9 @@ export const Navbar = () => {
 
   const navItems = [
     { id: "main", label: "Main", icon: Home, path: "/" },
+    { id: "stone", label: "Stone", icon: Pickaxe, path: "/stone" },
     // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
-    { id: "rock", label: "$ROCK", icon: "/rock.svg", path: "/rock" },
+    { id: "rock", label: "$ROCK", icon: "/jackhammer.svg", path: "/rock" },
     { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },

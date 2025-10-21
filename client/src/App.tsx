@@ -12,6 +12,7 @@ import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
+import { StonePage } from "./pages/StonePage";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,7 @@ function App() {
             <main className="flex-1 pb-16">
               <Routes>
                 <Route path="/" element={<MainPage />} />
+                <Route path="/stone" element={<StonePage />} />
                 <Route path="/rock" element={<RockPage />} />
                 <Route path="/dust" element={<DustPage />} />
                 <Route
