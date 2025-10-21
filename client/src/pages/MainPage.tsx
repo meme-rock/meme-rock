@@ -4,7 +4,7 @@ import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Zap, Award, Calendar } from "lucide-react";
+import { User, Gift, Award, Calendar, Pickaxe } from "lucide-react";
 
 export const MainPage = () => {
   const miner_data = useSelector((state: RootState) => state.miner);
@@ -85,13 +85,17 @@ export const MainPage = () => {
               {/* Level Badges - Compact in top right */}
               <div className="flex flex-col gap-1">
                 <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
-                  <Zap className="w-3 h-3 text-blue-400" />
+                  <Pickaxe className="w-3 h-3 text-blue-400" />
                   <span className="text-xs text-blue-300/70">
                     Lv {currentUserMinerLevel}
                   </span>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
-                  <Award className="w-3 h-3 text-purple-400" />
+                  <img
+                    src="./jackhammer.svg"
+                    alt="Jackhammer"
+                    className="w-3 h-3 object-contain text-purple-400"
+                  />
                   <span className="text-xs text-purple-300/70">
                     Lv {currentUserHiltiLevel}
                   </span>
