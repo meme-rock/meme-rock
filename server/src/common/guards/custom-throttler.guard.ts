@@ -14,7 +14,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: ThrottlerRequest): Promise<string> {
     // Request'ten telegram_id ve IP'yi al
     const telegramId = this.extractTelegramId(req);
-    console.log('telegramId: ', telegramId);
+    console.log('requested telegram_id: ', telegramId);
     // 🛑 KRİTİK: Telegram ID varsa onu kullan (cihazdan bağımsız), yoksa IP kullan (fallback)
     return `telegram_${telegramId}`;
   }

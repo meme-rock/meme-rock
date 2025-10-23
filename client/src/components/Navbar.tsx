@@ -1,4 +1,4 @@
-import { Home, User, ShoppingCart, Pickaxe } from "lucide-react";
+import { Home, User, ShoppingCart, Pickaxe, Trophy } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const Navbar = () => {
@@ -11,28 +11,29 @@ export const Navbar = () => {
     // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
     { id: "rock", label: "$ROCK", icon: "/jackhammer.svg", path: "/rock" },
     { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },
+    { id: "leaderboard", label: "Ranks", icon: Trophy, path: "/leaderboard" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
   ];
 
   return (
-    <div className="bg-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 px-4 py-3 fixed bottom-0 left-0 right-0 shadow-lg z-50">
-      <div className="flex justify-around items-center">
+    <div className="bg-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 px-2 py-2 fixed bottom-0 left-0 right-0 shadow-lg z-50">
+      <div className="flex justify-around items-center max-w-screen-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isSvgPath = typeof Icon === "string";
           const isActive = location.pathname === item.path;
 
-          // 1. Varsayılan boyut (Lucide ikonları için): w-6 h-6
-          let iconSizeClasses = `w-6 h-6`;
+          // 1. Varsayılan boyut (Lucide ikonları için): w-5 h-5
+          let iconSizeClasses = `w-5 h-5`;
 
-          // 2. Eğer ikon rock.svg ise, boyutu w-8 h-8 olarak özelleştirin
+          // 2. Eğer ikon rock.svg ise, boyutu w-6 h-6 olarak özelleştirin
           if (item.id === "boosters" && isSvgPath) {
-            iconSizeClasses = `w-8 h-8`; // Özel boyut burada!
+            iconSizeClasses = `w-6 h-6`; // Özel boyut burada!
           }
 
           // Ortak sınıfları ekleyin
-          const iconClasses = `${iconSizeClasses} mb-1 transition-transform duration-300 ${
+          const iconClasses = `${iconSizeClasses} mb-0.5 transition-transform duration-300 ${
             isActive ? "scale-110" : ""
           }`;
 
@@ -40,7 +41,7 @@ export const Navbar = () => {
             <button
               key={item.id}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300 ${
+              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 min-w-0 ${
                 isActive
                   ? "text-cyan-400 bg-gradient-to-t from-cyan-500/20 to-cyan-400/10 border border-cyan-500/30 shadow-lg shadow-cyan-500/20"
                   : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
@@ -53,7 +54,9 @@ export const Navbar = () => {
                 // Bileşen ikonları (Lucide) (Varsayılan boyutta kalıyor)
                 <Icon className={iconClasses} />
               )}
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium truncate max-w-[60px]">
+                {item.label}
+              </span>
             </button>
           );
         })}

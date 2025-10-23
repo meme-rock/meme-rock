@@ -1,28 +1,40 @@
 import { useMemo, useState } from "react";
 import { RockCounter } from "../components/rock/RockCounter";
 import { DailyRewardModal } from "../components/main/DailyRewardModal";
-import { useSelector } from "react-redux";
+import { AchievementsModal } from "../components/main/AchievementsModal";
+import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Calendar, Pickaxe } from "lucide-react";
+import { User, Gift, Calendar, Pickaxe, Trophy } from "lucide-react";
 
 export const MainPage = () => {
-  const miner_data = useSelector((state: RootState) => state.miner);
-  const user = useSelector((state: RootState) => state.user);
-  const hilti_data = useSelector((state: RootState) => state.hilti);
+  // Select only needed fields to avoid re-renders from displayRocks updates
+  const currentMiner = useSelector(
+    (state: RootState) => state.miner.current_miner,
+    shallowEqual
+  );
+  const currentHilti = useSelector(
+    (state: RootState) => state.hilti.current_hilti,
+    shallowEqual
+  );
+  const telegramData = useSelector(
+    (state: RootState) => state.user.telegram_data,
+    shallowEqual
+  );
 
   const currentUserMinerLevel = useMemo(
-    () => parseInt(miner_data.current_miner._id.split("_")[1]),
-    [miner_data.current_miner._id]
+    () => parseInt(currentMiner._id.split("_")[1]),
+    [currentMiner._id]
   );
 
   const currentUserHiltiLevel = useMemo(
-    () => parseInt(hilti_data.current_hilti._id.split("_")[1]),
-    [hilti_data.current_hilti._id]
+    () => parseInt(currentHilti._id.split("_")[1]),
+    [currentHilti._id]
   );
 
   const dailyStreak = 7;
   const [showDailyRewardModal, setShowDailyRewardModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const currentRewardDay = 7;
 
   const handleClaimReward = (day: number) => {
@@ -53,10 +65,10 @@ export const MainPage = () => {
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur-md opacity-60" />
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-slate-800">
-                    {user.telegram_data?.photo_url ? (
+                    {telegramData?.photo_url ? (
                       <img
-                        src={user.telegram_data.photo_url}
-                        alt={user.telegram_data.username}
+                        src={telegramData.photo_url}
+                        alt={telegramData.username}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -71,7 +83,7 @@ export const MainPage = () => {
                 {/* Name and Streak */}
                 <div>
                   <h2 className="text-lg font-bold text-white mb-1">
-                    {user.telegram_data?.username || "Guest"}
+                    {telegramData?.username || "Guest"}
                   </h2>
                   <div className="flex items-center gap-1.5 bg-orange-500/10 px-2 py-0.5 rounded-lg border border-orange-500/20 w-fit">
                     <Calendar className="w-3 h-3 text-orange-400" />
@@ -103,19 +115,64 @@ export const MainPage = () => {
               </div>
             </div>
 
-            {/* Daily Reward Button */}
-            <button
-              onClick={() => setShowDailyRewardModal(true)}
-              className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/40 hover:border-yellow-400/60 rounded-xl p-2 transition-all hover:scale-105 active:scale-95"
-            >
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Gift className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-xs text-yellow-300/70">Reward</span>
-              </div>
-              <div className="text-xl font-bold text-yellow-300">
-                Day {currentRewardDay}
-              </div>
-            </button>
+            {/* Action Buttons - Daily Reward & Achievements */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Daily Reward Button */}
+              <button
+                onClick={() => setShowDailyRewardModal(true)}
+                className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/20 via-orange-500/20 to-yellow-500/20 p-[2px] hover:from-amber-400/30 hover:via-orange-400/30 hover:to-yellow-400/30 transition-all duration-300 active:scale-95"
+              >
+                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-1.5 rounded-lg">
+                      <Gift className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-[10px] text-amber-300/60 font-medium">
+                        Daily Reward
+                      </div>
+                      <div className="text-base font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
+                        Day {currentRewardDay}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Progress indicator */}
+                  <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(currentRewardDay / 10) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                    />
+                  </div>
+                </div>
+              </button>
+
+              {/* Achievements Button */}
+              <button
+                onClick={() => setShowAchievementsModal(true)}
+                className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-purple-500/20 p-[2px] hover:from-purple-400/30 hover:via-pink-400/30 hover:to-purple-400/30 transition-all duration-300 active:scale-95"
+              >
+                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-1.5 rounded-lg">
+                      <Trophy className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-[10px] text-purple-300/60 font-medium">
+                        Achievements
+                      </div>
+                      <div className="text-base font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+                        Unlock
+                      </div>
+                    </div>
+                  </div>
+                  {/* Decorative bar */}
+                  <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full w-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-50" />
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
         </motion.div>
 
@@ -136,6 +193,12 @@ export const MainPage = () => {
         onClose={() => setShowDailyRewardModal(false)}
         currentDay={currentRewardDay}
         onClaimReward={handleClaimReward}
+      />
+
+      {/* Achievements Modal */}
+      <AchievementsModal
+        isOpen={showAchievementsModal}
+        onClose={() => setShowAchievementsModal(false)}
       />
     </div>
   );

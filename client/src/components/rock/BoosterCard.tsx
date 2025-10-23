@@ -7,6 +7,7 @@ import {
 } from "../../redux/services/booster/booster-api";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
+import WebApp from "@twa-dev/sdk";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -33,7 +34,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       console.log("✅ Booster unlocked successfully!");
     } catch (error: any) {
       console.error("❌ Failed to unlock booster:", error);
-      alert(
+      WebApp.showAlert(
         error?.data?.message || "Failed to unlock booster. Please try again."
       );
     }
@@ -49,7 +50,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       console.log("✅ Booster upgraded successfully!");
     } catch (error: any) {
       console.error("❌ Failed to upgrade booster:", error);
-      alert(
+      WebApp.showAlert(
         error?.data?.message || "Failed to upgrade booster. Please try again."
       );
     }

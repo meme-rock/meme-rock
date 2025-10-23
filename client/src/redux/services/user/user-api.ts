@@ -6,6 +6,7 @@ import {
   updateUserDust,
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
+  updateUserStones,
 } from "../../slices/userSlice";
 import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
@@ -55,6 +56,34 @@ export const userApi = createApi({
           );
         } catch (error) {
           console.error("Error loading user data:", error);
+        }
+      },
+    }),
+    mineDailyStoneReward: builder.mutation<
+      {
+        balance_data: { stone: number };
+        miner_data: { last_mine: string };
+      },
+      { user_id: string }
+    >({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/mine-daily-stone-reward/${user_id}`,
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Mine daily stone reward data received:", data);
+
+          // Update Redux with new stone balance and last_mine timestamp
+          dispatch(
+            updateUserStones({
+              stones: data.balance_data.stone,
+              last_mine: data.miner_data.last_mine,
+            })
+          );
+        } catch (error) {
+          console.error("Error mining daily stone reward:", error);
         }
       },
     }),
@@ -132,6 +161,7 @@ export const userApi = createApi({
 
 export const {
   useLoadingMutation,
+  useMineDailyStoneRewardMutation,
   useUpdateUserDustAfterAdRewardMutation,
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,

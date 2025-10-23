@@ -15,6 +15,12 @@ export type TonMarketItem = {
   total_stones: number;
 };
 
+export type DailyRewardItem = {
+  day: number;
+  reward: number;
+  dust_price: number;
+};
+
 /**
  * Yıldız paketleri verisi.
  * JSON formatına tamamen uyumludur ve kolayca okunabilir.
@@ -92,5 +98,58 @@ export const STONE_MARKET_TON: TonMarketItem[] = [
     stone_amount: 15380,
     stone_bonus: 6200, // %20 toplu (3076) + %20 TON (3076)
     total_stones: 21600,
+  },
+];
+
+export const DAILY_REWARD: DailyRewardItem[] = [
+  {
+    day: 1,
+    reward: 5,
+    dust_price: 50,
+  },
+  {
+    day: 2,
+    reward: 10,
+    dust_price: 55,
+  },
+  {
+    day: 3,
+    reward: 15,
+    dust_price: 60,
+  },
+  {
+    day: 4,
+    reward: 20,
+    dust_price: 65,
+  },
+  {
+    day: 5,
+    reward: 25,
+    dust_price: 70,
+  },
+  {
+    day: 6,
+    reward: 30,
+    dust_price: 75,
+  },
+  {
+    day: 7,
+    reward: 35,
+    dust_price: 80,
+  },
+  {
+    day: 8,
+    reward: 40,
+    dust_price: 85,
+  },
+  {
+    day: 9,
+    reward: 45,
+    dust_price: 90,
+  },
+  {
+    day: 10,
+    reward: 50,
+    dust_price: 100,
   },
 ];

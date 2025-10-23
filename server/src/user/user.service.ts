@@ -468,4 +468,43 @@ export class UserService {
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
   }
+
+  //! Daily Reward
+  async claimDailyReward(user_id: string) {
+    try {
+      // Reset date is 7 AM UTC
+      const resetDate = new Date(
+        new Date().toUTCString().split(' ')[0] + 'T07:00:00Z',
+      );
+
+      // Get user
+      const user = await this.userModel
+        .findById(user_id)
+        .select('daily_reward_data')
+        .lean()
+        .exec();
+
+      // If user not found, throw error
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      // If last claim date is before 48 hours ago, reset the daily reward data
+      if (
+        user.daily_reward_data.last_claim_date <
+        new Date(Date.now() - 48 * 60 * 60 * 1000)
+      ) {
+        user.daily_reward_data.day = 0;
+        user.daily_reward_data.last_claim_date = new Date();
+      } else {
+        user.daily_reward_data.day++;
+      }
+
+      // Save user
+      await user.save();
+    } catch (error) {
+      console.error('Error in claimDailyReward service:', error);
+      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
+    }
+  }
 }

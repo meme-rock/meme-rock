@@ -1,67 +1,53 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { MinerLevelThumbnails } from "../components/stone/MinerLevelThumbnails";
 import { MinerDisplay } from "../components/stone/MinerDisplay";
 import { MineButton } from "../components/stone/MineButton";
 import { UpgradeRequirements } from "../components/stone/UpgradeRequirements";
-import { useSelector } from "react-redux";
+import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 
 export const StonePage = () => {
-  const miner_data = useSelector((state: RootState) => state.miner);
-  console.log("minerrr: ", miner_data);
-  // TODO: Bu veriler Redux'tan gelecek
-  // Current user's hilti level
-  const currentUserMinerLevel = useMemo(
-    () => parseInt(miner_data.current_miner._id.split("_")[1]),
-    [miner_data.current_miner._id]
+  // Use shallowEqual to prevent unnecessary re-renders when Redux state updates
+  const current_miner = useSelector(
+    (state: RootState) => state.miner.current_miner,
+    shallowEqual
+  );
+  const all_miners = useSelector(
+    (state: RootState) => state.miner.all_miners,
+    shallowEqual
   );
 
-  // Selected hilti state (for browsing)
+  // Current user's miner level - only recompute when current_miner._id changes
+  const currentUserMinerLevel = useMemo(
+    () => parseInt(current_miner._id.split("_")[1]),
+    [current_miner._id]
+  );
+
+  // Selected miner state (for browsing)
   const [selectedMinerLevel, setSelectedMinerLevel] = useState(
     currentUserMinerLevel
   );
-  // Get selected hilti from all_hiltis
+
+  // Get selected miner from all_miners - only recompute when dependencies change
   const selectedMiner = useMemo(
     () =>
-      miner_data.all_miners.find(
-        (m) => m._id === `LEVEL_${selectedMinerLevel}`
-      ) || miner_data.current_miner,
-    [selectedMinerLevel, miner_data.all_miners, miner_data.current_miner]
+      all_miners.find((m) => m._id === `LEVEL_${selectedMinerLevel}`) ||
+      current_miner,
+    [selectedMinerLevel, all_miners, current_miner]
   );
 
-  const upgrade_requirements =
-    miner_data.current_miner.upgrade_requirements || {};
-
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const upgrade_requirements = useMemo(
+    () => current_miner.upgrade_requirements || {},
+    [current_miner.upgrade_requirements]
+  );
 
   const handleLevelSelect = useCallback((level: number) => {
     setSelectedMinerLevel(level);
   }, []);
-  // Mine button handler
-  const handleMine = () => {
-    if (cooldownRemaining > 0) return;
-
-    // TODO: Backend'e mine isteği gönder
-
-    // Start 24 hour cooldown
-    setCooldownRemaining(86400); // 24 hours in seconds
-  };
-
-  // Cooldown timer
-  useEffect(() => {
-    if (cooldownRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setCooldownRemaining((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [cooldownRemaining]);
 
   // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
   const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
-  const spent_stones_to_upgrade =
-    miner_data.current_miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
+  const spent_stones_to_upgrade = current_miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
 
   const handleUpgrade = () => {
     const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
@@ -100,9 +86,7 @@ export const StonePage = () => {
           {/* Mine button - show reward for all levels, but button only for current level */}
           <div className="mt-4">
             <MineButton
-              onMine={handleMine}
               reward={selectedMiner.stones_income}
-              cooldownRemaining={cooldownRemaining}
               showButton={selectedMinerLevel === currentUserMinerLevel}
             />
           </div>

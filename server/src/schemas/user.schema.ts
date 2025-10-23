@@ -100,6 +100,27 @@ class PaymentData {
   last_payment_date: Date;
 }
 
+@Schema({ _id: false, timestamps: false })
+class DailyRewardData {
+  @Prop({ type: Number, default: 0 })
+  day: number;
+
+  @Prop({ type: Date, default: Date.now() })
+  last_claim_date: Date;
+}
+
+@Schema({ _id: false, timestamps: false })
+class AchievementData {
+  @Prop({ type: String, required: true })
+  achievement_id: string; // e.g., "invite_1", "invite_5", etc.
+
+  @Prop({ type: Boolean, default: false })
+  is_claimed: boolean;
+
+  @Prop({ type: Date })
+  claimed_at: Date;
+}
+
 @Schema({ timestamps: true, _id: false })
 export class User {
   @Prop({ type: String, required: true })
@@ -128,6 +149,12 @@ export class User {
 
   @Prop({ type: [BoosterData], default: [] })
   boosters: BoosterData[]; // Array of user's boosters with their levels
+
+  @Prop({ type: DailyRewardData })
+  daily_reward_data: DailyRewardData;
+
+  @Prop({ type: [AchievementData], default: [] })
+  achievements: AchievementData[]; // Array of user's claimed achievements
 
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;

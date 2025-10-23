@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
-import { useSelector } from "react-redux";
+import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { UpgradeRequirements } from "../components/rock/UpgradeRequirements";
 import { BoosterPage } from "../components/rock/BoosterPage";
@@ -11,9 +11,28 @@ import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
 
 export const RockPage = () => {
   const [getBoosters] = useGetBoostersMutation();
-  const user = useSelector((state: RootState) => state.user);
-  const hilti_data = useSelector((state: RootState) => state.hilti);
-  const boosters = useSelector((state: RootState) => state.booster);
+
+  // Select only needed fields to avoid re-renders from displayRocks updates
+  const userId = useSelector((state: RootState) => state.user._id);
+  const userProfitPerHour = useSelector(
+    (state: RootState) => state.user.airdrop_data.profit_per_hour
+  );
+  const inviteCount = useSelector(
+    (state: RootState) => state.user.invite_count
+  );
+  const balanceData = useSelector(
+    (state: RootState) => state.user.balance_data,
+    shallowEqual
+  );
+
+  const hilti_data = useSelector(
+    (state: RootState) => state.hilti,
+    shallowEqual
+  );
+  const boosters = useSelector(
+    (state: RootState) => state.booster,
+    shallowEqual
+  );
 
   // Current user's hilti level
   const currentUserHiltiLevel = useMemo(
@@ -45,9 +64,9 @@ export const RockPage = () => {
   const handleBoosterClick = useCallback(async () => {
     setShowBoosterPage(true);
     if (boosters.length === 0) {
-      await getBoosters({ user_id: user._id }).unwrap();
+      await getBoosters({ user_id: userId }).unwrap();
     }
-  }, [boosters.length, getBoosters, user._id]);
+  }, [boosters.length, getBoosters, userId]);
 
   // Handle upgrade
   const handleUpgrade = useCallback(() => {
@@ -134,7 +153,7 @@ export const RockPage = () => {
             <HiltiDisplay
               selectedHilti={selectedHilti}
               currentUserHiltiLevel={currentUserHiltiLevel}
-              userProfitPerHour={user.airdrop_data.profit_per_hour}
+              userProfitPerHour={userProfitPerHour}
             />
           </div>
 
@@ -142,15 +161,15 @@ export const RockPage = () => {
           {selectedHiltiLevel === currentUserHiltiLevel && (
             <div className="w-full px-4">
               <UpgradeRequirements
-                inviteCount={user.invite_count}
+                inviteCount={inviteCount}
                 requiredInvites={
                   hilti_data.current_hilti.upgrade_requirements?.invites || 0
                 }
-                dustSpent={user.balance_data.dust}
+                dustSpent={balanceData.dust}
                 requiredDust={
                   hilti_data.current_hilti.upgrade_requirements?.spent_dust || 0
                 }
-                stonesSpent={user.balance_data.stone}
+                stonesSpent={balanceData.stone}
                 requiredStones={
                   hilti_data.current_hilti.upgrade_requirements?.spent_stones ||
                   0

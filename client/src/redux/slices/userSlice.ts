@@ -54,6 +54,7 @@ const initialState: UserState = {
     },
   },
   boosters: [],
+  achievements: [],
   is_premium: false,
   invited_by: null,
   invite_count: 0,
@@ -85,8 +86,15 @@ export const userSlice = createSlice({
       };
       return newState;
     },
-    updateUserStones: (state, action: PayloadAction<{ stones: number }>) => {
+    updateUserStones: (
+      state,
+      action: PayloadAction<{ stones: number; last_mine?: string }>
+    ) => {
       state.balance_data.stone = action.payload.stones;
+      // Update last_mine if provided (from mining reward)
+      if (action.payload.last_mine) {
+        state.miner_data.last_mine = new Date(action.payload.last_mine);
+      }
     },
     updateUserforCompleteTask: (
       state,

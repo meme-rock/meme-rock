@@ -82,6 +82,12 @@ export interface IUserBooster {
   current_level: number;
 }
 
+export interface IAchievement {
+  achievement_id: string;
+  is_claimed: boolean;
+  claimed_at?: string;
+}
+
 export interface IUser {
   __v: number;
   _id: string;
@@ -93,6 +99,7 @@ export interface IUser {
   miner_data: IMinerData;
   hilti_data: IHiltiData;
   boosters: IUserBooster[];
+  achievements: IAchievement[];
   is_premium: boolean;
   invited_by: string | null;
   invite_count: number;

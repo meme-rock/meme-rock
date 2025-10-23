@@ -8,6 +8,7 @@ import { RockPage } from "./pages/RockPage";
 import { DustPage } from "./pages/DustPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
@@ -55,6 +56,7 @@ function App() {
                   path="/market"
                   element={<MarketPage stones={user.balance_data.stone} />}
                 />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Routes>
             </main>

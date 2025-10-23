@@ -4,12 +4,17 @@ import { StoneTodustExchange } from "../components/dust/Exchange";
 import { AdRewardSection } from "../components/dust/AdRewardSection";
 import { SpinWheelButton } from "../components/dust/SpinWheelButton";
 import { SpinWheelModal } from "../components/dust/SpinWheelModal";
-import { useSelector } from "react-redux";
+import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 
 export const DustPage = () => {
   const [showSpinWheel, setShowSpinWheel] = useState(false);
-  const user = useSelector((state: RootState) => state.user);
+
+  // Select only balance_data to avoid re-renders from displayRocks updates
+  const balanceData = useSelector(
+    (state: RootState) => state.user.balance_data,
+    shallowEqual
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 relative overflow-hidden pb-20">
@@ -48,7 +53,7 @@ export const DustPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <StoneTodustExchange userStones={user.balance_data.stone} />
+          <StoneTodustExchange userStones={balanceData.stone} />
         </motion.div>
 
         {/* Ad Reward Section */}
@@ -67,7 +72,7 @@ export const DustPage = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <SpinWheelButton
-            userDust={user.balance_data.dust}
+            userDust={balanceData.dust}
             onClick={() => setShowSpinWheel(true)}
           />
         </motion.div>
@@ -76,7 +81,7 @@ export const DustPage = () => {
       {/* Spin Wheel Modal */}
       {showSpinWheel && (
         <SpinWheelModal
-          userDust={user.balance_data.dust}
+          userDust={balanceData.dust}
           onClose={() => setShowSpinWheel(false)}
         />
       )}
