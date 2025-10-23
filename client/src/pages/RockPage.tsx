@@ -91,6 +91,44 @@ export const RockPage = () => {
             onLevelSelect={handleLevelSelect}
           />
 
+          {/* Booster button - Prominent position */}
+          <div className="w-full px-4 mt-6 mb-4">
+            <button
+              onClick={handleBoosterClick}
+              className="w-full relative group overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 p-[2px] shadow-2xl shadow-cyan-500/50 hover:shadow-cyan-400/60 transition-all duration-300 active:scale-[0.98]"
+            >
+              <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl px-6 py-4 flex items-center justify-center gap-3 group-hover:bg-gradient-to-br group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
+                {/* Animated glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/20 to-cyan-500/0 group-hover:via-cyan-500/30 blur-xl transition-all duration-300" />
+
+                {/* Lottie animation */}
+                <div className="relative w-10 h-10 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]">
+                  <Lottie animationData={boosterAnimation} loop={true} />
+                </div>
+
+                {/* Text */}
+                <span className="relative text-xl font-bold bg-gradient-to-r from-cyan-200 via-blue-200 to-purple-200 bg-clip-text text-transparent group-hover:from-cyan-100 group-hover:via-blue-100 group-hover:to-purple-100 transition-all duration-300">
+                  Boosters
+                </span>
+
+                {/* Arrow icon */}
+                <svg
+                  className="relative w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform duration-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            </button>
+          </div>
+
           {/* Hilti display */}
           <div className="mt-2">
             <HiltiDisplay
@@ -99,17 +137,6 @@ export const RockPage = () => {
               userProfitPerHour={user.airdrop_data.profit_per_hour}
             />
           </div>
-
-          {/* Booster button */}
-          <button
-            onClick={handleBoosterClick}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/30 transition-all active:scale-95 flex items-center gap-2"
-          >
-            <div className="w-8 h-8">
-              <Lottie animationData={boosterAnimation} loop={true} />
-            </div>
-            <span>Boosters</span>
-          </button>
 
           {/* Upgrade requirements - Only show for current level */}
           {selectedHiltiLevel === currentUserHiltiLevel && (

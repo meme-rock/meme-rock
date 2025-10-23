@@ -43,10 +43,20 @@ export const BoosterPage = ({
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all text-white"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 p-[1px] hover:from-cyan-500/40 hover:via-blue-500/40 hover:to-purple-500/40 transition-all duration-300 active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back</span>
+            <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl px-4 py-2.5 flex items-center gap-2 group-hover:from-gray-800 group-hover:to-gray-700 transition-all duration-300">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-cyan-500/0 opacity-0 group-hover:opacity-100 blur-lg transition-opacity duration-300" />
+
+              {/* Arrow icon with animation */}
+              <ArrowLeft className="relative w-5 h-5 text-cyan-400 group-hover:text-cyan-300 group-hover:-translate-x-1 transition-all duration-300" />
+
+              {/* Text */}
+              <span className="relative font-semibold text-gray-200 group-hover:text-white transition-colors duration-300">
+                Back
+              </span>
+            </div>
           </button>
 
           <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">

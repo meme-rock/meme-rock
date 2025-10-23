@@ -244,16 +244,13 @@ export class UserBoosterService {
         {
           _id: user_id,
           // Booster zaten unlock edilmiş mi kontrolü
-          boosters: { $elemMatch: { booster: booster_id } },
+          'boosters.booster': { $nin: [booster_id] },
           // Hilti level kontrolü
           $expr: {
             $gte: [
               {
                 $toInt: {
-                  $arrayElemAt: [
-                    { $split: ['$hilti_data.hilti.level', '_'] },
-                    1,
-                  ],
+                  $arrayElemAt: [{ $split: ['$hilti_data.hilti', '_'] }, 1],
                 },
               },
               requiredHiltiLevel,

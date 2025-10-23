@@ -361,4 +361,111 @@ export class UserService {
       );
     }
   }
+
+  //! Mine Daily Stone Reward
+  async mineDailyStoneReward(user_id: string) {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    try {
+      // --- ADIM 1: ÖN KONTROL (PRE-CHECK) ---
+      // Gerekli hata mesajlarını verebilmek için önce kullanıcıyı
+      // 'select' ile sadece gereken alanları çekerek (optimize) bul.
+      const user = await this.userModel
+        .findById(user_id)
+        .select('miner_data.last_mine') // Sadece bu alana ihtiyacımız var
+        .lean();
+
+      // Senaryo 1: Kullanıcı hiç bulunamadı.
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      // Senaryo 2: Kullanıcı bulundu ancak bekleme süresi (cooldown) henüz dolmamış.
+      if (user.miner_data.last_mine > twentyFourHoursAgo) {
+        const nextAvailableTime = new Date(
+          user.miner_data.last_mine.getTime() + 24 * 60 * 60 * 1000,
+        );
+
+        // API'ye sadece bir string değil, detaylı bir obje dönmek daha iyidir.
+        throw new BadRequestException({
+          message: 'MINER_REWARD_NOT_READY_YET',
+          next_available_at: nextAvailableTime.toISOString(),
+        });
+      }
+
+      // --- ADIM 2: ATOMİK GÜNCELLEME (ATOMIC UPDATE) ---
+      // Ön kontrolleri geçti. Şimdi asıl güncellemeyi 'aggregate' ile
+      // atomik olarak yapıyoruz.
+      // Buradaki $match, bir "çift tıklama" (race condition) anında
+      // ikinci isteğin elenmesini garantileyen SON KİLİT görevi görür.
+      await this.userModel
+        .aggregate([
+          {
+            $match: {
+              _id: user_id,
+              'miner_data.last_mine': { $lt: twentyFourHoursAgo },
+            },
+          },
+          {
+            $lookup: {
+              from: this.minerModel.collection.name,
+              localField: 'miner_data.miner', //
+              foreignField: '_id', //
+              as: 'miner_doc',
+            },
+          },
+          {
+            $set: {
+              miner_doc: { $arrayElemAt: ['$miner_doc', 0] },
+            },
+          },
+          {
+            $set: {
+              'balance_data.stone': {
+                //
+                $add: [
+                  { $ifNull: ['$balance_data.stone', 0] },
+                  { $ifNull: ['$miner_doc.stones_income', 0] }, //
+                ],
+              },
+              'miner_data.last_mine': now, //
+            },
+          },
+          { $unset: 'miner_doc' },
+          {
+            $merge: {
+              into: this.userModel.collection.name,
+              on: '_id',
+              whenMatched: 'replace',
+              whenNotMatched: 'discard',
+            },
+          },
+        ])
+        .exec();
+
+      // --- ADIM 3: BAŞARILI SONUCU DÖNDÜR ---
+      // İşlem %100 başarılı oldu. Kullanıcıya güncel veriyi döndür.
+      const updatedSnapshot = await this.userModel
+        .findById(user_id)
+        .select('balance_data.stone miner_data.last_mine')
+        .lean()
+        .exec();
+
+      // updateSnapshot null olamaz çünkü en başta varlığını kontrol ettik.
+      return updatedSnapshot;
+    } catch (error) {
+      // Bizim fırlattığımız (throw) bilinen hataları (NotFound, BadRequest) tekrar yakalama.
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      // Bilinmeyen, sistemsel bir hata oluştu (örn. DB bağlantı koptu).
+      console.error('Unexpected error in mineDailyStoneReward:', error);
+      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
+    }
+  }
 }

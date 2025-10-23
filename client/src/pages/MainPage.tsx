@@ -4,7 +4,7 @@ import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Award, Calendar, Pickaxe } from "lucide-react";
+import { User, Gift, Calendar, Pickaxe } from "lucide-react";
 
 export const MainPage = () => {
   const miner_data = useSelector((state: RootState) => state.miner);

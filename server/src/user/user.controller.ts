@@ -32,6 +32,12 @@ export class UserController {
     return await this.userService.loading(user_id, user);
   }
 
+  @Post('mine-daily-stone-reward/:user_id')
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ default: { limit: 1, ttl: 2000 } }) // Sadece bu endpoint'te throttling
+  async mineDailyStoneReward(@Param('user_id') user_id: string) {
+    return await this.userService.mineDailyStoneReward(user_id);
+  }
   /**
    * Webhook endpoint for ad providers
    * Example: GET http://localhost:8080/user/ad-reward?userid=123456789&token=meme_rock_ad_secret_2024

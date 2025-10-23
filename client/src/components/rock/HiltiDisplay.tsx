@@ -173,40 +173,6 @@ export const HiltiDisplay = ({
           </div>
         </div>
       </motion.div>
-
-      {/* Upgrade Requirements (only if has requirements) */}
-      {selectedHilti.upgrade_requirements &&
-        Object.keys(selectedHilti.upgrade_requirements).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-4 w-full max-w-md"
-          >
-            <div className="bg-gradient-to-r from-gray-900/60 to-gray-800/60 border border-gray-700 rounded-lg p-4">
-              <h4 className="text-gray-300 text-sm font-semibold mb-2">
-                Upgrade Requirements
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(selectedHilti.upgrade_requirements).map(
-                  ([key, value]) => (
-                    <div
-                      key={key}
-                      className="bg-gray-800/70 px-3 py-1.5 rounded-md text-xs text-gray-300 border border-gray-600"
-                    >
-                      <span className="font-medium capitalize">
-                        {key.replace(/_/g, " ")}:
-                      </span>{" "}
-                      <span className="text-white font-bold">
-                        {String(value)}
-                      </span>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
     </div>
   );
 };
