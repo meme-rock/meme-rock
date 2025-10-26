@@ -59,53 +59,48 @@ export class UserAchivementService {
 
   async claimAchievement(user_id: string, achievement_id: string) {
     try {
-      const achievement = achievement_id.startsWith('Invite-')
-        ? ACHIVEMENTS.INVITE.find((a) => a.id === achievement_id)
-        : ACHIVEMENTS.AD.find((a) => a.id === achievement_id);
+      // 1. ADIM: Başarım verisini statik config'den al (DB sorgusu yok)
+      const isInvite = achievement_id.startsWith('Invite-');
+      const achievementConfig = isInvite
+        ? ACHIVEMENTS.INVITE.find((a) => a.id === achievement_id) //
+        : ACHIVEMENTS.AD.find((a) => a.id === achievement_id); //
 
-      if (!achievement) {
+      if (!achievementConfig) {
         throw new NotFoundException('ACHIEVEMENT_NOT_FOUND');
       }
 
-      // 2. Get user data
-      const user = await this.userModel
-        .findById(user_id)
-        .select(
-          'invite_count ad_data.ads_watched achievements balance_data.stone',
-        )
-        .lean()
-        .exec();
+      // Gerekli sayıyı ve ödülü al
+      const requiredCount = parseInt(achievement_id.split('-')[1]);
+      const stoneReward = achievementConfig.stone_reward; //
 
-      if (!user) {
-        throw new NotFoundException('USER_NOT_FOUND');
+      // Config'de bir hata varsa (örn: ödül yok, ID bozuk)
+      if (isNaN(requiredCount) || typeof stoneReward === 'undefined') {
+        throw new InternalServerErrorException('ACHIEVEMENT_CONFIG_ERROR');
       }
 
-      // 3. Check if already claimed
-      const alreadyClaimed = user.achievements?.some(
-        (a) => a.id === achievement_id,
-      );
-
-      if (alreadyClaimed) {
-        throw new BadRequestException('ACHIEVEMENT_ALREADY_CLAIMED');
-      }
-
-      const requiredCount = parseInt(achievement.id.split('-')[1]);
-      const canClaim =
-        achievement.achievement_type === 'invite'
-          ? user.invite_count >= requiredCount
-          : user.ad_data.ads_watched >= requiredCount;
-
-      if (!canClaim) {
-        throw new BadRequestException('ACHIEVEMENT_NOT_COMPLETED');
-      }
-
-      // 4. Claim achievement atomically
+      // 2. ADIM: ATOMİK GÜNCELLEMEYİ DENE (İyimser Sorgu)
+      // findOneAndUpdate'in 'query' kısmı, tüm şartları KONTROL eder.
+      // 'update' kısmı, sadece şartlar sağlanırsa çalışır.
       const updatedUser = await this.userModel.findOneAndUpdate(
         {
+          // TEMEL ŞART: Kullanıcıyı bul
           _id: user_id,
+
+          // ŞART 1: Başarım daha önce talep EDİLMEMİŞ olmalı
+          // (Sizin kodunuzdaki mantığa göre 'achievements' dizisinde bu ID olmamalı)
           'achievements.id': { $ne: achievement_id },
+
+          // ŞART 2: Gerekli şartı (davet/reklam) sağlıyor olmalı
+          ...(isInvite
+            ? { invite_count: { $gte: requiredCount } } //
+            : { 'ad_data.ads_watched': { $gte: requiredCount } }), //
         },
         {
+          // GÜNCELLEME 1: Ödülü ver
+          $inc: {
+            'balance_data.stone': stoneReward, //
+          },
+          // GÜNCELLEME 2: Başarımı 'talep edildi' olarak kaydet
           $push: {
             achievements: {
               id: achievement_id,
@@ -113,19 +108,60 @@ export class UserAchivementService {
             },
           },
         },
-        { new: true, select: 'achievements' },
+        {
+          new: true, // Güncellenmiş dokümanı döndür
+          select: 'balance_data.stone achievements', // Sadece bu alanları seç
+        },
       );
 
-      if (!updatedUser) {
-        throw new InternalServerErrorException('FAILED_TO_UPDATE_USER');
+      // 3. ADIM: BAŞARI SENARYOSU
+      // Eğer 'updatedUser' null değilse, tüm şartlar sağlandı ve güncelleme yapıldı.
+      if (updatedUser) {
+        console.log(`✅ Achievement claimed: ${user_id} / ${achievement_id}`);
+        return {
+          success: true,
+          achievement_id: achievement_id,
+          new_stone_balance: updatedUser.balance_data.stone,
+          achievements: updatedUser.achievements,
+        };
       }
-      console.log(`✅ Achievement claimed: ${updatedUser}`);
-      return {
-        message: 'ACHIEVEMENT_CLAIMED',
-        achievement: achievement,
-      };
+
+      // 4. ADIM: HATA SENARYOSU (updatedUser == null)
+      // Atomik sorgu başarısız oldu. Şimdi nedenini öğrenmek için 1 kez okuma yap.
+      console.warn(`Atomic claim failed for ${user_id}. Diagnosing...`);
+
+      const user = await this.userModel
+        .findById(user_id)
+        .select('invite_count ad_data.ads_watched achievements')
+        .lean()
+        .exec();
+
+      // Hata Nedeni 1: Kullanıcı bulunamadı
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      // Hata Nedeni 2: Başarım zaten talep edilmiş
+      // (Sizin kodunuzdaki 'some' mantığını kullanıyoruz)
+      if (user.achievements?.some((a) => a.id === achievement_id)) {
+        throw new BadRequestException('ACHIEVEMENT_ALREADY_CLAIMED');
+      }
+
+      // Hata Nedeni 3: Başarım şartı sağlanmamış
+      const userCount = isInvite ? user.invite_count : user.ad_data.ads_watched; //
+      if (userCount < requiredCount) {
+        throw new BadRequestException('ACHIEVEMENT_NOT_COMPLETED');
+      }
+
+      // Diğer tüm bilinmeyen nedenler (örn: anlık DB bağlantı hatası)
+      throw new InternalServerErrorException('FAILED_TO_CLAIM_UNKNOWN_REASON');
     } catch (error) {
       console.error('Error in claimAchievement:', error);
+      // Bizim fırlattığımız bilinen hataları (NotFound, BadRequest vb.) tekrar fırlat
+      if (error.status) {
+        throw error;
+      }
+      // Bilinmeyen bir hata oluştu
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
   }

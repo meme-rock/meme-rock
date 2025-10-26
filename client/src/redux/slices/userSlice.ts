@@ -142,13 +142,15 @@ export const userSlice = createSlice({
       state,
       action: PayloadAction<
         Array<{
-          achievement_id: string;
-          is_claimed: boolean;
+          id: string;
           claimed_at?: string;
         }>
       >
     ) => {
-      state.achievements = action.payload;
+      state.achievements = action.payload.map((achievement) => ({
+        ...achievement,
+        achievement_id: achievement.id,
+      }));
     },
   },
 });

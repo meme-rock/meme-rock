@@ -84,7 +84,6 @@ export interface IUserBooster {
 
 export interface IAchievement {
   achievement_id: string;
-  is_claimed: boolean;
   claimed_at?: string;
 }
 

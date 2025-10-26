@@ -203,19 +203,18 @@ export const userApi = createApi({
       {
         success: boolean;
         achievement_id: string;
-        stone_reward: number;
-        new_balance: number;
+        new_stone_balance: number;
         achievements: Array<{
-          achievement_id: string;
-          is_claimed: boolean;
-          claimed_at?: string;
+          id: string;
+          claimed_at: string;
         }>;
       },
       { user_id: string; achievement_id: string }
     >({
       query: ({ user_id, achievement_id }) => ({
-        url: `/claim-achievement/${user_id}/${achievement_id}`,
+        url: `/claim-achievement/${user_id}`,
         method: "POST",
+        body: { achievement_id },
       }),
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
@@ -225,24 +224,25 @@ export const userApi = createApi({
           // Update Redux with new stone balance
           dispatch(
             updateUserStones({
-              stones: data.new_balance,
+              stones: data.new_stone_balance,
             })
           );
 
-          // Update achievements in Redux
-          dispatch({
-            type: "user/updateUserAchievements",
-            payload: data.achievements,
-          });
+          // Find the claimed achievement to get the claimed_at date
+          const claimedAchievement = data.achievements.find(
+            (a) => a.id === data.achievement_id
+          );
 
-          // Update achievements slice with claimed status
-          dispatch({
-            type: "achievements/updateAchievementClaimed",
-            payload: {
-              id: data.achievement_id,
-              claimed_at: new Date().toISOString(),
-            },
-          });
+          if (claimedAchievement) {
+            // Update achievements slice with claimed status
+            dispatch({
+              type: "achievements/updateAchievementClaimed",
+              payload: {
+                id: data.achievement_id,
+                claimed_at: claimedAchievement.claimed_at,
+              },
+            });
+          }
         } catch (error) {
           console.error("Error claiming achievement:", error);
         }

@@ -41,12 +41,12 @@ export class UserController {
     return await this.userService.mineStone(user_id);
   }
 
-  @Post('claim-achievement/:user_id/:achievement_id')
+  @Post('claim-achievement/:user_id')
   @UseGuards(CustomThrottlerGuard)
   @Throttle({ default: { limit: 1, ttl: 1000 } })
   async claimAchievement(
     @Param('user_id') user_id: string,
-    @Param('achievement_id') achievement_id: string,
+    @Body() { achievement_id }: { achievement_id: string },
   ) {
     return await this.userAchivementService.claimAchievement(
       user_id,
