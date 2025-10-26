@@ -42,7 +42,7 @@ const initialState: UserState = {
   miner_data: {
     miner: {
       _id: EMinerLevel.LEVEL_1,
-      stones_income: 0,
+      profit_per_hour: 0,
       spent_stones_to_upgrade: 0,
     },
     last_mine: new Date(),
@@ -138,6 +138,18 @@ export const userSlice = createSlice({
       state.balance_data.dust = action.payload.dust;
       state.balance_data.stone = action.payload.stones;
     },
+    updateUserAchievements: (
+      state,
+      action: PayloadAction<
+        Array<{
+          achievement_id: string;
+          is_claimed: boolean;
+          claimed_at?: string;
+        }>
+      >
+    ) => {
+      state.achievements = action.payload;
+    },
   },
 });
 
@@ -152,6 +164,7 @@ export const {
   updateUserDust,
   updateUserOnStoneToDustExchange,
   updateUserOnDustToStoneExchange,
+  updateUserAchievements,
 } = userSlice.actions;
 
 export default userSlice.reducer;

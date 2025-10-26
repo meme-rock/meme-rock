@@ -14,12 +14,14 @@ import { UnlockUserBoosterDto } from './dto/user-boosters.dto';
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { BotService } from 'src/bot/bot.service';
+import { UserAchivementService } from './user-achivement.service';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly botService: BotService,
+    private readonly userAchivementService: UserAchivementService,
   ) {}
 
   @Post('loading/:user_id')
@@ -32,11 +34,24 @@ export class UserController {
     return await this.userService.loading(user_id, user);
   }
 
-  @Post('mine-daily-stone-reward/:user_id')
+  @Post('mine-stone/:user_id')
   @UseGuards(CustomThrottlerGuard)
   @Throttle({ default: { limit: 1, ttl: 2000 } }) // Sadece bu endpoint'te throttling
-  async mineDailyStoneReward(@Param('user_id') user_id: string) {
-    return await this.userService.mineDailyStoneReward(user_id);
+  async mineStone(@Param('user_id') user_id: string) {
+    return await this.userService.mineStone(user_id);
+  }
+
+  @Post('claim-achievement/:user_id/:achievement_id')
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ default: { limit: 1, ttl: 1000 } })
+  async claimAchievement(
+    @Param('user_id') user_id: string,
+    @Param('achievement_id') achievement_id: string,
+  ) {
+    return await this.userAchivementService.claimAchievement(
+      user_id,
+      achievement_id,
+    );
   }
   /**
    * Webhook endpoint for ad providers

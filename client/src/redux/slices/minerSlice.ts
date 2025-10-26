@@ -5,7 +5,7 @@ import { IMinerDetail, IUserMinerState } from "../../types";
 const initialState: IUserMinerState = {
   current_miner: {
     _id: EMinerLevel.LEVEL_1,
-    stones_income: 0,
+    profit_per_hour: 0,
     spent_stones_to_upgrade: 0,
     upgrade_requirements: {},
   },

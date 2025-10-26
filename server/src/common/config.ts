@@ -153,3 +153,142 @@ export const DAILY_REWARD: DailyRewardItem[] = [
     dust_price: 100,
   },
 ];
+
+//! ACHIEVEMENTS
+export type AchievementItem = {
+  id: string;
+  title: string;
+  description: string;
+  stone_reward: number;
+  achievement_type: 'invite' | 'ad';
+};
+
+const INVITE_ACHIEVEMENTS: AchievementItem[] = [
+  {
+    id: 'Invite-1',
+    title: 'First Friend',
+    description: 'Invite your first friend',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-2',
+    title: 'Social Starter',
+    description: 'Invite 2 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-5',
+    title: 'Social',
+    description: 'Invite 5 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-10',
+    title: 'Network Builder',
+    description: 'Invite 10 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-25',
+    title: 'Community Connector',
+    description: 'Invite 25 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-50',
+    title: 'Community Leader',
+    description: 'Invite 50 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-100',
+    title: 'Influencer',
+    description: 'Invite 100 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-250',
+    title: 'Superstar',
+    description: 'Invite 250 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-500',
+    title: 'Legend',
+    description: 'Invite 500 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+  {
+    id: 'Invite-1000',
+    title: 'Mythic',
+    description: 'Invite 1000 friends',
+    stone_reward: 10,
+    achievement_type: 'invite',
+  },
+];
+
+const AD_ACHIEVEMENTS: AchievementItem[] = [
+  {
+    id: 'Ad-10',
+    title: 'Viewer',
+    description: 'Watch 10 ads',
+    stone_reward: 5,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-50',
+    title: 'Explorer',
+    description: 'Watch 100 ads',
+    stone_reward: 10,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-100',
+    title: 'Supporter',
+    description: 'Watch 100 ads',
+    stone_reward: 20,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-250',
+    title: 'Ad Hunter',
+    description: 'Watch 250 ads',
+    stone_reward: 40,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-500',
+    title: 'Adventurer',
+    description: 'Watch 500 ads',
+    stone_reward: 80,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-1000',
+    title: 'Ad Hunter',
+    description: 'Watch 2500 ads',
+    stone_reward: 160,
+    achievement_type: 'ad',
+  },
+  {
+    id: 'Ad-2500',
+    title: 'Ad Star',
+    description: 'Watch 2500 ads',
+    stone_reward: 350,
+    achievement_type: 'ad',
+  },
+];
+
+export const ACHIVEMENTS = {
+  INVITE: INVITE_ACHIEVEMENTS,
+  AD: AD_ACHIEVEMENTS,
+};

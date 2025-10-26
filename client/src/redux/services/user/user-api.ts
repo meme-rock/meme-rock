@@ -20,6 +20,14 @@ export const userApi = createApi({
         user: IUser;
         hiltis: IHiltiDetail[];
         miners: IMinerDetail[];
+        achievements: Array<{
+          id: string;
+          title: string;
+          description: string;
+          stone_reward?: number;
+          is_claimed: boolean;
+          claimed_at?: string;
+        }>;
         message: string;
       },
       { user: Partial<IUser> }
@@ -54,6 +62,12 @@ export const userApi = createApi({
               all_hiltis: data.hiltis,
             })
           );
+
+          // Store achievements in Redux
+          dispatch({
+            type: "achievements/setAllAchievements",
+            payload: data.achievements || [],
+          });
         } catch (error) {
           console.error("Error loading user data:", error);
         }
@@ -156,6 +170,84 @@ export const userApi = createApi({
         }
       },
     }),
+    mineStone: builder.mutation<
+      {
+        new_stone_balance: number;
+        last_mine: string;
+        remaining_time_seconds: number;
+      },
+      { user_id: string }
+    >({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/mine-stone/${user_id}`,
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Mine stone data received:", data);
+
+          // Update Redux with new stone balance and last_mine timestamp
+          dispatch(
+            updateUserStones({
+              stones: data.new_stone_balance,
+              last_mine: data.last_mine,
+            })
+          );
+        } catch (error) {
+          console.error("Error mining stone:", error);
+        }
+      },
+    }),
+    claimAchievement: builder.mutation<
+      {
+        success: boolean;
+        achievement_id: string;
+        stone_reward: number;
+        new_balance: number;
+        achievements: Array<{
+          achievement_id: string;
+          is_claimed: boolean;
+          claimed_at?: string;
+        }>;
+      },
+      { user_id: string; achievement_id: string }
+    >({
+      query: ({ user_id, achievement_id }) => ({
+        url: `/claim-achievement/${user_id}/${achievement_id}`,
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Achievement claimed:", data);
+
+          // Update Redux with new stone balance
+          dispatch(
+            updateUserStones({
+              stones: data.new_balance,
+            })
+          );
+
+          // Update achievements in Redux
+          dispatch({
+            type: "user/updateUserAchievements",
+            payload: data.achievements,
+          });
+
+          // Update achievements slice with claimed status
+          dispatch({
+            type: "achievements/updateAchievementClaimed",
+            payload: {
+              id: data.achievement_id,
+              claimed_at: new Date().toISOString(),
+            },
+          });
+        } catch (error) {
+          console.error("Error claiming achievement:", error);
+        }
+      },
+    }),
   }),
 });
 
@@ -165,4 +257,6 @@ export const {
   useUpdateUserDustAfterAdRewardMutation,
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
+  useMineStoneMutation,
+  useClaimAchievementMutation,
 } = userApi;

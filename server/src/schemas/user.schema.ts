@@ -112,10 +112,7 @@ class DailyRewardData {
 @Schema({ _id: false, timestamps: false })
 class AchievementData {
   @Prop({ type: String, required: true })
-  achievement_id: string; // e.g., "invite_1", "invite_5", etc.
-
-  @Prop({ type: Boolean, default: false })
-  is_claimed: boolean;
+  id: string; // e.g., "invite_1", "invite_5", etc.
 
   @Prop({ type: Date })
   claimed_at: Date;
@@ -158,6 +155,9 @@ export class User {
 
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  is_auto_mining: boolean;
 
   @Prop({ type: String, default: null })
   invited_by: string;

@@ -35,7 +35,7 @@ export interface IAdData {
 
 export interface IMinerDetail {
   _id: EMinerLevel;
-  stones_income: number;
+  profit_per_hour: number;
   spent_stones_to_upgrade: number;
   upgrade_requirements?: {
     invite?: number;

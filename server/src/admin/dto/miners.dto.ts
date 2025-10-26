@@ -13,7 +13,7 @@ export class CreateMinerDto {
   _id: EMinerLevel;
 
   @IsNumber()
-  stones_income: number;
+  profit_per_hour: number;
 
   @IsObject()
   upgrade_requirements: Record<string, any>;

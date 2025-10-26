@@ -1,28 +1,27 @@
 import { motion } from "framer-motion";
-import { Pickaxe, Clock } from "lucide-react";
+import { Pickaxe } from "lucide-react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
-import { useMineDailyStoneRewardMutation } from "../../redux/services/user/user-api";
+import { useMineStoneMutation } from "../../redux/services/user/user-api";
 import WebApp from "@twa-dev/sdk";
-import { memo, useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo, useRef } from "react";
 
-interface MineButtonProps {
-  reward: number;
-  disabled?: boolean;
-  showButton?: boolean;
+interface MiningProgressProps {
+  hourlyReward: number;
+  showProgress?: boolean;
 }
 
 export const MineButton = memo(
-  ({ reward, disabled = false, showButton = true }: MineButtonProps) => {
-    // Only select user._id and miner_data to avoid re-renders from displayRocks updates
+  ({ hourlyReward, showProgress = true }: MiningProgressProps) => {
     const userId = useSelector((state: RootState) => state.user._id);
     const minerData = useSelector(
       (state: RootState) => state.user.miner_data,
       shallowEqual
     );
 
-    const [mineDailyStoneReward] = useMineDailyStoneRewardMutation();
+    const [mineStone] = useMineStoneMutation();
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const hasAutoClaimedRef = useRef(false);
 
     // Update current time every second for countdown
     useEffect(() => {
@@ -33,168 +32,227 @@ export const MineButton = memo(
       return () => clearInterval(interval);
     }, []);
 
-    // Calculate remaining time until next mine (24 hours after last_mine)
-    const { isOnCooldown, remainingHours, remainingMinutes } = useMemo(() => {
+    // Calculate mining progress (1 hour = 60 minutes)
+    const { progressPercentage, remainingMinutes, canClaim } = useMemo(() => {
       const lastMineTime = new Date(minerData.last_mine).getTime();
-      const nextAvailableTime = lastMineTime + 24 * 60 * 60 * 1000; // 24 hours later
-      const remaining = nextAvailableTime - currentTime;
+      const oneHourInMs = 60 * 60 * 1000; // 1 hour
+      const nextClaimTime = lastMineTime + oneHourInMs;
+      const elapsed = currentTime - lastMineTime;
+      const remaining = nextClaimTime - currentTime;
 
+      // If more than 1 hour passed, mining is complete
       if (remaining <= 0) {
-        return { isOnCooldown: false, remainingHours: 0, remainingMinutes: 0 };
+        return {
+          progressPercentage: 100,
+          remainingMinutes: 0,
+          canClaim: true,
+        };
       }
 
-      const hours = Math.floor(remaining / (1000 * 60 * 60));
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      // Calculate progress (0-100%)
+      const progress = (elapsed / oneHourInMs) * 100;
+
+      // Calculate remaining time (only minutes)
+      const minutes = Math.floor(remaining / (1000 * 60));
 
       return {
-        isOnCooldown: true,
-        remainingHours: hours,
+        progressPercentage: Math.min(progress, 100),
         remainingMinutes: minutes,
+        canClaim: false,
       };
     }, [minerData.last_mine, currentTime]);
 
-    const isDisabled = disabled || isOnCooldown;
+    // Auto-claim when mining is complete
+    useEffect(() => {
+      const attemptAutoClaim = async () => {
+        if (canClaim && !hasAutoClaimedRef.current) {
+          hasAutoClaimedRef.current = true;
 
-    const handleMine = async () => {
-      try {
-        await mineDailyStoneReward({
-          user_id: userId,
-        }).unwrap();
-      } catch (error: any) {
-        console.error("❌ Error mining daily stone reward:", error);
+          try {
+            await mineStone({ user_id: userId }).unwrap();
+            console.log("✅ Auto-claimed mining reward!");
 
-        // Handle different error types
-        let errorMessage =
-          "Failed to mine daily stone reward. Please try again.";
+            // Reset auto-claim flag after successful claim
+            setTimeout(() => {
+              hasAutoClaimedRef.current = false;
+            }, 2000);
+          } catch (error: any) {
+            console.error("❌ Auto-claim failed:", error);
 
-        if (error?.data) {
-          // Backend returned structured error
-          if (error.data.message === "USER_NOT_FOUND") {
-            errorMessage = "User not found. Please restart the app.";
-          } else if (error.data.message === "MINER_REWARD_NOT_READY_YET") {
-            // Calculate remaining time
-            if (error.data.next_available_at) {
-              const nextTime = new Date(error.data.next_available_at);
-              const now = new Date();
-              const diff = Math.max(0, nextTime.getTime() - now.getTime());
-              const hours = Math.floor(diff / (1000 * 60 * 60));
-              const minutes = Math.floor(
-                (diff % (1000 * 60 * 60)) / (1000 * 60)
-              );
+            // Reset flag to retry on next cycle
+            hasAutoClaimedRef.current = false;
 
-              errorMessage = `⏰ Please wait ${hours}h ${minutes}m before mining again.`;
-            } else {
-              errorMessage =
-                "⏰ Mining reward not ready yet. Please wait 24 hours between claims.";
+            // Show error to user only if it's not a "NOT_READY" error
+            if (error?.data?.message !== "MINER_REWARD_NOT_READY_YET") {
+              const errorMessage =
+                error?.data?.message || "Failed to claim mining reward";
+              WebApp.showAlert(errorMessage);
             }
-          } else if (error.data.message === "UNEXPECTED_SERVER_ERROR") {
-            errorMessage = "Server error occurred. Please try again later.";
-          } else if (typeof error.data.message === "string") {
-            errorMessage = error.data.message;
           }
-        } else if (error?.message) {
-          errorMessage = error.message;
         }
+      };
 
-        WebApp.showAlert(errorMessage);
-      }
-    };
+      attemptAutoClaim();
+    }, [canClaim, userId, mineStone]);
 
     return (
-      <div className="flex flex-col items-center gap-4">
-        {/* Reward display */}
+      <div className="flex flex-col items-center gap-6 w-full px-4">
+        {/* Hourly reward display */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-2 bg-gray-800/50 px-6 py-2 rounded-full border border-gray-700"
+          className="flex items-center gap-3 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-8 py-3 rounded-2xl backdrop-blur-sm"
         >
-          <img src="/stone.svg" alt="Stone" className="w-6 h-6" />
-          <span className="text-white font-bold text-lg">{reward} Stone</span>
+          <img src="/stone.svg" alt="Stone" className="w-12 h-12" />
+          <div className="flex flex-col items-start">
+            <span className="text-cyan-400 text-xs font-medium">
+              Hourly Income
+            </span>
+            <span className="text-white font-bold text-xl">
+              +{hourlyReward} Stone
+            </span>
+          </div>
         </motion.div>
-        {/* Mine Button - only show if showButton is true */}
-        {showButton && (
-          <motion.button
-            onClick={handleMine}
-            disabled={isDisabled}
-            whileHover={!isDisabled ? { scale: 1.05 } : {}}
-            whileTap={!isDisabled ? { scale: 0.95 } : {}}
-            className={`relative group ${
-              isDisabled ? "cursor-not-allowed" : ""
-            }`}
-          >
-            {/* Glow effect */}
-            <div
-              className={`absolute inset-0 rounded-2xl blur-xl transition-opacity ${
-                isDisabled
-                  ? "bg-gray-600/20 opacity-50"
-                  : "bg-cyan-500/50 group-hover:bg-cyan-400/70"
-              }`}
-            />
 
-            {/* Button container */}
-            <div
-              className={`relative px-8 py-4 rounded-2xl border-4 transition-all duration-300 ${
-                isDisabled
-                  ? "border-gray-700 bg-gray-800"
-                  : "border-cyan-400 bg-gradient-to-b from-gray-900 to-gray-800 group-hover:border-cyan-300 group-hover:shadow-lg group-hover:shadow-cyan-500/50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <img src="/stone.svg" alt="Stone" className="w-12 h-12" />
-                <div className="flex flex-col items-start flex-1">
-                  <span
-                    className={`text-xl font-bold tracking-wide ${
-                      isDisabled ? "text-gray-500" : "text-cyan-400"
-                    }`}
-                  >
-                    {isOnCooldown ? "ON COOLDOWN" : "MINE DAILY STONE"}
-                  </span>
-                  {isOnCooldown && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-4 h-4 text-orange-400" />
-                      <span className="text-base font-semibold text-orange-400">
-                        {remainingHours > 0 && `${remainingHours}h `}
-                        {remainingMinutes}m
-                      </span>
-                    </div>
+        {/* Mining Progress Display */}
+        {showProgress && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="w-full max-w-md space-y-4"
+          >
+            {/* Header with icon */}
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{
+                    rotate: canClaim ? 0 : [0, -10, 10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Pickaxe className="w-5 h-5 text-cyan-400" />
+                </motion.div>
+                <span className="text-gray-300 font-semibold">
+                  Mining Progress
+                </span>
+              </div>
+              <span className="text-gray-400 text-sm">
+                {canClaim ? "Ready!" : `${remainingMinutes} min left`}
+              </span>
+            </div>
+
+            {/* Modern Progress Bar */}
+            <div className="relative">
+              {/* Background glow */}
+              <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full" />
+
+              {/* Progress bar container */}
+              <div className="relative h-6 bg-gray-900/80 rounded-full overflow-hidden backdrop-blur-sm">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-cyan-500 relative"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercentage}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  style={{
+                    boxShadow: "0 0 20px rgba(34, 211, 238, 0.5)",
+                  }}
+                >
+                  {/* Glow at the end of progress */}
+                  {progressPercentage > 0 && (
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/80 shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
                   )}
+                </motion.div>
+
+                {/* Progress percentage inside bar */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    {progressPercentage.toFixed(0)}%
+                  </span>
                 </div>
-                {!isDisabled && <Pickaxe className="w-6 h-6 text-cyan-400" />}
-                {isDisabled && <Clock className="w-6 h-6 text-gray-500" />}
               </div>
             </div>
 
-            {/* Animated particles on hover */}
-            {!isDisabled && (
-              <>
+            {/* Status indicator */}
+            <div className="flex items-center justify-center">
+              {canClaim ? (
                 <motion.div
-                  className="absolute top-0 left-1/4 w-1 h-1 bg-cyan-400 rounded-full"
-                  animate={{
-                    y: [-20, -40],
-                    opacity: [0, 1, 0],
-                  }}
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: [0.9, 1.05, 0.9] }}
                   transition={{
                     duration: 1.5,
                     repeat: Infinity,
-                    delay: 0,
+                    ease: "easeInOut",
                   }}
-                />
-                <motion.div
-                  className="absolute top-0 right-1/4 w-1 h-1 bg-cyan-400 rounded-full"
-                  animate={{
-                    y: [-20, -40],
-                    opacity: [0, 1, 0],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    delay: 0.5,
-                  }}
-                />
-              </>
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-6 py-2.5 rounded-full backdrop-blur-sm"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <Pickaxe className="w-4 h-4 text-green-400" />
+                  </motion.div>
+                  <span className="text-green-400 font-bold text-sm">
+                    Collecting reward...
+                  </span>
+                </motion.div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    className="w-2 h-2 bg-cyan-400 rounded-full"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [1, 0.5, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <span className="text-gray-400 text-sm font-medium">
+                    Mining in progress...
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Particle effects when near completion */}
+            {progressPercentage >= 75 && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+                    style={{
+                      left: `${20 + i * 12}%`,
+                      top: "50%",
+                    }}
+                    animate={{
+                      y: [-20, -50],
+                      opacity: [0, 1, 0],
+                      scale: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: i * 0.3,
+                      ease: "easeOut",
+                    }}
+                  />
+                ))}
+              </div>
             )}
-          </motion.button>
+          </motion.div>
         )}
       </div>
     );

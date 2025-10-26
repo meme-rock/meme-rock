@@ -4,6 +4,7 @@ import minerReducer from "./slices/minerSlice";
 import hiltiReducer from "./slices/hiltiSlice";
 import { userApi } from "./services/user/user-api";
 import boosterReducer from "./slices/boosterSlice";
+import achievementsReducer from "./slices/achievementsSlice";
 import { boosterApi } from "./services/booster/booster-api";
 import { marketApi } from "./services/market/market-api";
 
@@ -13,6 +14,7 @@ export const store = configureStore({
     miner: minerReducer,
     hilti: hiltiReducer,
     booster: boosterReducer,
+    achievements: achievementsReducer,
     [userApi.reducerPath]: userApi.reducer,
     [boosterApi.reducerPath]: boosterApi.reducer,
     [marketApi.reducerPath]: marketApi.reducer,

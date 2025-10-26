@@ -13,11 +13,10 @@ export const MinerDisplay = memo(
   ({ selectedMiner, currentUserMinerLevel, minerImage }: MinerDisplayProps) => {
     const level = parseInt(selectedMiner._id.split("_")[1]);
     const isLocked = level > currentUserMinerLevel;
-    const isCurrentLevel = level === currentUserMinerLevel;
     const imageSrc = minerImage || `/assets/miners/miner-level-${level}.svg`;
 
     return (
-      <div className="relative flex flex-col items-center mb-3">
+      <div className="relative flex flex-col items-center mb-4">
         {/* Miner container */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -41,17 +40,6 @@ export const MinerDisplay = memo(
               </motion.div>
             )}
 
-            {/* Current Level Badge */}
-            {isCurrentLevel && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold z-20 shadow-lg"
-              >
-                CURRENT
-              </motion.div>
-            )}
             {/* Miner image - tight fit for transparent background */}
             <img
               src={imageSrc}

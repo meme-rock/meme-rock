@@ -66,7 +66,7 @@ export const StonePage = () => {
       {/* Content container */}
       <div className="relative container mx-auto px-4 py-1">
         {/* Main content */}
-        <div className="flex flex-col items-center justify-start pt-2">
+        <div className="flex flex-col items-center justify-start">
           {/* Level thumbnails */}
           <MinerLevelThumbnails
             currentLevel={currentUserMinerLevel}
@@ -76,18 +76,18 @@ export const StonePage = () => {
           />
 
           {/* Miner display */}
-          <div className="mt-2">
+          <div className="">
             <MinerDisplay
               selectedMiner={selectedMiner}
               currentUserMinerLevel={currentUserMinerLevel}
             />
           </div>
 
-          {/* Mine button - show reward for all levels, but button only for current level */}
-          <div className="mt-4">
+          {/* Mining progress - show reward for all levels, but progress only for current level */}
+          <div className="mt-4 w-full">
             <MineButton
-              reward={selectedMiner.stones_income}
-              showButton={selectedMinerLevel === currentUserMinerLevel}
+              hourlyReward={selectedMiner.profit_per_hour}
+              showProgress={selectedMinerLevel === currentUserMinerLevel}
             />
           </div>
 

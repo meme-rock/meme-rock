@@ -13,14 +13,26 @@ import { EMinerLevel } from 'src/common/enums/miners.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
+import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
+import { ACHIVEMENTS } from 'src/common/config';
+import { UserAchivementService } from './user-achivement.service';
 
 @Injectable()
 export class UserService {
+  private readonly MINING_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 Saat
+  // Test için 15 saniye:
+  // private readonly MINING_COOLDOWN_MS = 15 * 1000;
+
+  // Offline toplanabilecek maksimum periyot sayıları
+  private readonly MAX_CLAIMS_STANDARD = 2; // 2 periyot (örn. 2 saat)
+  private readonly MAX_CLAIMS_AUTO_MINING = 6; // 6 periyot (örn. 6 saat)
+  private readonly MAX_CLAIMS_PREMIUM = 24; // 24 periyot (örn. 24 saat)
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
+    private userAchivementService: UserAchivementService,
   ) {}
 
   /**
@@ -54,6 +66,134 @@ export class UserService {
   }
 
   //! Loading Service
+  async mineStoneOnLoading(_id: string) {
+    try {
+      // 1. Kullanıcıyı ve miner bilgilerini getir (sadece gerekli alanlar)
+      const user = await this.userModel
+        .findById(_id)
+        .populate<{
+          miner_data: { last_mine: Date; miner: MinerDocument };
+        }>('miner_data.miner')
+        .select(
+          'miner_data.last_mine miner_data.miner is_premium is_auto_mining balance_data.stone',
+        )
+        .exec();
+
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      const miner = user.miner_data.miner;
+
+      // Veri tutarsızlığı kontrolü
+      if (!miner || typeof miner.profit_per_hour === 'undefined') {
+        console.error(`Inconsistent data: User ${_id} has missing miner data.`);
+        throw new InternalServerErrorException('MINER_DATA_NOT_FOUND');
+      }
+
+      // 2. Zaman hesaplamaları
+      const now = Date.now();
+      const lastMineTime = new Date(user.miner_data.last_mine).getTime();
+      const elapsedMilliseconds = now - lastMineTime;
+
+      // Eğer 1 periyot (1 saat) bile dolmadıysa, hiçbir şey yapma
+      if (elapsedMilliseconds < this.MINING_COOLDOWN_MS) {
+        return {
+          success: true,
+          claimed_stones: 0,
+          periods_claimed: 0,
+          message: 'NOT_ENOUGH_TIME_PASSED',
+        };
+      }
+
+      // 3. Kaç periyot geçtiğini hesapla
+      const elapsedPeriods = Math.floor(
+        elapsedMilliseconds / this.MINING_COOLDOWN_MS,
+      );
+
+      // 4. Maksimum toplanabilecek periyot sayısını belirle
+      // Öncelik sırası: is_premium > is_auto_mining > standard
+      let maxClaimablePeriods: number;
+
+      if (user.is_premium) {
+        // Premium kullanıcı: is_auto_mining durumu önemli değil, her zaman 24
+        maxClaimablePeriods = this.MAX_CLAIMS_PREMIUM;
+      } else if (user.is_auto_mining) {
+        // Auto-mining aktif ama premium değil: 6 periyot
+        maxClaimablePeriods = this.MAX_CLAIMS_AUTO_MINING;
+      } else {
+        // Normal kullanıcı: 2 periyot
+        maxClaimablePeriods = this.MAX_CLAIMS_STANDARD;
+      }
+
+      // 5. Toplanacak periyot sayısını hesapla (minimum: geçen periyot vs max limit)
+      const periodsToClaimCalculated = Math.min(
+        elapsedPeriods,
+        maxClaimablePeriods,
+      );
+
+      // 6. Hiç toplanacak şey yoksa erken dön
+      if (periodsToClaimCalculated === 0) {
+        return {
+          success: true,
+          claimed_stones: 0,
+          periods_claimed: 0,
+          message: 'NO_PERIODS_TO_CLAIM',
+        };
+      }
+
+      // 7. Toplam ödül hesapla
+      const totalStoneReward = periodsToClaimCalculated * miner.profit_per_hour;
+
+      // 8. last_mine zamanını güncelle
+      // Sadece toplanan periyotlar kadar geriye git (kalan periyotları korumak için)
+      const newLastMineTime = new Date(
+        lastMineTime + periodsToClaimCalculated * this.MINING_COOLDOWN_MS,
+      );
+
+      // 9. Atomik güncelleme: stone ekle ve last_mine'ı güncelle
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(
+          _id,
+          {
+            $inc: { 'balance_data.stone': totalStoneReward },
+            $set: { 'miner_data.last_mine': newLastMineTime },
+          },
+          { new: true, select: 'balance_data.stone miner_data.last_mine' },
+        )
+        .exec();
+
+      if (!updatedUser) {
+        throw new InternalServerErrorException('FAILED_TO_UPDATE_USER');
+      }
+
+      console.log(
+        `✅ Loading: User ${_id} claimed ${totalStoneReward} stones (${periodsToClaimCalculated} periods, max: ${maxClaimablePeriods})`,
+      );
+
+      return {
+        success: true,
+        claimed_stones: totalStoneReward,
+        periods_claimed: periodsToClaimCalculated,
+        new_balance: updatedUser.balance_data.stone,
+        new_last_mine: updatedUser.miner_data.last_mine,
+        message: 'STONES_CLAIMED_SUCCESSFULLY',
+      };
+    } catch (error) {
+      // Bilinen hataları olduğu gibi fırlat
+      if (
+        error instanceof NotFoundException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      // Beklenmedik hatalar
+      console.error('Error in mineStoneOnLoading service:', error);
+      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
+    }
+  }
+
   async loading(_id: string, user: CreateUserDto) {
     try {
       console.log('Loading service started for user:', _id);
@@ -109,16 +249,25 @@ export class UserService {
           .populate('hilti_data.hilti')
           .exec();
 
+        if (!populatedUser) {
+          throw new Error('Failed to create user');
+        }
+
+        // Get merged achievements with claim status
+        const mergedAchievements =
+          this.userAchivementService.returnMergedAchivements(populatedUser);
+
         console.log('New user created:', _id);
         return {
           user: populatedUser,
           hiltis,
           miners,
+          achievements: mergedAchievements,
           message: 'User created successfully',
         };
       }
 
-      // Existing user - calculate and claim pending rocks
+      // Existing user - calculate and claim pending rocks and stones
       const lastClaim = existingUser.last_online || new Date();
       const profitPerHour = existingUser.airdrop_data?.profit_per_hour || 0;
 
@@ -155,7 +304,7 @@ export class UserService {
         .populate('hilti_data.hilti')
         .exec();
 
-      // Log claim details
+      // Log claim details for rocks
       const elapsedMinutes = (
         (Date.now() - new Date(lastClaim).getTime()) /
         (1000 * 60)
@@ -165,36 +314,46 @@ export class UserService {
         `User ${_id} claimed ${pendingRocks.toFixed(2)} rocks (${elapsedMinutes} minutes elapsed)`,
       );
 
+      // Call mineStoneOnLoading to claim pending stones from miner
+      try {
+        const stoneClaimResult = await this.mineStoneOnLoading(_id);
+        console.log(
+          `User ${_id} stone claim result:`,
+          stoneClaimResult.message,
+          `(${stoneClaimResult.claimed_stones} stones)`,
+        );
+      } catch (stoneError) {
+        // Stone claim hatası kritik değil, loading işlemini engellemez
+        console.warn(
+          `Warning: Stone claim failed for user ${_id}:`,
+          stoneError.message,
+        );
+      }
+
+      // Final user data'yı tekrar getir (stone claim sonrası güncel data için)
+      const finalUser = await this.userModel
+        .findById(_id)
+        .populate('miner_data.miner')
+        .populate('hilti_data.hilti')
+        .exec();
+
+      if (!finalUser) {
+        throw new Error('User not found after update');
+      }
+
+      // Get merged achievements with claim status
+      const mergedAchievements =
+        this.userAchivementService.returnMergedAchivements(finalUser);
+
       return {
-        user: updatedUser,
+        user: finalUser,
         hiltis,
         miners,
+        achievements: mergedAchievements,
         message: 'User updated successfully',
       };
     } catch (error) {
       console.error('Error in loading service:', error);
-
-      // Handle duplicate key errors gracefully
-      if (error.code === 11000) {
-        console.log('Duplicate key error, fetching existing user');
-        const [existingUser, hiltis, miners] = await Promise.all([
-          this.userModel
-            .findById(_id)
-            .populate('miner_data.miner')
-            .populate('hilti_data.hilti')
-            .exec(),
-          this.hiltiModel.find().lean().exec(),
-          this.minerModel.find().lean().exec(),
-        ]);
-
-        return {
-          user: existingUser,
-          hiltis,
-          miners,
-          message: 'User already exists',
-        };
-      }
-
       throw error;
     }
   }
@@ -362,6 +521,45 @@ export class UserService {
     }
   }
 
+  //! Daily Reward
+  async claimDailyReward(user_id: string) {
+    try {
+      // Reset date is 7 AM UTC
+      const resetDate = new Date(
+        new Date().toUTCString().split(' ')[0] + 'T07:00:00Z',
+      );
+
+      // Get user
+      const user = await this.userModel
+        .findById(user_id)
+        .select('daily_reward_data')
+        .lean()
+        .exec();
+
+      // If user not found, throw error
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      // If last claim date is before 48 hours ago, reset the daily reward data
+      if (
+        user.daily_reward_data.last_claim_date <
+        new Date(Date.now() - 48 * 60 * 60 * 1000)
+      ) {
+        user.daily_reward_data.day = 0;
+        user.daily_reward_data.last_claim_date = new Date();
+      } else {
+        user.daily_reward_data.day++;
+      }
+
+      // Save user
+      await user.save();
+    } catch (error) {
+      console.error('Error in claimDailyReward service:', error);
+      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
+    }
+  }
+
   //! Mine Daily Stone Reward
   async mineDailyStoneReward(user_id: string) {
     const now = new Date();
@@ -426,7 +624,7 @@ export class UserService {
                 //
                 $add: [
                   { $ifNull: ['$balance_data.stone', 0] },
-                  { $ifNull: ['$miner_doc.stones_income', 0] }, //
+                  { $ifNull: ['$miner_doc.profit_per_hour', 0] }, //
                 ],
               },
               'miner_data.last_mine': now, //
@@ -469,41 +667,193 @@ export class UserService {
     }
   }
 
-  //! Daily Reward
-  async claimDailyReward(user_id: string) {
+  //! Claim Achievement
+  async claimAchievement(user_id: string, achievement_id: string) {
     try {
-      // Reset date is 7 AM UTC
-      const resetDate = new Date(
-        new Date().toUTCString().split(' ')[0] + 'T07:00:00Z',
+      // 1. Validate achievement exists in config
+      const achievementConfig = ACHIEVEMENTS_CONFIG.find(
+        (a) => a.id === achievement_id,
       );
 
-      // Get user
+      if (!achievementConfig) {
+        throw new NotFoundException('ACHIEVEMENT_NOT_FOUND');
+      }
+
+      // 2. Get user data
       const user = await this.userModel
         .findById(user_id)
-        .select('daily_reward_data')
+        .select(
+          'invite_count ad_data.ads_watched achievements balance_data.stone',
+        )
         .lean()
         .exec();
 
-      // If user not found, throw error
       if (!user) {
         throw new NotFoundException('USER_NOT_FOUND');
       }
 
-      // If last claim date is before 48 hours ago, reset the daily reward data
-      if (
-        user.daily_reward_data.last_claim_date <
-        new Date(Date.now() - 48 * 60 * 60 * 1000)
-      ) {
-        user.daily_reward_data.day = 0;
-        user.daily_reward_data.last_claim_date = new Date();
-      } else {
-        user.daily_reward_data.day++;
+      // 3. Check if already claimed
+      const alreadyClaimed = user.achievements?.some(
+        (a) => a.id === achievement_id,
+      );
+
+      if (alreadyClaimed) {
+        throw new BadRequestException('ACHIEVEMENT_ALREADY_CLAIMED');
       }
 
-      // Save user
-      await user.save();
+      // 4. Check if achievement is completed
+      const currentCount =
+        achievementConfig.type === 'invite'
+          ? user.invite_count
+          : user.ad_data?.ads_watched || 0;
+
+      const isCompleted = currentCount >= achievementConfig.requiredCount;
+
+      if (!isCompleted) {
+        throw new BadRequestException('ACHIEVEMENT_NOT_COMPLETED');
+      }
+
+      // 5. Claim achievement atomically
+      const updatedUser = await this.userModel
+        .findOneAndUpdate(
+          {
+            _id: user_id,
+            'achievements.achievement_id': { $ne: achievement_id }, // Ensure not already in array
+          },
+          {
+            $push: {
+              achievements: {
+                achievement_id,
+                is_claimed: true,
+                claimed_at: new Date(),
+              },
+            },
+            $inc: {
+              'balance_data.stone': achievementConfig.stoneReward,
+            },
+          },
+          {
+            new: true,
+            select: 'balance_data.stone achievements',
+          },
+        )
+        .exec();
+
+      // If updatedUser is null, it means achievement was already added (race condition)
+      if (!updatedUser) {
+        throw new BadRequestException('ACHIEVEMENT_ALREADY_CLAIMED');
+      }
+
+      console.log(
+        `✅ Achievement claimed: User ${user_id} claimed ${achievement_id} (${achievementConfig.stoneReward} stones)`,
+      );
+
+      return {
+        success: true,
+        achievement_id,
+        stone_reward: achievementConfig.stoneReward,
+        new_balance: updatedUser.balance_data.stone,
+        achievements: updatedUser.achievements,
+      };
     } catch (error) {
-      console.error('Error in claimDailyReward service:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      console.error('Error in claimAchievement service:', error);
+      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
+    }
+  }
+
+  //! Mine Stone
+  async mineStone(user_id: string) {
+    const now = new Date();
+    // 1 saatlik bekleme süresini milisaniye cinsinden tanımlayalım
+    const MINING_COOLDOWN_MS = 1 * 60 * 60 * 1000;
+    // 1 saat öncesinin tam zamanı
+    const oneHourAgo = new Date(now.getTime() - MINING_COOLDOWN_MS);
+
+    try {
+      // 1. ADIM: Kullanıcının hangi miner'a sahip olduğunu ve ödül miktarını öğren.
+      // Bu bilgiyi atomik güncelleme için kullanacağız.
+      // Sadece gerekli alanları seçerek (select) sorguyu hızlandırıyoruz.
+      const userForMiner = await this.userModel
+        .findById(user_id)
+        .select('miner_data.miner') // Sadece miner'ın ID'sine ihtiyacımız var
+        .lean()
+        .exec();
+
+      if (!userForMiner) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+
+      // 2. ADIM: Miner'ın saatlik kârını (profit) al.
+      const miner = await this.minerModel
+        .findById(userForMiner.miner_data.miner)
+        .select('profit_per_hour') // Sadece kâra ihtiyacımız var
+        .lean()
+        .exec();
+
+      // Bu bir tutarsızlık durumudur, kullanıcının sahip olduğu miner DB'de yoksa.
+      if (!miner) {
+        console.error(
+          `Inconsistent data: User ${user_id} has non-existent miner ${userForMiner.miner_data.miner}`,
+        );
+        throw new InternalServerErrorException('MINER_DATA_NOT_FOUND');
+      }
+
+      const profitAmount = miner.profit_per_hour;
+
+      // 3. ADIM: ATOMİK GÜNCELLEME
+      // findOneAndUpdate kullanarak hem şartı kontrol et (1 saat geçti mi?)
+      // hem de güncellemeyi (ödülü ekle, zamanı sıfırla) tek bir işlemde yap.
+      const updatedUser = await this.userModel
+        .findOneAndUpdate(
+          {
+            _id: user_id,
+            'miner_data.last_mine': { $lte: oneHourAgo }, // ŞART: Son toplama 1 saat önceden ESKİ veya EŞİTSE
+          },
+          {
+            $set: { 'miner_data.last_mine': now }, // Güncelle: Son toplama zamanını 'şimdi' yap
+            $inc: { 'balance_data.stone': profitAmount }, // Güncelle: Bakiyeye kârı ekle
+          },
+          {
+            new: true, // Metodun, belgenin güncellenmiş halini döndürmesini sağla
+            select: 'balance_data.stone miner_data.last_mine', // Sadece bu yeni değerleri döndür
+          },
+        )
+        .exec();
+
+      // 4. ADIM: Sonucu Değerlendir
+      if (!updatedUser) {
+        // Eğer updatedUser 'null' dönerse, bu demektir ki kullanıcı bulundu
+        // ANCAK 'miner_data.last_mine' şartı ($lte: oneHourAgo) sağlanmadı.
+        // Yani, kullanıcı toplamak için çok erken davrandı.
+        throw new BadRequestException('MINER_REWARD_NOT_READY_YET');
+      }
+
+      // 5. ADIM: Başarılı yanıtı döndür
+      return {
+        new_stone_balance: updatedUser.balance_data.stone,
+        last_mine: updatedUser.miner_data.last_mine,
+        // Bir sonraki toplama için kalan süre her zaman 1 saattir (saniye cinsinden)
+        remaining_time_seconds: Math.ceil(MINING_COOLDOWN_MS / 1000), // 3600
+      };
+    } catch (error) {
+      // Eğer hata bizim tarafımızdan (NotFound, BadRequest) atıldıysa, onu olduğu gibi yolla
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      // Diğer beklenmedik hataları logla ve genel bir hata dön
+      console.error('Error in mineStone service:', error);
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
   }

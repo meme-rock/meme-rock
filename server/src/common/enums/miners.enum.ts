@@ -5,3 +5,8 @@ export enum EMinerLevel {
   LEVEL_4 = 'LEVEL_4',
   LEVEL_5 = 'LEVEL_5',
 }
+
+export enum EMinerRewardType {
+  STONE = 'STONE',
+  DUST = 'DUST',
+}
