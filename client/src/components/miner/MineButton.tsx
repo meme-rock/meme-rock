@@ -5,19 +5,22 @@ import { RootState } from "../../redux/store";
 import { useMineStoneMutation } from "../../redux/services/user/user-api";
 import WebApp from "@twa-dev/sdk";
 import { memo, useState, useEffect, useMemo, useRef } from "react";
+import { EMinerRewardType } from "../../types/enums";
 
 interface MiningProgressProps {
   hourlyReward: number;
   showProgress?: boolean;
+  rewardType: EMinerRewardType;
 }
 
 export const MineButton = memo(
-  ({ hourlyReward, showProgress = true }: MiningProgressProps) => {
+  ({ hourlyReward, rewardType, showProgress = true }: MiningProgressProps) => {
     const userId = useSelector((state: RootState) => state.user._id);
     const minerData = useSelector(
       (state: RootState) => state.user.miner_data,
       shallowEqual
     );
+    console.log("minerData", minerData);
 
     const [mineStone] = useMineStoneMutation();
     const [currentTime, setCurrentTime] = useState(Date.now());
@@ -104,13 +107,19 @@ export const MineButton = memo(
           transition={{ delay: 0.2 }}
           className="flex items-center gap-3 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-8 py-3 rounded-2xl backdrop-blur-sm"
         >
-          <img src="/stone.svg" alt="Stone" className="w-12 h-12" />
+          <img
+            src={
+              rewardType === EMinerRewardType.STONE ? `stone.svg` : `dust.svg`
+            }
+            alt="Stone"
+            className="w-12 h-12"
+          />
           <div className="flex flex-col items-start">
             <span className="text-cyan-400 text-xs font-medium">
-              Hourly Income
+              Profit Per Hour
             </span>
             <span className="text-white font-bold text-xl">
-              +{hourlyReward} Stone
+              + {hourlyReward}
             </span>
           </div>
         </motion.div>

@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
-import { MinerLevelThumbnails } from "../components/stone/MinerLevelThumbnails";
-import { MinerDisplay } from "../components/stone/MinerDisplay";
-import { MineButton } from "../components/stone/MineButton";
-import { UpgradeRequirements } from "../components/stone/UpgradeRequirements";
+import { MinerLevelThumbnails } from "../components/miner/MinerLevelThumbnails";
+import { MinerDisplay } from "../components/miner/MinerDisplay";
+import { MineButton } from "../components/miner/MineButton";
+import { MinerUpgradeButton } from "../components/miner/MinerUpgradeButton";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 
-export const StonePage = () => {
+export const MinePage = () => {
   // Use shallowEqual to prevent unnecessary re-renders when Redux state updates
   const current_miner = useSelector(
     (state: RootState) => state.miner.current_miner,
@@ -36,25 +36,13 @@ export const StonePage = () => {
     [selectedMinerLevel, all_miners, current_miner]
   );
 
-  const upgrade_requirements = useMemo(
-    () => current_miner.upgrade_requirements || {},
-    [current_miner.upgrade_requirements]
-  );
-
   const handleLevelSelect = useCallback((level: number) => {
     setSelectedMinerLevel(level);
   }, []);
 
-  // TODO: Bu veriler Redux'tan gelecek - miner data ve user stones_spent
-  const stonesSpent = 45000; // Kullanıcının harcadığı toplam stone (dummy data)
-  const spent_stones_to_upgrade = current_miner.spent_stones_to_upgrade; // Level 2 için gerekli stone (miner.spent_stones_to_upgrade)
-
   const handleUpgrade = () => {
-    const canUpgrade = stonesSpent >= spent_stones_to_upgrade;
-    if (!canUpgrade) return;
-
     // TODO: Backend'e upgrade isteği gönder (level artacak)
-    console.log("Upgrading to level", selectedMinerLevel + 1);
+    console.log("Upgrading miner to level", selectedMinerLevel);
   };
 
   return (
@@ -87,26 +75,19 @@ export const StonePage = () => {
           <div className="mt-4 w-full">
             <MineButton
               hourlyReward={selectedMiner.profit_per_hour}
+              rewardType={selectedMiner.reward_type}
               showProgress={selectedMinerLevel === currentUserMinerLevel}
             />
           </div>
 
-          {/* Upgrade requirements */}
-          {selectedMinerLevel < 5 && (
-            <div className="w-full px-4">
-              <UpgradeRequirements
-                nextLevel={selectedMinerLevel + 1}
-                inviteCount={7} // Kullanıcının yaptığı davet sayısı
-                requiredInvites={upgrade_requirements.invite || 0} // Gerekli davet sayısı
-                dustSpent={999} // Harcanan dust
-                requiredDust={upgrade_requirements.spend_dust || 0} // Gerekli dust
-                stonesSpent={1000} // Harcanan stone
-                requiredStones={upgrade_requirements.spend_stone || 0} // Gerekli stone
-                canUpgrade={true}
-                onUpgrade={handleUpgrade}
-              />
-            </div>
-          )}
+          {/* Upgrade button - show for next level miners */}
+          <div className="mt-4 w-full">
+            <MinerUpgradeButton
+              selectedMiner={selectedMiner}
+              currentUserMinerLevel={currentUserMinerLevel}
+              onUpgrade={handleUpgrade}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
 import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 import { UserBoosterService } from './user-booster.service';
 import { UserAchivementService } from './user-achivement.service';
+import { UserMineService } from './user-mine.service';
 
 import { BotModule } from 'src/bot/bot.module';
 
@@ -23,7 +24,12 @@ import { BotModule } from 'src/bot/bot.module';
     BotModule, // BotService'i kullanabilmek için
   ],
   controllers: [UserController, UserBoosterController],
-  providers: [UserService, UserBoosterService, UserAchivementService],
+  providers: [
+    UserService,
+    UserBoosterService,
+    UserAchivementService,
+    UserMineService,
+  ],
 })
 export class UserModule {}
 

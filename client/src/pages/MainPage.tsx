@@ -162,7 +162,7 @@ export const MainPage = () => {
                         Achievements
                       </div>
                       <div className="text-base font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
-                        Unlock
+                        Claim
                       </div>
                     </div>
                   </div>

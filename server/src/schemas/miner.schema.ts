@@ -4,11 +4,6 @@ import { EMinerLevel, EMinerRewardType } from 'src/common/enums/miners.enum';
 
 export type MinerDocument = HydratedDocument<Miner>;
 
-// Gereksinimlerin yapısını belirleyen özel bir Interface tanımlayalım (isteğe bağlı)
-interface MinerUpgradeRequirements {
-  required_achivement: string;
-}
-
 @Schema({ timestamps: true, _id: false })
 export class Miner {
   @Prop({ type: String, required: true })
@@ -21,10 +16,7 @@ export class Miner {
   profit_per_hour: number;
 
   @Prop({ type: Number })
-  spent_stones_to_upgrade: number;
-
-  @Prop({ type: Object, default: {} }) // MongoDB'de esnek bir Object (veya Map) olarak saklanır
-  upgrade_requirements: MinerUpgradeRequirements;
+  stone_price_to_upgrade: number;
 }
 
 export const MinerSchema = SchemaFactory.createForClass(Miner);

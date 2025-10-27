@@ -7,7 +7,7 @@ export const Navbar = () => {
 
   const navItems = [
     { id: "main", label: "Main", icon: Home, path: "/" },
-    { id: "stone", label: "Stone", icon: Pickaxe, path: "/stone" },
+    { id: "mine", label: "Mine", icon: Pickaxe, path: "/mine" },
     // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
     { id: "rock", label: "$ROCK", icon: "/jackhammer.svg", path: "/rock" },
     { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },

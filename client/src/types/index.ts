@@ -1,4 +1,9 @@
-import { EHiltiLevel, EMinerLevel, EUserTaskStatus } from "./enums";
+import {
+  EHiltiLevel,
+  EMinerLevel,
+  EMinerRewardType,
+  EUserTaskStatus,
+} from "./enums";
 
 export interface ITelegramData {
   username: string;
@@ -35,16 +40,9 @@ export interface IAdData {
 
 export interface IMinerDetail {
   _id: EMinerLevel;
+  reward_type: EMinerRewardType;
   profit_per_hour: number;
-  spent_stones_to_upgrade: number;
-  upgrade_requirements?: {
-    invite?: number;
-    spend_dust?: number;
-    spend_stone?: number;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
+  stone_price_to_upgrade: number;
 }
 
 export interface IMinerData {
