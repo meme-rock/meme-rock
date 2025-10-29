@@ -2,6 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
 import { getBoosters, updateSingleBooster } from "../../slices/boosterSlice";
 import { updateUserFromBoosterAction } from "../../slices/userSlice";
+import { IBooster } from "../../../types";
 
 export const boosterApi = createApi({
   reducerPath: "boosterApi",
@@ -25,7 +26,21 @@ export const boosterApi = createApi({
         }
       },
     }),
-    unlockBooster: builder.mutation({
+    unlockBooster: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: {
+          booster: IBooster;
+          user: {
+            stone: number;
+            dust: number;
+            profit_per_hour: number;
+          };
+        };
+      },
+      { user_id: string; booster_id: string }
+    >({
       query: ({
         user_id,
         booster_id,
@@ -37,20 +52,39 @@ export const boosterApi = createApi({
         method: "POST",
         body: { booster_id },
       }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
         try {
           const { data } = await queryFulfilled;
           console.log("✅ Booster unlocked successfully:", data);
 
-          // User data'yı güncelle (bakiye, profit vb.)
-          if (data.user) {
-            dispatch(updateUserFromBoosterAction(data.user));
-          }
+          // Update user balances and profit
+          const state = getState() as any;
+          const updatedUser = {
+            ...state.user,
+            balance_data: {
+              ...state.user.balance_data,
+              stone: data.data.user.stone,
+              dust: data.data.user.dust,
+            },
+            airdrop_data: {
+              ...state.user.airdrop_data,
+              profit_per_hour: data.data.user.profit_per_hour,
+            },
+          };
 
-          // Backend'den gelen güncellenmiş booster bilgisi ile state'i güncelle
-          if (data.booster) {
-            dispatch(updateSingleBooster(data.booster));
-            console.log("🔄 Single booster updated:", data.booster);
+          dispatch(updateUserFromBoosterAction(updatedUser));
+
+          // Update booster state
+          if (data.data.booster) {
+            dispatch(updateSingleBooster(data.data.booster));
+            console.log(
+              "🔄 Booster unlocked - stone:",
+              data.data.user.stone,
+              "dust:",
+              data.data.user.dust,
+              "profit/h:",
+              data.data.user.profit_per_hour
+            );
           }
         } catch (error) {
           console.error("❌ Error unlocking booster:", error);
@@ -58,7 +92,21 @@ export const boosterApi = createApi({
         }
       },
     }),
-    upgradeBooster: builder.mutation({
+    upgradeBooster: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: {
+          booster: IBooster;
+          user: {
+            stone: number;
+            dust: number;
+            profit_per_hour: number;
+          };
+        };
+      },
+      { user_id: string; booster_id: string }
+    >({
       query: ({
         user_id,
         booster_id,
@@ -70,20 +118,39 @@ export const boosterApi = createApi({
         method: "POST",
         body: { booster_id },
       }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
         try {
           const { data } = await queryFulfilled;
           console.log("✅ Booster upgraded successfully:", data);
 
-          // User data'yı güncelle (bakiye, profit vb.)
-          if (data.user) {
-            dispatch(updateUserFromBoosterAction(data.user));
-          }
+          // Update user balances and profit
+          const state = getState() as any;
+          const updatedUser = {
+            ...state.user,
+            balance_data: {
+              ...state.user.balance_data,
+              stone: data.data.user.stone,
+              dust: data.data.user.dust,
+            },
+            airdrop_data: {
+              ...state.user.airdrop_data,
+              profit_per_hour: data.data.user.profit_per_hour,
+            },
+          };
 
-          // Backend'den gelen güncellenmiş booster bilgisi ile state'i güncelle
-          if (data.booster) {
-            dispatch(updateSingleBooster(data.booster));
-            console.log("🔄 Single booster updated:", data.booster);
+          dispatch(updateUserFromBoosterAction(updatedUser));
+
+          // Update booster state
+          if (data.data.booster) {
+            dispatch(updateSingleBooster(data.data.booster));
+            console.log(
+              "🔄 Booster upgraded - stone:",
+              data.data.user.stone,
+              "dust:",
+              data.data.user.dust,
+              "profit/h:",
+              data.data.user.profit_per_hour
+            );
           }
         } catch (error) {
           console.error("❌ Error upgrading booster:", error);

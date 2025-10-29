@@ -58,6 +58,8 @@ export interface IUserMinerState {
 export interface IHiltiDetail {
   _id: EHiltiLevel;
   profit_per_hour: number;
+  profit_per_hour_to_upgrade?: number;
+  stone_price_to_upgrade?: number;
   upgrade_requirements?: {
     [key: string]: any;
   };
@@ -135,14 +137,12 @@ export interface IBooster {
   required_hilti_level: EHiltiLevel | string;
   max_level: number;
   unlock_requirements: {
-    stone_pay?: number;
-    [key: string]: string | number | undefined;
+    stone?: number;
+    dust?: number;
+    invite?: number;
   };
   level_data: IBoosterLevelData[];
   image_url: string;
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
   is_unlocked: boolean;
   current_level: number;
 }

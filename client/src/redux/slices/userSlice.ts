@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { IUser } from "../../types";
-import { EHiltiLevel, EMinerLevel } from "../../types/enums";
+import { EHiltiLevel, EMinerLevel, EMinerRewardType } from "../../types/enums";
 
 type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
@@ -43,7 +43,8 @@ const initialState: UserState = {
     miner: {
       _id: EMinerLevel.LEVEL_1,
       profit_per_hour: 0,
-      spent_stones_to_upgrade: 0,
+      stone_price_to_upgrade: 0,
+      reward_type: EMinerRewardType.STONE,
     },
     last_mine: new Date(),
   },
@@ -95,6 +96,18 @@ export const userSlice = createSlice({
       if (action.payload.last_mine) {
         state.miner_data.last_mine = new Date(action.payload.last_mine);
       }
+    },
+    updateUserFromMine: (
+      state,
+      action: PayloadAction<{
+        stone: number;
+        dust: number;
+        last_mine: string;
+      }>
+    ) => {
+      state.balance_data.stone = action.payload.stone;
+      state.balance_data.dust = action.payload.dust;
+      state.miner_data.last_mine = new Date(action.payload.last_mine);
     },
     updateUserforCompleteTask: (
       state,
@@ -159,6 +172,7 @@ export const {
   setUser,
   loadingUser,
   updateUserStones,
+  updateUserFromMine,
   updateUserforCompleteTask,
   updateUserBoosters,
   updateUserFromBoosterAction,

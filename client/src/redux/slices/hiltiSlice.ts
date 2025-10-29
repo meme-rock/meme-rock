@@ -25,8 +25,16 @@ export const hiltiSlice = createSlice({
       state.current_hilti = action.payload.current_hilti;
       state.all_hiltis = action.payload.all_hiltis;
     },
+    upgradeHilti: (
+      state,
+      action: PayloadAction<{
+        new_hilti: IHiltiDetail;
+      }>
+    ) => {
+      state.current_hilti = action.payload.new_hilti;
+    },
   },
 });
 
-export const { setHiltiData } = hiltiSlice.actions;
+export const { setHiltiData, upgradeHilti } = hiltiSlice.actions;
 export default hiltiSlice.reducer;

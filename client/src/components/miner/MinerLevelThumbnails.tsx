@@ -10,6 +10,7 @@ interface MinerLevel {
 interface MinerLevelThumbnailsProps {
   currentLevel: number;
   selectedLevel: number;
+  minLevel?: number;
   maxLevel?: number;
   onLevelSelect: (level: number) => void;
 }
@@ -18,14 +19,22 @@ export const MinerLevelThumbnails = memo(
   ({
     currentLevel,
     selectedLevel,
+    minLevel = 1,
     maxLevel = 5,
     onLevelSelect,
   }: MinerLevelThumbnailsProps) => {
-    const levels: MinerLevel[] = Array.from({ length: maxLevel }, (_, i) => ({
-      level: i + 1,
-      image: `/assets/miners/miner-level-${i + 1}.svg`,
-      locked: i + 1 > currentLevel,
-    }));
+    // Generate levels from minLevel to maxLevel
+    const levels: MinerLevel[] = Array.from(
+      { length: maxLevel - minLevel + 1 },
+      (_, i) => {
+        const level = minLevel + i;
+        return {
+          level,
+          image: `/assets/miners/miner-level-${level}.svg`,
+          locked: level > currentLevel,
+        };
+      }
+    );
 
     return (
       <div className="flex items-center justify-center gap-3">

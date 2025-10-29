@@ -21,6 +21,16 @@ export class LevelDataDto {
   @IsNumber()
   profit_per_hour: number;
 }
+export class UnlockRequirementsDto {
+  @IsNumber()
+  stone?: number;
+
+  @IsNumber()
+  dust?: number;
+
+  @IsNumber()
+  invite?: number;
+}
 
 export class CreateBoosterDto {
   @IsString()
@@ -33,7 +43,7 @@ export class CreateBoosterDto {
   max_level: number;
 
   @IsObject()
-  unlock_requirements: Record<string, any>;
+  unlock_requirements: UnlockRequirementsDto;
 
   // Dizi olarak tanımla ve her elemanın LevelDataDto olduğunu belirt
   @IsArray()

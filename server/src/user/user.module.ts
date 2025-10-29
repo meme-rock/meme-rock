@@ -10,6 +10,7 @@ import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 import { UserBoosterService } from './user-booster.service';
 import { UserAchivementService } from './user-achivement.service';
 import { UserMineService } from './user-mine.service';
+import { UserHiltiService } from './user-hilti.service';
 
 import { BotModule } from 'src/bot/bot.module';
 
@@ -29,6 +30,7 @@ import { BotModule } from 'src/bot/bot.module';
     UserBoosterService,
     UserAchivementService,
     UserMineService,
+    UserHiltiService,
   ],
 })
 export class UserModule {}

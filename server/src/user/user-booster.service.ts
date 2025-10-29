@@ -86,26 +86,30 @@ export class UserBoosterService {
 
   async upgradeUserBooster(user_id: string, booster_id: string) {
     try {
-      // Booster verilerini al (cache'lenebilir)
+      // Booster verilerini al
       const dbBooster = await this.boosterModel.findById(booster_id).lean();
       if (!dbBooster) {
         throw new BadRequestException('Booster not found');
       }
 
-      // Level data'yı map'e çevir - hızlı erişim
+      // Level data'yı map'e çevir - O(1) erişim
       const levelDataMap = new Map(
         dbBooster.level_data.map((ld) => [ld.level, ld]),
       );
 
-      // TÜM KONTROLLER VERİTABANI SEVİYESİNDE
-      // Önce mevcut user booster bilgisini alalım
+      // Mevcut booster bilgisini al
       const user = await this.userModel
         .findOne(
           { _id: user_id, boosters: { $elemMatch: { booster: booster_id } } },
-          { 'boosters.$': 1, 'balance_data.stone': 1 },
+          {
+            'boosters.$': 1,
+            'balance_data.stone': 1,
+            'balance_data.dust': 1,
+            invite_count: 1,
+          },
         )
         .lean();
-      console.log('user: ', user);
+
       if (!user || !user.boosters?.[0]) {
         throw new BadRequestException('Booster not unlocked yet');
       }
@@ -127,10 +131,10 @@ export class UserBoosterService {
 
       const upgradeCost = nextLevelData.upgrade_cost;
 
-      // Stone kontrolü
+      // Rock coins kontrolü
       if (user.balance_data.stone < upgradeCost) {
         throw new BadRequestException(
-          `Insufficient stones. Required: ${upgradeCost.toLocaleString()}`,
+          `Insufficient rocks. Required: ${upgradeCost.toLocaleString()}, Available: ${user.balance_data.stone.toLocaleString()}`,
         );
       }
 
@@ -140,7 +144,7 @@ export class UserBoosterService {
       const nextProfit = nextLevelData.profit_per_hour;
       const profitIncrease = nextProfit - currentProfit;
 
-      // ATOMİK GÜNCELLEME - TÜM KONTROLLER DB SEVİYESİNDE
+      // ATOMİK GÜNCELLEME - Race condition koruması
       const updatedUser = await this.userModel.findOneAndUpdate(
         {
           _id: user_id,
@@ -150,12 +154,11 @@ export class UserBoosterService {
               current_level: currentLevel, // Race condition koruması
             },
           },
-          'balance_data.stone': { $gte: upgradeCost }, // Stone yeterlilik kontrolü
+          'balance_data.stone': { $gte: upgradeCost }, // Rock yeterlilik kontrolü
         },
         {
           $inc: {
             'balance_data.stone': -upgradeCost,
-
             'airdrop_data.profit_per_hour': profitIncrease,
           },
           $set: {
@@ -166,7 +169,7 @@ export class UserBoosterService {
       );
 
       if (!updatedUser) {
-        // Detaylı hata mesajı için tekrar kontrol
+        // Detaylı hata kontrolü
         const userAfterFail = await this.userModel
           .findOne(
             { _id: user_id, boosters: { $elemMatch: { booster: booster_id } } },
@@ -175,33 +178,31 @@ export class UserBoosterService {
           .lean();
 
         if (!userAfterFail || !userAfterFail?.boosters?.[0]) {
-          throw new BadRequestException(
-            `❌ Booster not found in your inventory.`,
-          );
+          throw new BadRequestException('Booster not found in your inventory');
         }
 
         const currentUserBooster = userAfterFail.boosters[0];
 
-        // Level değişti mi? (Eş zamanlı upgrade)
+        // Level değişti mi? (Concurrent upgrade)
         if (currentUserBooster.current_level !== currentLevel) {
           throw new BadRequestException(
-            `❌ Booster level changed. Please refresh and try again. (Current: ${currentUserBooster.current_level}, Expected: ${currentLevel})`,
+            `Booster level changed. Current: ${currentUserBooster.current_level}, Expected: ${currentLevel}. Please refresh`,
           );
         }
 
-        // Stone yetersiz mi?
+        // Rock yetersiz mi?
         if (userAfterFail.balance_data.stone < upgradeCost) {
           throw new BadRequestException(
-            `❌ Insufficient stones. You have ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${upgradeCost.toLocaleString()}.`,
+            `Insufficient rocks. Required: ${upgradeCost.toLocaleString()}, Available: ${userAfterFail.balance_data.stone.toLocaleString()}`,
           );
         }
 
         throw new BadRequestException(
-          `❌ Upgrade failed. Please try again or contact support.`,
+          'Failed to upgrade booster. Please try again',
         );
       }
 
-      // Güncellenmiş booster bilgisini hazırla (frontend için)
+      // Frontend için güncellenmiş booster bilgisi
       const updatedBoosterInfo = this.prepareBoosterInfo(
         dbBooster,
         nextLevel,
@@ -209,90 +210,116 @@ export class UserBoosterService {
       );
 
       return {
+        success: true,
         message: 'Booster upgraded successfully',
-        user: updatedUser,
-        booster: updatedBoosterInfo, // Frontend'e güncellenmiş booster bilgisi
+        data: {
+          booster: updatedBoosterInfo,
+          user: {
+            stone: updatedUser.balance_data.stone,
+            dust: updatedUser.balance_data.dust,
+            profit_per_hour: updatedUser.airdrop_data.profit_per_hour,
+          },
+        },
       };
     } catch (error) {
-      console.error('Error in upgradeUserBooster service:', error);
+      console.error('Error in upgradeUserBooster:', error);
       throw error;
     }
   }
 
   async unlockUserBooster(user_id: string, booster_id: string) {
     try {
-      // Booster verilerini al (cache'lenebilir)
+      // Booster verilerini al
       const booster = await this.boosterModel.findById(booster_id).lean();
       if (!booster) {
         throw new BadRequestException('Booster not found');
       }
 
+      // Requirements
       const requirements = booster.unlock_requirements || {};
-      const requiredStone = requirements.stone_pay || 0;
-      const requiredDust = requirements.dust_pay || 0;
-      const requiredMinProfit = requirements.min_profit_per_hour || 0;
-      const requiredMinInvites = requirements.min_invite_count || 0;
-      const requiredMinSpentStone = requirements.min_spent_stone || 0;
-      const requiredMinSpentDust = requirements.min_spent_dust || 0;
+      const requiredStone = requirements.stone || 0;
+      const requiredDust = requirements.dust || 0;
+      const requiredInvites = requirements.invite || 0;
       const requiredHiltiLevel = parseInt(
         booster.required_hilti_level.split('_')[1],
       );
+
+      // Level 1 profit (unlock sonrası kazanç)
       const levelOneProfit = booster.level_data?.[0]?.profit_per_hour || 0;
 
-      // TÜM KONTROLLER VERİTABANI SEVİYESİNDE - TEK ATOMİK İŞLEM
-      const updatedUser = await this.userModel.findOneAndUpdate(
-        {
-          _id: user_id,
-          // Booster zaten unlock edilmiş mi kontrolü
-          'boosters.booster': { $nin: [booster_id] },
-          // Hilti level kontrolü
-          $expr: {
-            $gte: [
-              {
-                $toInt: {
-                  $arrayElemAt: [{ $split: ['$hilti_data.hilti', '_'] }, 1],
-                },
+      // Build query conditions
+      const queryConditions: any = {
+        _id: user_id,
+        // Booster zaten unlock edilmiş mi kontrolü
+        'boosters.booster': { $nin: [booster_id] },
+        // Hilti level kontrolü
+        $expr: {
+          $gte: [
+            {
+              $toInt: {
+                $arrayElemAt: [{ $split: ['$hilti_data.hilti', '_'] }, 1],
               },
-              requiredHiltiLevel,
-            ],
-          },
-          // Bakiye kontrolleri
-          'balance_data.stone': { $gte: requiredStone },
-          'balance_data.dust': { $gte: requiredDust },
-          // Kazanım/Harcama kontrolleri
-          'airdrop_data.profit_per_hour': { $gte: requiredMinProfit },
-          invite_count: { $gte: requiredMinInvites },
-        },
-        {
-          $inc: {
-            'balance_data.stone': -requiredStone,
-            'airdrop_data.profit_per_hour': levelOneProfit,
-          },
-          $push: {
-            boosters: {
-              booster: booster_id,
-              current_level: 1,
             },
+            requiredHiltiLevel,
+          ],
+        },
+        // Invite kontrolü
+        invite_count: { $gte: requiredInvites },
+      };
+
+      // Stone requirement varsa ekle
+      if (requiredStone > 0) {
+        queryConditions['balance_data.stone'] = { $gte: requiredStone };
+      }
+
+      // Dust requirement varsa ekle
+      if (requiredDust > 0) {
+        queryConditions['balance_data.dust'] = { $gte: requiredDust };
+      }
+
+      // Build update operations
+      const updateOperations: any = {
+        $push: {
+          boosters: {
+            booster: booster_id,
+            current_level: 1,
           },
         },
+        $inc: {
+          'airdrop_data.profit_per_hour': levelOneProfit,
+        },
+      };
+
+      // Stone harcama
+      if (requiredStone > 0) {
+        updateOperations.$inc['balance_data.stone'] = -requiredStone;
+      }
+
+      // Dust harcama
+      if (requiredDust > 0) {
+        updateOperations.$inc['balance_data.dust'] = -requiredDust;
+      }
+
+      // ATOMİK İŞLEM - TÜM KONTROLLER VE GÜNCELLEMELER TEK SORGUDA
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        queryConditions,
+        updateOperations,
         { new: true },
       );
 
+      // Başarısız olursa detaylı hata kontrolü
       if (!updatedUser) {
-        // Hangi gereksinim karşılanmadığını bulmak için detaylı kontrol
         const userAfterFail = await this.userModel.findById(user_id).lean();
         if (!userAfterFail) {
           throw new BadRequestException('User not found');
         }
 
-        // Detaylı hata mesajları - öncelik sırasına göre
+        // Öncelik sırasına göre hata mesajları
         const isAlreadyUnlocked = userAfterFail.boosters.some(
           (b) => b.booster.toString() === booster_id,
         );
         if (isAlreadyUnlocked) {
-          throw new BadRequestException(
-            `Booster already unlocked. You already own this booster.`,
-          );
+          throw new BadRequestException('Booster already unlocked');
         }
 
         const userHiltiLevel = parseInt(
@@ -300,61 +327,56 @@ export class UserBoosterService {
         );
         if (userHiltiLevel < requiredHiltiLevel) {
           throw new BadRequestException(
-            `Hilti level too low. You have Level ${userHiltiLevel}, but need Level ${requiredHiltiLevel}.`,
+            `Hilti level too low. Required: Level ${requiredHiltiLevel}, Current: Level ${userHiltiLevel}`,
           );
         }
 
-        if (userAfterFail.balance_data.stone < requiredStone) {
+        if (
+          requiredStone > 0 &&
+          userAfterFail.balance_data.stone < requiredStone
+        ) {
           throw new BadRequestException(
-            `Insufficient stones. You have ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${requiredStone.toLocaleString()}.`,
+            `Insufficient stones. Required: ${requiredStone.toLocaleString()}, Available: ${userAfterFail.balance_data.stone.toLocaleString()}`,
           );
         }
 
-        if (userAfterFail.balance_data.dust < requiredDust) {
+        if (
+          requiredDust > 0 &&
+          userAfterFail.balance_data.dust < requiredDust
+        ) {
           throw new BadRequestException(
-            `Insufficient dust. You have ${userAfterFail.balance_data.dust.toLocaleString()}, but need ${requiredDust.toLocaleString()}.`,
+            `Insufficient dust. Required: ${requiredDust.toLocaleString()}, Available: ${userAfterFail.balance_data.dust.toLocaleString()}`,
           );
         }
 
-        if (userAfterFail.airdrop_data.profit_per_hour < requiredMinProfit) {
+        if (userAfterFail.invite_count < requiredInvites) {
           throw new BadRequestException(
-            `Profit/hour too low. You earn ${userAfterFail.airdrop_data.profit_per_hour.toLocaleString()}/hour, but need ${requiredMinProfit.toLocaleString()}/hour.`,
-          );
-        }
-
-        if (userAfterFail.invite_count < requiredMinInvites) {
-          throw new BadRequestException(
-            `Not enough invites. You have ${userAfterFail.invite_count} invites, but need ${requiredMinInvites}.`,
-          );
-        }
-
-        if (userAfterFail.balance_data.stone < requiredMinSpentStone) {
-          throw new BadRequestException(
-            `Haven't spent enough stones. You've spent ${userAfterFail.balance_data.stone.toLocaleString()}, but need ${requiredMinSpentStone.toLocaleString()}.`,
-          );
-        }
-
-        if (userAfterFail.balance_data.dust < requiredMinSpentDust) {
-          throw new BadRequestException(
-            `Haven't spent enough dust. You've spent ${userAfterFail.balance_data.dust.toLocaleString()}, but need ${requiredMinSpentDust.toLocaleString()}.`,
+            `Not enough invites. Required: ${requiredInvites}, Current: ${userAfterFail.invite_count}`,
           );
         }
 
         throw new BadRequestException(
-          `Transaction failed. Requirements not met or concurrent modification. Please try again.`,
+          'Failed to unlock booster. Please try again',
         );
       }
 
-      // Güncellenmiş booster bilgisini hazırla (frontend için)
+      // Frontend için booster bilgisini hazırla
       const unlockedBoosterInfo = this.prepareBoosterInfo(booster, 1, true);
 
       return {
-        message: 'Booster unlocked and activated successfully',
-        user: updatedUser,
-        booster: unlockedBoosterInfo, // Frontend'e güncellenmiş booster bilgisi
+        success: true,
+        message: 'Booster unlocked successfully',
+        data: {
+          booster: unlockedBoosterInfo,
+          user: {
+            stone: updatedUser.balance_data.stone,
+            dust: updatedUser.balance_data.dust,
+            profit_per_hour: updatedUser.airdrop_data.profit_per_hour,
+          },
+        },
       };
     } catch (error) {
-      console.error('Error in unlockUserBooster service:', error);
+      console.error('Error in unlockUserBooster:', error);
       throw error;
     }
   }

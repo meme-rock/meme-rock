@@ -9,6 +9,7 @@ interface HiltiLevel {
 interface HiltiLevelThumbnailsProps {
   currentLevel: number;
   selectedLevel: number;
+  minLevel?: number;
   maxLevel?: number;
   onLevelSelect: (level: number) => void;
 }
@@ -16,14 +17,22 @@ interface HiltiLevelThumbnailsProps {
 export const HiltiLevelThumbnails = ({
   currentLevel,
   selectedLevel,
+  minLevel = 1,
   maxLevel = 5,
   onLevelSelect,
 }: HiltiLevelThumbnailsProps) => {
-  const levels: HiltiLevel[] = Array.from({ length: maxLevel }, (_, i) => ({
-    level: i + 1,
-    image: `/assets/hiltis/hilti-level-${i + 1}.svg`,
-    locked: i + 1 > currentLevel,
-  }));
+  // Generate levels from minLevel to maxLevel
+  const levels: HiltiLevel[] = Array.from(
+    { length: maxLevel - minLevel + 1 },
+    (_, i) => {
+      const level = minLevel + i;
+      return {
+        level,
+        image: `/assets/hiltis/hilti-level-${level}.svg`,
+        locked: level > currentLevel,
+      };
+    }
+  );
 
   return (
     <div className="flex items-center justify-center gap-3">

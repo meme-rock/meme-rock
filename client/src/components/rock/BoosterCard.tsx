@@ -1,5 +1,13 @@
 import { motion } from "framer-motion";
-import { Lock, Unlock, TrendingUp, Zap } from "lucide-react";
+import {
+  Lock,
+  Unlock,
+  TrendingUp,
+  Zap,
+  UserPlus,
+  Check,
+  X,
+} from "lucide-react";
 import { IBooster } from "../../types";
 import {
   useUnlockBoosterMutation,
@@ -24,14 +32,38 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   const currentLevel = booster.current_level || 0;
   const isUnlocked = booster.is_unlocked || false;
 
+  // Check unlock requirements
+  const requirements = booster.unlock_requirements;
+  const hasStoneReq = (requirements.stone ?? 0) > 0;
+  const hasDustReq = (requirements.dust ?? 0) > 0;
+  const hasInviteReq = (requirements.invite ?? 0) > 0;
+
+  // Check if user meets requirements
+  const meetsStoneReq =
+    !hasStoneReq || user.balance_data.stone >= (requirements.stone ?? 0);
+  const meetsDustReq =
+    !hasDustReq || user.balance_data.dust >= (requirements.dust ?? 0);
+  const meetsInviteReq =
+    !hasInviteReq || user.invite_count >= (requirements.invite ?? 0);
+
+  // All requirements met
+  const allRequirementsMet = meetsStoneReq && meetsDustReq && meetsInviteReq;
+
   const handleUnlock = async () => {
+    if (!allRequirementsMet) {
+      WebApp.showAlert(
+        "You don't meet all the requirements to unlock this booster."
+      );
+      return;
+    }
+
     try {
       console.log("Unlocking booster:", booster._id);
-      await unlockBooster({
+      const result = await unlockBooster({
         user_id: user._id,
         booster_id: booster._id,
       }).unwrap();
-      console.log("✅ Booster unlocked successfully!");
+      console.log("✅ Booster unlocked successfully!", result);
     } catch (error: any) {
       console.error("❌ Failed to unlock booster:", error);
       WebApp.showAlert(
@@ -43,11 +75,11 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   const handleUpgrade = async () => {
     try {
       console.log("Upgrading booster:", booster._id);
-      await upgradeBooster({
+      const result = await upgradeBooster({
         user_id: user._id,
         booster_id: booster._id,
       }).unwrap();
-      console.log("✅ Booster upgraded successfully!");
+      console.log("✅ Booster upgraded successfully!", result);
     } catch (error: any) {
       console.error("❌ Failed to upgrade booster:", error);
       WebApp.showAlert(
@@ -85,7 +117,6 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   }
 
   // Costs and profits
-  const unlockCost = booster.unlock_requirements.stone_pay || 0;
   const upgradeCost = nextLevelData?.upgrade_cost || 0;
 
   // Current and next profit
@@ -192,13 +223,19 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         ) : !isUnlocked ? (
           <button
             onClick={handleUnlock}
-            disabled={isUnlocking}
-            className={`flex-1 px-4 py-3 bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:via-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 relative overflow-hidden group ${
-              isUnlocking ? "opacity-50 cursor-not-allowed" : ""
+            disabled={isUnlocking || !allRequirementsMet}
+            className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 relative overflow-hidden group ${
+              isUnlocking
+                ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600"
+                : allRequirementsMet
+                ? "bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:via-cyan-400 hover:to-blue-500 active:scale-95 shadow-lg shadow-cyan-500/30"
+                : "bg-gradient-to-r from-gray-700 to-gray-800 cursor-not-allowed opacity-60"
             }`}
           >
-            {/* Shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+            {/* Shine effect - only when unlockable */}
+            {allRequirementsMet && !isUnlocking && (
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+            )}
             {isUnlocking ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10" />
@@ -206,15 +243,12 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
               </>
             ) : (
               <>
-                <Unlock className="w-4 h-4 relative z-10" />
-                <span className="relative z-10">
-                  {unlockCost.toLocaleString()}
-                </span>
-                <img
-                  src="/stone.svg"
-                  alt="Stone"
-                  className="w-7 h-7 relative z-10"
-                />
+                {allRequirementsMet ? (
+                  <Unlock className="w-5 h-5 relative z-10" />
+                ) : (
+                  <Lock className="w-5 h-5 relative z-10" />
+                )}
+                <span className="relative z-10">Unlock</span>
               </>
             )}
           </button>
@@ -245,13 +279,13 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
             ) : (
               <>
                 <TrendingUp className="w-4 h-4 relative z-10" />
-                <span className="relative z-10 text-sm">
-                  Upgrade for {upgradeCost.toLocaleString()}
+                <span className="relative z-10 text-lg font-bold">
+                  {upgradeCost.toLocaleString()}
                 </span>
                 <img
-                  src="/rock.svg"
+                  src="/stone.svg"
                   alt="Rock"
-                  className="w-5 h-5 relative z-10"
+                  className="w-7 h-7 relative z-10"
                 />
               </>
             )}
@@ -281,23 +315,112 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         </div>
       )}
 
-      {/* Additional info */}
-      {isLevelLocked ? (
-        <div></div>
-      ) : (
-        !isUnlocked && (
-          <div className="mt-4 pt-4 border-t border-gray-800/50 relative z-10">
-            <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-              <TrendingUp className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-              <p className="text-xs text-gray-400 font-medium">
-                Unlock to earn{" "}
-                <span className="text-cyan-400 font-bold">
-                  +{displayProfit} ROCK/hour
+      {/* Unlock Requirements - Show below unlock button */}
+      {!isLevelLocked && !isUnlocked && (
+        <div className="mt-4 pt-4 border-t border-gray-800/50 relative z-10">
+          <p className="text-xs text-gray-400 font-semibold mb-3">
+            Unlock Requirements:
+          </p>
+          <div className="space-y-2">
+            {hasStoneReq && (
+              <div
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
+                  meetsStoneReq
+                    ? "bg-green-500/10 border-green-500/30"
+                    : "bg-red-500/10 border-red-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {meetsStoneReq ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <img src="/stone.svg" alt="Stone" className="w-5 h-5" />
+                  <span
+                    className={`text-sm font-medium ${
+                      meetsStoneReq ? "text-green-300" : "text-red-300"
+                    }`}
+                  >
+                    {requirements.stone?.toLocaleString()} Stone
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  {user.balance_data.stone.toLocaleString()} /{" "}
+                  {requirements.stone?.toLocaleString()}
                 </span>
-              </p>
-            </div>
+              </div>
+            )}
+            {hasDustReq && (
+              <div
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
+                  meetsDustReq
+                    ? "bg-green-500/10 border-green-500/30"
+                    : "bg-red-500/10 border-red-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {meetsDustReq ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <img src="/dust.svg" alt="Dust" className="w-5 h-5" />
+                  <span
+                    className={`text-sm font-medium ${
+                      meetsDustReq ? "text-green-300" : "text-red-300"
+                    }`}
+                  >
+                    {requirements.dust?.toLocaleString()} Dust
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  {user.balance_data.dust.toLocaleString()} /{" "}
+                  {requirements.dust?.toLocaleString()}
+                </span>
+              </div>
+            )}
+            {hasInviteReq && (
+              <div
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
+                  meetsInviteReq
+                    ? "bg-green-500/10 border-green-500/30"
+                    : "bg-red-500/10 border-red-500/30"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {meetsInviteReq ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <UserPlus className="w-5 h-5 text-purple-400" />
+                  <span
+                    className={`text-sm font-medium ${
+                      meetsInviteReq ? "text-green-300" : "text-red-300"
+                    }`}
+                  >
+                    {requirements.invite} Friend
+                    {requirements.invite !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  {user.invite_count} / {requirements.invite}
+                </span>
+              </div>
+            )}
           </div>
-        )
+          {/* Info about profit */}
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+            <TrendingUp className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+            <p className="text-xs text-gray-400 font-medium">
+              Unlock to earn{" "}
+              <span className="text-cyan-400 font-bold">
+                +{displayProfit} ROCK/hour
+              </span>
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

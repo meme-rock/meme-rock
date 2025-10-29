@@ -1,19 +1,22 @@
 import {
   IsEnum,
   IsNumber,
-  IsObject,
-  IsDateString, // Tarih için string formatında veri bekleneceğinden bunu kullanıyoruz
-  IsOptional, // lastEnergyRefill'in client tarafından gönderilmesi opsiyonel ise (service handle edecekse)
+  IsNotEmpty, // lastEnergyRefill'in client tarafından gönderilmesi opsiyonel ise (service handle edecekse)
 } from 'class-validator';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 
 export class CreateHiltiDto {
+  @IsNotEmpty()
   @IsEnum(EHiltiLevel)
   _id: EHiltiLevel;
 
   @IsNumber()
-  rock_income: number;
+  @IsNotEmpty()
+  profit_per_hour: number;
 
-  @IsObject()
-  upgrade_requirements: Record<string, any>;
+  @IsNumber()
+  profit_per_hour_to_upgrade: number;
+
+  @IsNumber()
+  stone_price_to_upgrade: number;
 }

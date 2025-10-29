@@ -1,13 +1,16 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { MinerLevelThumbnails } from "../components/miner/MinerLevelThumbnails";
 import { MinerDisplay } from "../components/miner/MinerDisplay";
 import { MineButton } from "../components/miner/MineButton";
 import { MinerUpgradeButton } from "../components/miner/MinerUpgradeButton";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
+import { useUpgradeMinerMutation } from "../redux/services/user/user-api";
+import WebApp from "@twa-dev/sdk";
 
 export const MinePage = () => {
   // Use shallowEqual to prevent unnecessary re-renders when Redux state updates
+  const userId = useSelector((state: RootState) => state.user._id);
   const current_miner = useSelector(
     (state: RootState) => state.miner.current_miner,
     shallowEqual
@@ -16,6 +19,8 @@ export const MinePage = () => {
     (state: RootState) => state.miner.all_miners,
     shallowEqual
   );
+
+  const [upgradeMiner, { isLoading: isUpgrading }] = useUpgradeMinerMutation();
 
   // Current user's miner level - only recompute when current_miner._id changes
   const currentUserMinerLevel = useMemo(
@@ -27,6 +32,11 @@ export const MinePage = () => {
   const [selectedMinerLevel, setSelectedMinerLevel] = useState(
     currentUserMinerLevel
   );
+
+  // Update selected level when current miner level changes (after upgrade)
+  useEffect(() => {
+    setSelectedMinerLevel(currentUserMinerLevel);
+  }, [currentUserMinerLevel]);
 
   // Get selected miner from all_miners - only recompute when dependencies change
   const selectedMiner = useMemo(
@@ -40,9 +50,18 @@ export const MinePage = () => {
     setSelectedMinerLevel(level);
   }, []);
 
-  const handleUpgrade = () => {
-    // TODO: Backend'e upgrade isteği gönder (level artacak)
-    console.log("Upgrading miner to level", selectedMinerLevel);
+  const handleUpgrade = async () => {
+    if (isUpgrading) return;
+
+    try {
+      await upgradeMiner({ user_id: userId }).unwrap();
+      WebApp.showAlert("Miner upgraded successfully! 🎉");
+    } catch (error: any) {
+      console.error("Error upgrading miner:", error);
+      const errorMessage =
+        error?.data?.message || "Failed to upgrade miner. Please try again.";
+      WebApp.showAlert(errorMessage);
+    }
   };
 
   return (
@@ -55,10 +74,11 @@ export const MinePage = () => {
       <div className="relative container mx-auto px-4 py-1">
         {/* Main content */}
         <div className="flex flex-col items-center justify-start">
-          {/* Level thumbnails */}
+          {/* Level thumbnails - show only from current level to max */}
           <MinerLevelThumbnails
             currentLevel={currentUserMinerLevel}
             selectedLevel={selectedMinerLevel}
+            minLevel={currentUserMinerLevel}
             maxLevel={5}
             onLevelSelect={handleLevelSelect}
           />

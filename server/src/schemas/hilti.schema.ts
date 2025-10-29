@@ -4,12 +4,6 @@ import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 
 export type HiltiDocument = HydratedDocument<Hilti>;
 
-// Gereksinimlerin yapısını belirleyen özel bir Interface tanımlayalım (isteğe bağlı)
-interface HiltiUpgradeRequirements {
-  // Gelecekte eklenecek her türlü yeni gereksinim (örn. 'itemA_count', 'mission_completed' vb.)
-  [key: string]: any;
-}
-
 @Schema({ timestamps: true, _id: false })
 export class Hilti {
   @Prop({ type: String, required: true })
@@ -20,8 +14,10 @@ export class Hilti {
 
   // YENİ ALAN: Bir sonraki seviyeye geçmek için gerekenler.
   // Bu alanda, her Hilti seviyesi için farklı gereksinimler tanımlanabilir.
-  @Prop({ type: Object, default: {} }) // MongoDB'de esnek bir Object (veya Map) olarak saklanır
-  upgrade_requirements: HiltiUpgradeRequirements;
+  @Prop({ type: Number }) // MongoDB'de esnek bir Object (veya Map) olarak saklanır
+  profit_per_hour_to_upgrade: number;
+  @Prop({ type: Number })
+  stone_price_to_upgrade: number;
 }
 
 export const HiltiSchema = SchemaFactory.createForClass(Hilti);

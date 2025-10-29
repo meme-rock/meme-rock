@@ -9,7 +9,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import { EMinerLevel } from 'src/common/enums/miners.enum';
+import { EMinerLevel, EMinerRewardType } from 'src/common/enums/miners.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
@@ -65,8 +65,8 @@ export class UserService {
     return Math.round(pendingRocks * 100) / 100;
   }
 
-  //! Loading Service
-  async mineStoneOnLoading(_id: string) {
+  //! Mine On Loading Service
+  async mineOnLoading(_id: string) {
     try {
       // 1. Kullanıcıyı ve miner bilgilerini getir (sadece gerekli alanlar)
       const user = await this.userModel
@@ -75,7 +75,7 @@ export class UserService {
           miner_data: { last_mine: Date; miner: MinerDocument };
         }>('miner_data.miner')
         .select(
-          'miner_data.last_mine miner_data.miner is_premium is_auto_mining balance_data.stone',
+          'miner_data.last_mine miner_data.miner is_premium is_auto_mining balance_data.stone balance_data.dust',
         )
         .exec();
 
@@ -84,6 +84,7 @@ export class UserService {
       }
 
       const miner = user.miner_data.miner;
+      const reward_type = miner.reward_type;
 
       // Veri tutarsızlığı kontrolü
       if (!miner || typeof miner.profit_per_hour === 'undefined') {
@@ -100,7 +101,8 @@ export class UserService {
       if (elapsedMilliseconds < this.MINING_COOLDOWN_MS) {
         return {
           success: true,
-          claimed_stones: 0,
+          claimed_reward: 0,
+          reward_type: reward_type,
           periods_claimed: 0,
           message: 'NOT_ENOUGH_TIME_PASSED',
         };
@@ -136,14 +138,15 @@ export class UserService {
       if (periodsToClaimCalculated === 0) {
         return {
           success: true,
-          claimed_stones: 0,
+          claimed_reward: 0,
+          reward_type: reward_type,
           periods_claimed: 0,
           message: 'NO_PERIODS_TO_CLAIM',
         };
       }
 
       // 7. Toplam ödül hesapla
-      const totalStoneReward = periodsToClaimCalculated * miner.profit_per_hour;
+      const totalReward = periodsToClaimCalculated * miner.profit_per_hour;
 
       // 8. last_mine zamanını güncelle
       // Sadece toplanan periyotlar kadar geriye git (kalan periyotları korumak için)
@@ -151,15 +154,20 @@ export class UserService {
         lastMineTime + periodsToClaimCalculated * this.MINING_COOLDOWN_MS,
       );
 
-      // 9. Atomik güncelleme: stone ekle ve last_mine'ı güncelle
+      // 9. Atomik güncelleme: reward ekle (stone veya dust) ve last_mine'ı güncelle
       const updatedUser = await this.userModel
         .findByIdAndUpdate(
           _id,
           {
-            $inc: { 'balance_data.stone': totalStoneReward },
+            $inc: {
+              [`balance_data.${reward_type.toLowerCase()}`]: totalReward,
+            },
             $set: { 'miner_data.last_mine': newLastMineTime },
           },
-          { new: true, select: 'balance_data.stone miner_data.last_mine' },
+          {
+            new: true,
+            select: 'balance_data.stone balance_data.dust miner_data.last_mine',
+          },
         )
         .exec();
 
@@ -168,16 +176,18 @@ export class UserService {
       }
 
       console.log(
-        `✅ Loading: User ${_id} claimed ${totalStoneReward} stones (${periodsToClaimCalculated} periods, max: ${maxClaimablePeriods})`,
+        `✅ Loading: User ${_id} claimed ${totalReward} ${reward_type} (${periodsToClaimCalculated} periods, max: ${maxClaimablePeriods})`,
       );
 
       return {
         success: true,
-        claimed_stones: totalStoneReward,
+        claimed_reward: totalReward,
+        reward_type: reward_type,
         periods_claimed: periodsToClaimCalculated,
-        new_balance: updatedUser.balance_data.stone,
+        new_stone_balance: updatedUser.balance_data.stone,
+        new_dust_balance: updatedUser.balance_data.dust,
         new_last_mine: updatedUser.miner_data.last_mine,
-        message: 'STONES_CLAIMED_SUCCESSFULLY',
+        message: 'REWARD_CLAIMED_SUCCESSFULLY',
       };
     } catch (error) {
       // Bilinen hataları olduğu gibi fırlat
@@ -189,7 +199,7 @@ export class UserService {
       }
 
       // Beklenmedik hatalar
-      console.error('Error in mineStoneOnLoading service:', error);
+      console.error('Error in mineOnLoading service:', error);
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
   }
@@ -314,23 +324,23 @@ export class UserService {
         `User ${_id} claimed ${pendingRocks.toFixed(2)} rocks (${elapsedMinutes} minutes elapsed)`,
       );
 
-      // Call mineStoneOnLoading to claim pending stones from miner
+      // Call mineOnLoading to claim pending rewards (stone/dust) from miner
       try {
-        const stoneClaimResult = await this.mineStoneOnLoading(_id);
+        const mineClaimResult = await this.mineOnLoading(_id);
         console.log(
-          `User ${_id} stone claim result:`,
-          stoneClaimResult.message,
-          `(${stoneClaimResult.claimed_stones} stones)`,
+          `User ${_id} mine claim result:`,
+          mineClaimResult.message,
+          `(${mineClaimResult.claimed_reward} ${mineClaimResult.reward_type})`,
         );
-      } catch (stoneError) {
-        // Stone claim hatası kritik değil, loading işlemini engellemez
+      } catch (mineError) {
+        // Mine claim hatası kritik değil, loading işlemini engellemez
         console.warn(
-          `Warning: Stone claim failed for user ${_id}:`,
-          stoneError.message,
+          `Warning: Mine claim failed for user ${_id}:`,
+          mineError.message,
         );
       }
 
-      // Final user data'yı tekrar getir (stone claim sonrası güncel data için)
+      // Final user data'yı tekrar getir (mine claim sonrası güncel data için)
       const finalUser = await this.userModel
         .findById(_id)
         .populate('miner_data.miner')
@@ -667,8 +677,8 @@ export class UserService {
     }
   }
 
-  //! Mine Stone
-  async mineStone(user_id: string) {
+  //! Mine (Stone or Dust)
+  async mine(user_id: string) {
     const now = new Date();
     // 1 saatlik bekleme süresini milisaniye cinsinden tanımlayalım
     const MINING_COOLDOWN_MS = 1 * 60 * 60 * 1000;
@@ -689,10 +699,10 @@ export class UserService {
         throw new NotFoundException('USER_NOT_FOUND');
       }
 
-      // 2. ADIM: Miner'ın saatlik kârını (profit) al.
+      // 2. ADIM: Miner'ın saatlik kârını ve reward_type'ı al.
       const miner = await this.minerModel
         .findById(userForMiner.miner_data.miner)
-        .select('profit_per_hour') // Sadece kâra ihtiyacımız var
+        .select('profit_per_hour reward_type') // Kâr ve reward type'a ihtiyacımız var
         .lean()
         .exec();
 
@@ -705,6 +715,7 @@ export class UserService {
       }
 
       const profitAmount = miner.profit_per_hour;
+      const reward_type = miner.reward_type;
 
       // 3. ADIM: ATOMİK GÜNCELLEME
       // findOneAndUpdate kullanarak hem şartı kontrol et (1 saat geçti mi?)
@@ -717,11 +728,13 @@ export class UserService {
           },
           {
             $set: { 'miner_data.last_mine': now }, // Güncelle: Son toplama zamanını 'şimdi' yap
-            $inc: { 'balance_data.stone': profitAmount }, // Güncelle: Bakiyeye kârı ekle
+            $inc: {
+              [`balance_data.${reward_type.toLowerCase()}`]: profitAmount,
+            }, // Güncelle: Bakiyeye reward'ı ekle (stone veya dust)
           },
           {
             new: true, // Metodun, belgenin güncellenmiş halini döndürmesini sağla
-            select: 'balance_data.stone miner_data.last_mine', // Sadece bu yeni değerleri döndür
+            select: 'balance_data.stone balance_data.dust miner_data.last_mine', // Sadece bu yeni değerleri döndür
           },
         )
         .exec();
@@ -736,7 +749,11 @@ export class UserService {
 
       // 5. ADIM: Başarılı yanıtı döndür
       return {
+        success: true,
+        reward_type: reward_type,
+        claimed_reward: profitAmount,
         new_stone_balance: updatedUser.balance_data.stone,
+        new_dust_balance: updatedUser.balance_data.dust,
         last_mine: updatedUser.miner_data.last_mine,
         // Bir sonraki toplama için kalan süre her zaman 1 saattir (saniye cinsinden)
         remaining_time_seconds: Math.ceil(MINING_COOLDOWN_MS / 1000), // 3600
@@ -752,7 +769,7 @@ export class UserService {
       }
 
       // Diğer beklenmedik hataları logla ve genel bir hata dön
-      console.error('Error in mineStone service:', error);
+      console.error('Error in mine service:', error);
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
   }

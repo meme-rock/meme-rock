@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { EMinerLevel } from "../../types/enums";
+import { EMinerLevel, EMinerRewardType } from "../../types/enums";
 import { IMinerDetail, IUserMinerState } from "../../types";
 
 const initialState: IUserMinerState = {
   current_miner: {
     _id: EMinerLevel.LEVEL_1,
     profit_per_hour: 0,
-    spent_stones_to_upgrade: 0,
-    upgrade_requirements: {},
+    stone_price_to_upgrade: 0,
+    reward_type: EMinerRewardType.STONE,
   },
   all_miners: [],
 };
@@ -26,8 +26,16 @@ export const minerSlice = createSlice({
       state.current_miner = action.payload.current_miner;
       state.all_miners = action.payload.all_miners;
     },
+    upgradeMiner: (
+      state,
+      action: PayloadAction<{
+        new_miner: IMinerDetail;
+      }>
+    ) => {
+      state.current_miner = action.payload.new_miner;
+    },
   },
 });
 
-export const { setMinerData } = minerSlice.actions;
+export const { setMinerData, upgradeMiner } = minerSlice.actions;
 export default minerSlice.reducer;

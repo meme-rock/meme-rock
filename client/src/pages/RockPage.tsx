@@ -3,22 +3,22 @@ import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
-import { UpgradeRequirements } from "../components/rock/UpgradeRequirements";
+import { HiltiUpgradeButton } from "../components/rock/HiltiUpgradeButton";
 import { BoosterPage } from "../components/rock/BoosterPage";
 import boosterAnimation from "../../public/animated-booster.json";
 import Lottie from "lottie-react";
 import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
+import { useUpgradeHiltiMutation } from "../redux/services/user/user-api";
+import WebApp from "@twa-dev/sdk";
 
 export const RockPage = () => {
   const [getBoosters] = useGetBoostersMutation();
+  const [upgradeHilti, { isLoading: isUpgrading }] = useUpgradeHiltiMutation();
 
   // Select only needed fields to avoid re-renders from displayRocks updates
   const userId = useSelector((state: RootState) => state.user._id);
   const userProfitPerHour = useSelector(
     (state: RootState) => state.user.airdrop_data.profit_per_hour
-  );
-  const inviteCount = useSelector(
-    (state: RootState) => state.user.invite_count
   );
   const balanceData = useSelector(
     (state: RootState) => state.user.balance_data,
@@ -69,18 +69,19 @@ export const RockPage = () => {
   }, [boosters.length, getBoosters, userId]);
 
   // Handle upgrade
-  const handleUpgrade = useCallback(() => {
-    // TODO: Backend'e upgrade isteği gönder
-    console.log("Upgrading hilti to level", currentUserHiltiLevel + 1);
-  }, [currentUserHiltiLevel]);
+  const handleUpgrade = useCallback(async () => {
+    if (isUpgrading) return;
 
-  // Check if can upgrade
-  const canUpgrade = useMemo(
-    () =>
-      Object.keys(hilti_data.current_hilti.upgrade_requirements || {})
-        .length === 0,
-    [hilti_data.current_hilti.upgrade_requirements]
-  );
+    try {
+      await upgradeHilti({ user_id: userId }).unwrap();
+      WebApp.showAlert("Hilti upgraded successfully! 🎉");
+    } catch (error: any) {
+      console.error("Error upgrading hilti:", error);
+      const errorMessage =
+        error?.data?.message || "Failed to upgrade hilti. Please try again.";
+      WebApp.showAlert(errorMessage);
+    }
+  }, [isUpgrading, upgradeHilti, userId]);
 
   // If booster page is shown, render it instead
   if (showBoosterPage) {
@@ -106,6 +107,7 @@ export const RockPage = () => {
           <HiltiLevelThumbnails
             currentLevel={currentUserHiltiLevel}
             selectedLevel={selectedHiltiLevel}
+            minLevel={currentUserHiltiLevel}
             maxLevel={5}
             onLevelSelect={handleLevelSelect}
           />
@@ -157,29 +159,16 @@ export const RockPage = () => {
             />
           </div>
 
-          {/* Upgrade requirements - Only show for current level */}
-          {selectedHiltiLevel === currentUserHiltiLevel && (
-            <div className="w-full px-4">
-              <UpgradeRequirements
-                inviteCount={inviteCount}
-                requiredInvites={
-                  hilti_data.current_hilti.upgrade_requirements?.invites || 0
-                }
-                dustSpent={balanceData.dust}
-                requiredDust={
-                  hilti_data.current_hilti.upgrade_requirements?.spent_dust || 0
-                }
-                stonesSpent={balanceData.stone}
-                requiredStones={
-                  hilti_data.current_hilti.upgrade_requirements?.spent_stones ||
-                  0
-                }
-                nextLevel={currentUserHiltiLevel + 1}
-                canUpgrade={canUpgrade}
-                onUpgrade={handleUpgrade}
-              />
-            </div>
-          )}
+          {/* Hilti Upgrade Button */}
+          <HiltiUpgradeButton
+            selectedHilti={selectedHilti}
+            selectedHiltiLevel={selectedHiltiLevel}
+            currentUserHiltiLevel={currentUserHiltiLevel}
+            userStoneBalance={balanceData.stone}
+            userProfitPerHour={userProfitPerHour}
+            onUpgrade={handleUpgrade}
+            isUpgrading={isUpgrading}
+          />
         </div>
       </div>
     </div>

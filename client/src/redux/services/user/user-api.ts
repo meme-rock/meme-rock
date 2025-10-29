@@ -7,9 +7,10 @@ import {
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
   updateUserStones,
+  updateUserFromMine,
 } from "../../slices/userSlice";
-import { setMinerData } from "../../slices/minerSlice";
-import { setHiltiData } from "../../slices/hiltiSlice";
+import { setMinerData, upgradeMiner } from "../../slices/minerSlice";
+import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -170,32 +171,37 @@ export const userApi = createApi({
         }
       },
     }),
-    mineStone: builder.mutation<
+    mine: builder.mutation<
       {
+        success: boolean;
+        reward_type: string;
+        claimed_reward: number;
         new_stone_balance: number;
+        new_dust_balance: number;
         last_mine: string;
         remaining_time_seconds: number;
       },
       { user_id: string }
     >({
       query: ({ user_id }: { user_id: string }) => ({
-        url: `/mine-stone/${user_id}`,
+        url: `/mine/${user_id}`,
         method: "POST",
       }),
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          console.log("Mine stone data received:", data);
+          console.log("Mine data received:", data);
 
-          // Update Redux with new stone balance and last_mine timestamp
+          // Update Redux with new stone/dust balance and last_mine timestamp
           dispatch(
-            updateUserStones({
-              stones: data.new_stone_balance,
+            updateUserFromMine({
+              stone: data.new_stone_balance,
+              dust: data.new_dust_balance,
               last_mine: data.last_mine,
             })
           );
         } catch (error) {
-          console.error("Error mining stone:", error);
+          console.error("Error mining:", error);
         }
       },
     }),
@@ -248,6 +254,94 @@ export const userApi = createApi({
         }
       },
     }),
+    upgradeMiner: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          new_miner_level: string;
+          new_stone_balance: number;
+          miner: IMinerDetail;
+        };
+      },
+      { user_id: string }
+    >({
+      query: ({ user_id }) => ({
+        url: `/upgrade-miner/${user_id}`,
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Miner upgraded successfully:", data);
+
+          // Update Redux with new miner
+          dispatch(
+            upgradeMiner({
+              new_miner: data.data.miner,
+            })
+          );
+
+          // Update stone balance
+          dispatch(
+            updateUserStones({
+              stones: data.data.new_stone_balance,
+            })
+          );
+        } catch (error) {
+          console.error("Error upgrading miner:", error);
+          throw error;
+        }
+      },
+    }),
+    upgradeHilti: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          new_hilti_level: string;
+          new_stone_balance: number;
+          new_profit_per_hour: number;
+          hilti: IHiltiDetail;
+        };
+      },
+      { user_id: string }
+    >({
+      query: ({ user_id }) => ({
+        url: `/upgrade-hilti/${user_id}`,
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Hilti upgraded successfully:", data);
+
+          // Update Redux with new hilti
+          dispatch(
+            upgradeHilti({
+              new_hilti: data.data.hilti,
+            })
+          );
+
+          // Update user state
+          const state = getState() as any;
+          const updatedUser = {
+            ...state.user,
+            balance_data: {
+              ...state.user.balance_data,
+              stone: data.data.new_stone_balance,
+            },
+            airdrop_data: {
+              ...state.user.airdrop_data,
+              profit_per_hour: data.data.new_profit_per_hour,
+            },
+          };
+
+          dispatch(loadingUser(updatedUser));
+        } catch (error) {
+          console.error("Error upgrading hilti:", error);
+          throw error;
+        }
+      },
+    }),
   }),
 });
 
@@ -257,6 +351,8 @@ export const {
   useUpdateUserDustAfterAdRewardMutation,
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
-  useMineStoneMutation,
+  useMineMutation,
   useClaimAchievementMutation,
+  useUpgradeMinerMutation,
+  useUpgradeHiltiMutation,
 } = userApi;

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Pickaxe } from "lucide-react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
-import { useMineStoneMutation } from "../../redux/services/user/user-api";
+import { useMineMutation } from "../../redux/services/user/user-api";
 import WebApp from "@twa-dev/sdk";
 import { memo, useState, useEffect, useMemo, useRef } from "react";
 import { EMinerRewardType } from "../../types/enums";
@@ -22,7 +22,7 @@ export const MineButton = memo(
     );
     console.log("minerData", minerData);
 
-    const [mineStone] = useMineStoneMutation();
+    const [mine] = useMineMutation();
     const [currentTime, setCurrentTime] = useState(Date.now());
     const hasAutoClaimedRef = useRef(false);
 
@@ -72,8 +72,8 @@ export const MineButton = memo(
           hasAutoClaimedRef.current = true;
 
           try {
-            await mineStone({ user_id: userId }).unwrap();
-            console.log("✅ Auto-claimed mining reward!");
+            const result = await mine({ user_id: userId }).unwrap();
+            console.log("✅ Auto-claimed mining reward!", result);
 
             // Reset auto-claim flag after successful claim
             setTimeout(() => {
@@ -96,7 +96,7 @@ export const MineButton = memo(
       };
 
       attemptAutoClaim();
-    }, [canClaim, userId, mineStone]);
+    }, [canClaim, userId, mine]);
 
     return (
       <div className="flex flex-col items-center gap-6 w-full px-4">
