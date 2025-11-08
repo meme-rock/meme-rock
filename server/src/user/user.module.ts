@@ -9,10 +9,10 @@ import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
 import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 import { UserBoosterService } from './user-booster.service';
 import { UserAchivementService } from './user-achivement.service';
-import { UserMineService } from './user-mine.service';
 import { UserHiltiService } from './user-hilti.service';
 
 import { BotModule } from 'src/bot/bot.module';
+import { MinerService } from 'src/miner/miner.service';
 
 @Module({
   imports: [
@@ -29,8 +29,8 @@ import { BotModule } from 'src/bot/bot.module';
     UserService,
     UserBoosterService,
     UserAchivementService,
-    UserMineService,
     UserHiltiService,
+    MinerService,
   ],
 })
 export class UserModule {}

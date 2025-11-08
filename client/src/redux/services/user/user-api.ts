@@ -7,11 +7,9 @@ import {
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
   updateUserStones,
-  updateUserFromMine,
 } from "../../slices/userSlice";
-import { setMinerData, upgradeMiner } from "../../slices/minerSlice";
+import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
-import { MineResponse } from "./responses";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -167,31 +165,7 @@ export const userApi = createApi({
         }
       },
     }),
-    mine: builder.mutation<MineResponse, { user_id: string }>({
-      query: ({ user_id }: { user_id: string }) => ({
-        url: `/mine/${user_id}`,
-        method: "POST",
-      }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log("Mine data received:", data);
 
-          // Update Redux with new stone/dust balance and mining data
-          dispatch(
-            updateUserFromMine({
-              stone: data.balance_data.stone,
-              dust: data.balance_data.dust,
-              last_mine: data.miner_data.last_mine,
-              next_mine: data.miner_data.next_mine,
-              claimable_periods: data.miner_data.claimable_periods,
-            })
-          );
-        } catch (error) {
-          console.error("Error mining:", error);
-        }
-      },
-    }),
     claimAchievement: builder.mutation<
       {
         success: boolean;
@@ -241,45 +215,7 @@ export const userApi = createApi({
         }
       },
     }),
-    upgradeMiner: builder.mutation<
-      {
-        success: boolean;
-        data: {
-          new_miner_level: string;
-          new_stone_balance: number;
-          miner: IMinerDetail;
-        };
-      },
-      { user_id: string }
-    >({
-      query: ({ user_id }) => ({
-        url: `/upgrade-miner/${user_id}`,
-        method: "POST",
-      }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log("Miner upgraded successfully:", data);
 
-          // Update Redux with new miner
-          dispatch(
-            upgradeMiner({
-              new_miner: data.data.miner,
-            })
-          );
-
-          // Update stone balance
-          dispatch(
-            updateUserStones({
-              stones: data.data.new_stone_balance,
-            })
-          );
-        } catch (error) {
-          console.error("Error upgrading miner:", error);
-          throw error;
-        }
-      },
-    }),
     upgradeHilti: builder.mutation<
       {
         success: boolean;
@@ -337,8 +273,6 @@ export const {
   useUpdateUserDustAfterAdRewardMutation,
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
-  useMineMutation,
   useClaimAchievementMutation,
-  useUpgradeMinerMutation,
   useUpgradeHiltiMutation,
 } = userApi;

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Post,
   Query,
@@ -15,7 +16,6 @@ import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { BotService } from 'src/bot/bot.service';
 import { UserAchivementService } from './user-achivement.service';
-import { UserMineService } from './user-mine.service';
 import { UserHiltiService } from './user-hilti.service';
 
 @Controller('user')
@@ -24,7 +24,6 @@ export class UserController {
     private readonly userService: UserService,
     private readonly botService: BotService,
     private readonly userAchivementService: UserAchivementService,
-    private readonly userMineService: UserMineService,
     private readonly userHiltiService: UserHiltiService,
   ) {}
 
@@ -34,22 +33,9 @@ export class UserController {
   async loading(
     @Param('user_id') user_id: string,
     @Body() user: CreateUserDto,
+    @Headers('x-telegram-init-data') initData: string,
   ) {
-    return await this.userService.loading(user_id, user);
-  }
-
-  @Post('mine/:user_id')
-  @UseGuards(CustomThrottlerGuard)
-  @Throttle({ default: { limit: 1, ttl: 2000 } }) // Sadece bu endpoint'te throttling
-  async mine(@Param('user_id') user_id: string) {
-    return await this.userMineService.mine(user_id);
-  }
-
-  @Post('upgrade-miner/:user_id')
-  @UseGuards(CustomThrottlerGuard)
-  @Throttle({ strict: { limit: 1, ttl: 2000 } }) // Kritik işlem - sıkı throttling
-  async upgradeMiner(@Param('user_id') user_id: string) {
-    return await this.userMineService.upgrade(user_id);
+    return await this.userService.loading(user_id, user, initData);
   }
 
   @Post('upgrade-hilti/:user_id')

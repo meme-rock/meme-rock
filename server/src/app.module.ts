@@ -14,6 +14,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ThrottleTestController } from './common/controllers/throttle-test.controller';
 import { MarketModule } from './market/market.module';
 import { HelpersModule } from './helpers/helpers.module';
+import { MinerModule } from './miner/miner.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -59,6 +60,7 @@ if (!mongoUri) {
     }),
     MongooseModule.forRoot(mongoUri),
     UserModule,
+    MinerModule,
     TonModule,
     AdminModule,
     BotModule,

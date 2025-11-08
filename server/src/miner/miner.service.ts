@@ -10,7 +10,7 @@ import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { EMinerLevel } from 'src/common/enums/miners.enum';
 
 @Injectable()
-export class UserMineService {
+export class MinerService {
   // Mining variables
   private readonly MINING_COOLDOWN_MS = 15 * 1000; // 1 * 60 * 60 * 1000; // 1 Saat
   private readonly MAX_CLAIMS_STANDARD = 2; // 2 periyot (örn. 2 saat)
@@ -66,6 +66,7 @@ export class UserMineService {
       next_mine: new Date(last_mine.getTime() + this.MINING_COOLDOWN_MS),
     };
   }
+
   //! Mine
   async mine(user_id: string) {
     // 1. Kullanıcıyı ve miner detaylarını tek seferde al

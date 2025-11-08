@@ -5,7 +5,7 @@ import { MineButton } from "../components/miner/MineButton";
 import { MinerUpgradeButton } from "../components/miner/MinerUpgradeButton";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
-import { useUpgradeMinerMutation } from "../redux/services/user/user-api";
+import { useUpgradeMinerMutation } from "../redux/services/miner/miner-api";
 import WebApp from "@twa-dev/sdk";
 
 export const MinePage = () => {

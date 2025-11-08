@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
-import { useMineMutation } from "../../redux/services/user/user-api";
+import { useMineMutation } from "../../redux/services/miner/miner-api";
 import WebApp from "@twa-dev/sdk";
 import { memo } from "react";
 import { EMinerRewardType } from "../../types/enums";

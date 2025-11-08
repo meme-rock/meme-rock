@@ -16,7 +16,7 @@ import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
 import { ACHIVEMENTS } from 'src/common/config';
 import { UserAchivementService } from './user-achivement.service';
-import { UserMineService } from './user-mine.service';
+import { MinerService } from 'src/miner/miner.service';
 
 @Injectable()
 export class UserService {
@@ -34,7 +34,7 @@ export class UserService {
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
     private userAchivementService: UserAchivementService,
-    private userMineService: UserMineService,
+    private minerService: MinerService,
   ) {}
 
   /**
@@ -69,10 +69,9 @@ export class UserService {
     return Math.floor(pendingRocks);
   }
 
-  async loading(_id: string, user: CreateUserDto) {
+  async loading(_id: string, user: CreateUserDto, initData: string) {
     try {
       console.log('Loading service called for user:', _id);
-
       const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
         await Promise.all([
           // Hiltis
@@ -200,7 +199,7 @@ export class UserService {
       const mergedAchivements =
         this.userAchivementService.returnMergedAchivements(updatedUser!);
 
-      const minerData = await this.userMineService.calculateMinerData(
+      const minerData = await this.minerService.calculateMinerData(
         {
           miner: updatedUser.miner_data.miner as unknown as MinerDocument,
           last_mine: updatedUser.miner_data.last_mine,
@@ -635,5 +634,11 @@ export class UserService {
       console.error('Error in mine service:', error);
       throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
     }
+  }
+
+  //! User Invite
+  async handleInvite(initData: string) {
+    try {
+    } catch (error) {}
   }
 }
