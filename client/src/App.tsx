@@ -15,9 +15,40 @@ import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
 
+function AppContent() {
+  const user = useSelector((state: RootState) => state.user);
+
+  return (
+    <>
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        <TopBar
+          stones={user.balance_data.stone}
+          dust={user.balance_data.dust}
+        />
+
+        <main className="flex-1 pb-16">
+          <Routes>
+            <Route path="/" element={<MainPage />} />
+            <Route path="/mine" element={<MinePage />} />
+            <Route path="/rock" element={<RockPage />} />
+            <Route path="/dust" element={<DustPage />} />
+            <Route
+              path="/market"
+              element={<MarketPage stones={user.balance_data.stone} />}
+            />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
+        </main>
+
+        <Navbar />
+      </div>
+    </>
+  );
+}
+
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const user = useSelector((state: RootState) => state.user);
 
   // Initialize global rock counter (runs across all pages)
   useGlobalRockCounter();
@@ -37,35 +68,11 @@ function App() {
   }
 
   return (
-    <>
-      <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
-        <Router>
-          <div className="min-h-screen bg-black text-white flex flex-col">
-            <TopBar
-              stones={user.balance_data.stone}
-              dust={user.balance_data.dust}
-            />
-
-            <main className="flex-1 pb-16">
-              <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/mine" element={<MinePage />} />
-                <Route path="/rock" element={<RockPage />} />
-                <Route path="/dust" element={<DustPage />} />
-                <Route
-                  path="/market"
-                  element={<MarketPage stones={user.balance_data.stone} />}
-                />
-                <Route path="/leaderboard" element={<LeaderboardPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-              </Routes>
-            </main>
-
-            <Navbar />
-          </div>
-        </Router>
-      </TonConnectUIProvider>
-    </>
+    <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
+      <Router>
+        <AppContent />
+      </Router>
+    </TonConnectUIProvider>
   );
 }
 

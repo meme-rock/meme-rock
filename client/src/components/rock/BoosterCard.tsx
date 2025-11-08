@@ -16,6 +16,8 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import WebApp from "@twa-dev/sdk";
+import { useState } from "react";
+import { BoosterConfirmModal } from "./BoosterConfirmModal";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -28,6 +30,9 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
     useUnlockBoosterMutation();
   const [upgradeBooster, { isLoading: isUpgrading }] =
     useUpgradeBoosterMutation();
+
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const currentLevel = booster.current_level || 0;
   const isUnlocked = booster.is_unlocked || false;
@@ -49,14 +54,17 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   // All requirements met
   const allRequirementsMet = meetsStoneReq && meetsDustReq && meetsInviteReq;
 
-  const handleUnlock = async () => {
+  const handleUnlockClick = () => {
     if (!allRequirementsMet) {
       WebApp.showAlert(
         "You don't meet all the requirements to unlock this booster."
       );
       return;
     }
+    setShowUnlockModal(true);
+  };
 
+  const handleUnlockConfirm = async () => {
     try {
       console.log("Unlocking booster:", booster._id);
       const result = await unlockBooster({
@@ -64,6 +72,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         booster_id: booster._id,
       }).unwrap();
       console.log("✅ Booster unlocked successfully!", result);
+      setShowUnlockModal(false);
     } catch (error: any) {
       console.error("❌ Failed to unlock booster:", error);
       WebApp.showAlert(
@@ -72,7 +81,11 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
     }
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgradeClick = () => {
+    setShowUpgradeModal(true);
+  };
+
+  const handleUpgradeConfirm = async () => {
     try {
       console.log("Upgrading booster:", booster._id);
       const result = await upgradeBooster({
@@ -80,6 +93,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         booster_id: booster._id,
       }).unwrap();
       console.log("✅ Booster upgraded successfully!", result);
+      setShowUpgradeModal(false);
     } catch (error: any) {
       console.error("❌ Failed to upgrade booster:", error);
       WebApp.showAlert(
@@ -197,14 +211,16 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         </div>
       </div>
 
-      {/* Progress bar (only if unlocked) */}
-      {isUnlocked && (
-        <div className="mb-4 relative z-10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400 font-semibold">
-              Level {currentLevel} / {booster.max_level}
-            </span>
-          </div>
+      {/* Progress bar - Always show max level */}
+      <div className="mb-4 relative z-10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-400 font-semibold">
+            {isUnlocked
+              ? `Level ${currentLevel} / ${booster.max_level}`
+              : `Max Level: ${booster.max_level}`}
+          </span>
+        </div>
+        {isUnlocked && (
           <div className="relative w-full h-2.5 bg-gray-800 rounded-full overflow-hidden border border-gray-700/50">
             <motion.div
               initial={{ width: 0 }}
@@ -213,8 +229,8 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
               className="h-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600"
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 relative z-10">
@@ -222,7 +238,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
           <div></div>
         ) : !isUnlocked ? (
           <button
-            onClick={handleUnlock}
+            onClick={handleUnlockClick}
             disabled={isUnlocking || !allRequirementsMet}
             className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 relative overflow-hidden group ${
               isUnlocking
@@ -263,7 +279,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
           </button>
         ) : (
           <button
-            onClick={handleUpgrade}
+            onClick={handleUpgradeClick}
             disabled={isUpgrading}
             className={`flex-1 px-4 py-3 bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:via-cyan-400 hover:to-blue-500 text-white rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 relative overflow-hidden group ${
               isUpgrading ? "opacity-50 cursor-not-allowed" : ""
@@ -280,13 +296,8 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
               <>
                 <TrendingUp className="w-4 h-4 relative z-10" />
                 <span className="relative z-10 text-lg font-bold">
-                  {upgradeCost.toLocaleString()}
+                  Upgrade
                 </span>
-                <img
-                  src="/stone.svg"
-                  alt="Rock"
-                  className="w-7 h-7 relative z-10"
-                />
               </>
             )}
           </button>
@@ -422,6 +433,57 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
           </div>
         </div>
       )}
+
+      {/* Unlock Modal */}
+      <BoosterConfirmModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        onConfirm={handleUnlockConfirm}
+        isLoading={isUnlocking}
+        type="unlock"
+        boosterTitle={booster.title}
+        cost={{
+          amount: hasStoneReq
+            ? requirements.stone!
+            : hasDustReq
+            ? requirements.dust!
+            : 0,
+          currency: hasStoneReq ? "stone" : hasDustReq ? "dust" : "rock",
+        }}
+        requirements={requirements}
+        userBalance={{
+          stone: user.balance_data.stone,
+          dust: user.balance_data.dust,
+        }}
+        profitIncrease={{
+          current: 0,
+          next: nextProfit,
+        }}
+      />
+
+      {/* Upgrade Modal */}
+      <BoosterConfirmModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onConfirm={handleUpgradeConfirm}
+        isLoading={isUpgrading}
+        type="upgrade"
+        boosterTitle={booster.title}
+        currentLevel={currentLevel}
+        nextLevel={currentLevel + 1}
+        cost={{
+          amount: upgradeCost,
+          currency: "stone",
+        }}
+        userBalance={{
+          stone: user.balance_data.stone,
+          dust: user.balance_data.dust,
+        }}
+        profitIncrease={{
+          current: currentProfit,
+          next: nextProfit,
+        }}
+      />
     </div>
   );
 };

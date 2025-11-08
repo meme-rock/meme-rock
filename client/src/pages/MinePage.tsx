@@ -96,7 +96,7 @@ export const MinePage = () => {
             <MineButton
               hourlyReward={selectedMiner.profit_per_hour}
               rewardType={selectedMiner.reward_type}
-              showProgress={selectedMinerLevel === currentUserMinerLevel}
+              isCurrentMiner={selectedMiner._id === current_miner._id}
             />
           </div>
 

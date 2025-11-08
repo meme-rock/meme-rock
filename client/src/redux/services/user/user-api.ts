@@ -11,6 +11,7 @@ import {
 } from "../../slices/userSlice";
 import { setMinerData, upgradeMiner } from "../../slices/minerSlice";
 import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
+import { MineResponse } from "./responses";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -29,6 +30,19 @@ export const userApi = createApi({
           is_claimed: boolean;
           claimed_at?: string;
         }>;
+        mine_claim?: {
+          success: boolean;
+          claimed_reward: number;
+          reward_type: string;
+          periods_claimed: number;
+          last_mine?: string;
+          next_mine: string;
+          mining_cooldown_ms: number;
+          message: string;
+          new_stone_balance?: number;
+          new_dust_balance?: number;
+          new_last_mine?: string;
+        } | null;
         message: string;
       },
       { user: Partial<IUser> }
@@ -47,10 +61,11 @@ export const userApi = createApi({
           dispatch(loadingUser(data.user));
 
           // Dispatch miner data
+          const minerData = data.user.miner_data;
+          const currentMiner: IMinerDetail = minerData.miner; //
           dispatch(
             setMinerData({
-              current_miner: data.user.miner_data
-                .miner as unknown as IMinerDetail,
+              current_miner: currentMiner,
               all_miners: data.miners,
             })
           );
@@ -69,39 +84,20 @@ export const userApi = createApi({
             type: "achievements/setAllAchievements",
             payload: data.achievements || [],
           });
+
+          // Store mine claim data if available
+          if (data.mine_claim) {
+            dispatch({
+              type: "mineClaim/setMineClaimData",
+              payload: data.mine_claim,
+            });
+          }
         } catch (error) {
           console.error("Error loading user data:", error);
         }
       },
     }),
-    mineDailyStoneReward: builder.mutation<
-      {
-        balance_data: { stone: number };
-        miner_data: { last_mine: string };
-      },
-      { user_id: string }
-    >({
-      query: ({ user_id }: { user_id: string }) => ({
-        url: `/mine-daily-stone-reward/${user_id}`,
-        method: "POST",
-      }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log("Mine daily stone reward data received:", data);
 
-          // Update Redux with new stone balance and last_mine timestamp
-          dispatch(
-            updateUserStones({
-              stones: data.balance_data.stone,
-              last_mine: data.miner_data.last_mine,
-            })
-          );
-        } catch (error) {
-          console.error("Error mining daily stone reward:", error);
-        }
-      },
-    }),
     updateUserDustAfterAdReward: builder.mutation({
       query: ({ user_id }: { user_id: string }) => ({
         url: `/get-balance-after-ad-reward/${user_id}`,
@@ -171,18 +167,7 @@ export const userApi = createApi({
         }
       },
     }),
-    mine: builder.mutation<
-      {
-        success: boolean;
-        reward_type: string;
-        claimed_reward: number;
-        new_stone_balance: number;
-        new_dust_balance: number;
-        last_mine: string;
-        remaining_time_seconds: number;
-      },
-      { user_id: string }
-    >({
+    mine: builder.mutation<MineResponse, { user_id: string }>({
       query: ({ user_id }: { user_id: string }) => ({
         url: `/mine/${user_id}`,
         method: "POST",
@@ -192,12 +177,14 @@ export const userApi = createApi({
           const { data } = await queryFulfilled;
           console.log("Mine data received:", data);
 
-          // Update Redux with new stone/dust balance and last_mine timestamp
+          // Update Redux with new stone/dust balance and mining data
           dispatch(
             updateUserFromMine({
-              stone: data.new_stone_balance,
-              dust: data.new_dust_balance,
-              last_mine: data.last_mine,
+              stone: data.balance_data.stone,
+              dust: data.balance_data.dust,
+              last_mine: data.miner_data.last_mine,
+              next_mine: data.miner_data.next_mine,
+              claimable_periods: data.miner_data.claimable_periods,
             })
           );
         } catch (error) {
@@ -347,7 +334,6 @@ export const userApi = createApi({
 
 export const {
   useLoadingMutation,
-  useMineDailyStoneRewardMutation,
   useUpdateUserDustAfterAdRewardMutation,
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,

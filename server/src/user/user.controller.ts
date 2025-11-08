@@ -42,7 +42,7 @@ export class UserController {
   @UseGuards(CustomThrottlerGuard)
   @Throttle({ default: { limit: 1, ttl: 2000 } }) // Sadece bu endpoint'te throttling
   async mine(@Param('user_id') user_id: string) {
-    return await this.userService.mine(user_id);
+    return await this.userMineService.mine(user_id);
   }
 
   @Post('upgrade-miner/:user_id')

@@ -46,7 +46,10 @@ const initialState: UserState = {
       stone_price_to_upgrade: 0,
       reward_type: EMinerRewardType.STONE,
     },
-    last_mine: new Date(),
+    max_periods: 2,
+    claimable_periods: 0,
+    last_mine: "",
+    next_mine: "",
   },
   hilti_data: {
     hilti: {
@@ -57,6 +60,7 @@ const initialState: UserState = {
   boosters: [],
   achievements: [],
   is_premium: false,
+  is_auto_mining: false,
   invited_by: null,
   invite_count: 0,
   created_at: "",
@@ -94,7 +98,7 @@ export const userSlice = createSlice({
       state.balance_data.stone = action.payload.stones;
       // Update last_mine if provided (from mining reward)
       if (action.payload.last_mine) {
-        state.miner_data.last_mine = new Date(action.payload.last_mine);
+        state.miner_data.last_mine = action.payload.last_mine;
       }
     },
     updateUserFromMine: (
@@ -103,11 +107,15 @@ export const userSlice = createSlice({
         stone: number;
         dust: number;
         last_mine: string;
+        next_mine: string;
+        claimable_periods: number;
       }>
     ) => {
       state.balance_data.stone = action.payload.stone;
       state.balance_data.dust = action.payload.dust;
-      state.miner_data.last_mine = new Date(action.payload.last_mine);
+      state.miner_data.last_mine = action.payload.last_mine;
+      state.miner_data.next_mine = action.payload.next_mine;
+      state.miner_data.claimable_periods = action.payload.claimable_periods;
     },
     updateUserforCompleteTask: (
       state,

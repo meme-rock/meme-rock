@@ -205,7 +205,7 @@ export const MinerUpgradeButton = memo(
                         className="w-5 h-5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]"
                       />
                       <span className="text-xs font-bold text-gray-300">
-                        {requiredStone.toLocaleString()} stone
+                        {requiredStone.toLocaleString()} stone to upgrade
                       </span>
                     </div>
                   </div>

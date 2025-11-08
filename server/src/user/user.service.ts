@@ -16,10 +16,11 @@ import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
 import { ACHIVEMENTS } from 'src/common/config';
 import { UserAchivementService } from './user-achivement.service';
+import { UserMineService } from './user-mine.service';
 
 @Injectable()
 export class UserService {
-  private readonly MINING_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 Saat
+  private readonly MINING_COOLDOWN_MS = 15 * 1000; // 1 * 60 * 60 * 1000; // 1 Saat
   // Test için 15 saniye:
   // private readonly MINING_COOLDOWN_MS = 15 * 1000;
 
@@ -33,202 +34,72 @@ export class UserService {
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
     private userAchivementService: UserAchivementService,
+    private userMineService: UserMineService,
   ) {}
 
   /**
    * Calculate pending rock coins based on elapsed time since last claim
    * Uses minute-based calculation for precision
-   * @param lastClaim - Last claim timestamp
+   * @param lastOnline - Last claim timestamp
    * @param profitPerHour - User's profit per hour from boosters
    * @param hiltiRockIncome - Rock income from hilti level
    * @returns Calculated pending rocks (rounded to 2 decimals)
    */
   private calculatePendingRocks(
-    lastClaim: Date,
+    lastOnline: Date,
     profitPerHour: number,
     hiltiRockIncome: number,
   ): number {
     const now = Date.now();
-    const lastClaimTime = new Date(lastClaim).getTime();
+    const lastOnlineTime = new Date(lastOnline).getTime();
 
     // Calculate elapsed minutes with millisecond precision
-    const elapsedMinutes = (now - lastClaimTime) / (1000 * 60);
+    const elapsedMilliseconds = now - lastOnlineTime;
 
     // Total profit per hour and convert to per minute
     const totalProfitPerHour = profitPerHour + hiltiRockIncome;
-    const profitPerMinute = totalProfitPerHour / 60;
+    // (Saatlik Kâr / 3,600,000 milisaniye)
+    const profitPerMillisecond = totalProfitPerHour / (1000 * 60 * 60);
 
-    // Calculate pending rocks
-    const pendingRocks = elapsedMinutes * profitPerMinute;
+    // 3. Toplam kazancı hesapla
+    // (Geçen Milisaniye * Milisaniye Başına Kâr)
+    const pendingRocks = elapsedMilliseconds * profitPerMillisecond;
 
-    // Round to 2 decimal places for precision
-    return Math.round(pendingRocks * 100) / 100;
-  }
-
-  //! Mine On Loading Service
-  async mineOnLoading(_id: string) {
-    try {
-      // 1. Kullanıcıyı ve miner bilgilerini getir (sadece gerekli alanlar)
-      const user = await this.userModel
-        .findById(_id)
-        .populate<{
-          miner_data: { last_mine: Date; miner: MinerDocument };
-        }>('miner_data.miner')
-        .select(
-          'miner_data.last_mine miner_data.miner is_premium is_auto_mining balance_data.stone balance_data.dust',
-        )
-        .exec();
-
-      if (!user) {
-        throw new NotFoundException('USER_NOT_FOUND');
-      }
-
-      const miner = user.miner_data.miner;
-      const reward_type = miner.reward_type;
-
-      // Veri tutarsızlığı kontrolü
-      if (!miner || typeof miner.profit_per_hour === 'undefined') {
-        console.error(`Inconsistent data: User ${_id} has missing miner data.`);
-        throw new InternalServerErrorException('MINER_DATA_NOT_FOUND');
-      }
-
-      // 2. Zaman hesaplamaları
-      const now = Date.now();
-      const lastMineTime = new Date(user.miner_data.last_mine).getTime();
-      const elapsedMilliseconds = now - lastMineTime;
-
-      // Eğer 1 periyot (1 saat) bile dolmadıysa, hiçbir şey yapma
-      if (elapsedMilliseconds < this.MINING_COOLDOWN_MS) {
-        return {
-          success: true,
-          claimed_reward: 0,
-          reward_type: reward_type,
-          periods_claimed: 0,
-          message: 'NOT_ENOUGH_TIME_PASSED',
-        };
-      }
-
-      // 3. Kaç periyot geçtiğini hesapla
-      const elapsedPeriods = Math.floor(
-        elapsedMilliseconds / this.MINING_COOLDOWN_MS,
-      );
-
-      // 4. Maksimum toplanabilecek periyot sayısını belirle
-      // Öncelik sırası: is_premium > is_auto_mining > standard
-      let maxClaimablePeriods: number;
-
-      if (user.is_premium) {
-        // Premium kullanıcı: is_auto_mining durumu önemli değil, her zaman 24
-        maxClaimablePeriods = this.MAX_CLAIMS_PREMIUM;
-      } else if (user.is_auto_mining) {
-        // Auto-mining aktif ama premium değil: 6 periyot
-        maxClaimablePeriods = this.MAX_CLAIMS_AUTO_MINING;
-      } else {
-        // Normal kullanıcı: 2 periyot
-        maxClaimablePeriods = this.MAX_CLAIMS_STANDARD;
-      }
-
-      // 5. Toplanacak periyot sayısını hesapla (minimum: geçen periyot vs max limit)
-      const periodsToClaimCalculated = Math.min(
-        elapsedPeriods,
-        maxClaimablePeriods,
-      );
-
-      // 6. Hiç toplanacak şey yoksa erken dön
-      if (periodsToClaimCalculated === 0) {
-        return {
-          success: true,
-          claimed_reward: 0,
-          reward_type: reward_type,
-          periods_claimed: 0,
-          message: 'NO_PERIODS_TO_CLAIM',
-        };
-      }
-
-      // 7. Toplam ödül hesapla
-      const totalReward = periodsToClaimCalculated * miner.profit_per_hour;
-
-      // 8. last_mine zamanını güncelle
-      // Sadece toplanan periyotlar kadar geriye git (kalan periyotları korumak için)
-      const newLastMineTime = new Date(
-        lastMineTime + periodsToClaimCalculated * this.MINING_COOLDOWN_MS,
-      );
-
-      // 9. Atomik güncelleme: reward ekle (stone veya dust) ve last_mine'ı güncelle
-      const updatedUser = await this.userModel
-        .findByIdAndUpdate(
-          _id,
-          {
-            $inc: {
-              [`balance_data.${reward_type.toLowerCase()}`]: totalReward,
-            },
-            $set: { 'miner_data.last_mine': newLastMineTime },
-          },
-          {
-            new: true,
-            select: 'balance_data.stone balance_data.dust miner_data.last_mine',
-          },
-        )
-        .exec();
-
-      if (!updatedUser) {
-        throw new InternalServerErrorException('FAILED_TO_UPDATE_USER');
-      }
-
-      console.log(
-        `✅ Loading: User ${_id} claimed ${totalReward} ${reward_type} (${periodsToClaimCalculated} periods, max: ${maxClaimablePeriods})`,
-      );
-
-      return {
-        success: true,
-        claimed_reward: totalReward,
-        reward_type: reward_type,
-        periods_claimed: periodsToClaimCalculated,
-        new_stone_balance: updatedUser.balance_data.stone,
-        new_dust_balance: updatedUser.balance_data.dust,
-        new_last_mine: updatedUser.miner_data.last_mine,
-        message: 'REWARD_CLAIMED_SUCCESSFULLY',
-      };
-    } catch (error) {
-      // Bilinen hataları olduğu gibi fırlat
-      if (
-        error instanceof NotFoundException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
-
-      // Beklenmedik hatalar
-      console.error('Error in mineOnLoading service:', error);
-      throw new InternalServerErrorException('UNEXPECTED_SERVER_ERROR');
-    }
+    // 4. Kazancı tam sayıya yuvarla
+    return Math.floor(pendingRocks);
   }
 
   async loading(_id: string, user: CreateUserDto) {
     try {
-      console.log('Loading service started for user:', _id);
+      console.log('Loading service called for user:', _id);
 
-      // Parallel fetching for optimal performance
       const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
         await Promise.all([
+          // Hiltis
           this.hiltiModel.find().lean().exec(),
+          // Miners
           this.minerModel.find().lean().exec(),
-          this.minerModel.findOne({ _id: EMinerLevel.LEVEL_1 }).lean().exec(),
-          this.hiltiModel.findOne({ _id: EHiltiLevel.LEVEL_1 }).lean().exec(),
+          // Level 1 Miner
+          this.minerModel.findById(EMinerLevel.LEVEL_1).lean().exec(),
+          // Level 1 Hilti
+          this.hiltiModel.findById(EHiltiLevel.LEVEL_1).lean().exec(),
+          // Existing User
           this.userModel
             .findById(_id)
-            .populate('hilti_data.hilti')
             .populate('miner_data.miner')
-            .lean()
+            .populate('hilti_data.hilti')
             .exec(),
         ]);
-
+      console.log('hiltis', hiltis);
+      console.log('level1Miner', level1Miner);
+      console.log('level1Hilti', level1Hilti);
       if (!level1Miner || !level1Hilti) {
         throw new Error('LEVEL_1 miner or hilti not found in database');
       }
 
-      // New user creation
+      //? Create new user if not exists
       if (!existingUser) {
+        // Create new user
         const newUser = await this.userModel.create({
           _id,
           telegram_data: user.telegram_data,
@@ -236,13 +107,12 @@ export class UserService {
           payment_data: {},
           airdrop_data: {},
           ad_data: {},
-          // ANCAK, Miner ve Hilti referanslarını manuel olarak atamalıyız.
           miner_data: {
-            miner: level1Miner._id, // Başlangıç Miner referansı atanmalı
-            last_mine: new Date(), // MinerData içindeki varsayılan değerleri açıkça atamak daha güvenlidir.
+            miner: level1Miner._id,
+            last_mine: new Date(),
           },
           hilti_data: {
-            hilti: level1Hilti._id, // Başlangıç Hilti referansı atanmalı
+            hilti: level1Hilti._id,
           },
           boosters: [],
           is_premium: false,
@@ -260,42 +130,53 @@ export class UserService {
           .exec();
 
         if (!populatedUser) {
-          throw new Error('Failed to create user');
+          throw new Error('Failed to create new user');
         }
 
-        // Get merged achievements with claim status
-        const mergedAchievements =
+        const mergedAchivements =
           this.userAchivementService.returnMergedAchivements(populatedUser);
 
+        const nextMineTime = new Date(
+          newUser.miner_data.last_mine.getTime() + this.MINING_COOLDOWN_MS,
+        );
         console.log('New user created:', _id);
         return {
           user: populatedUser,
           hiltis,
           miners,
-          achievements: mergedAchievements,
+          achievements: mergedAchivements,
+          mine_claim: {
+            success: true,
+            claimed_reward: 0,
+            reward_type: level1Miner.reward_type,
+            periods_claimed: 0,
+            last_mine: newUser.miner_data.last_mine,
+            next_mine: nextMineTime,
+            mining_cooldown_ms: this.MINING_COOLDOWN_MS,
+            message: 'NEW_USER',
+          },
           message: 'User created successfully',
         };
       }
+      //? New user creation end
 
-      // Existing user - calculate and claim pending rocks and stones
-      const lastClaim = existingUser.last_online || new Date();
-      const profitPerHour = existingUser.airdrop_data?.profit_per_hour || 0;
-
-      // Extract hilti rock income (handle populated document)
-      const hiltiData = existingUser.hilti_data.hilti;
+      //? --- CURRENT USER FLOW START ---
+      // 1. Calculate pending rocks
+      const lastOnline = existingUser.last_online || new Date();
+      const profitPerHour = existingUser.airdrop_data.profit_per_hour || 0;
+      // Hilti tipini güvenli hale getir
+      const hiltiData = existingUser.hilti_data.hilti as unknown as Hilti;
       const hiltiRockIncome =
         typeof hiltiData === 'object' && hiltiData !== null
-          ? (hiltiData as any).profit_per_hour || 0
+          ? hiltiData.profit_per_hour || 0
           : 0;
-
       // Calculate pending rocks
       const pendingRocks = this.calculatePendingRocks(
-        lastClaim,
+        lastOnline,
         profitPerHour,
         hiltiRockIncome,
       );
 
-      // Atomic update: claim rocks and update timestamp
       const updatedUser = await this.userModel
         .findByIdAndUpdate(
           _id,
@@ -311,55 +192,37 @@ export class UserService {
           { new: true },
         )
         .populate('miner_data.miner')
-        .populate('hilti_data.hilti')
-        .exec();
-
-      // Log claim details for rocks
-      const elapsedMinutes = (
-        (Date.now() - new Date(lastClaim).getTime()) /
-        (1000 * 60)
-      ).toFixed(2);
-
-      console.log(
-        `User ${_id} claimed ${pendingRocks.toFixed(2)} rocks (${elapsedMinutes} minutes elapsed)`,
-      );
-
-      // Call mineOnLoading to claim pending rewards (stone/dust) from miner
-      try {
-        const mineClaimResult = await this.mineOnLoading(_id);
-        console.log(
-          `User ${_id} mine claim result:`,
-          mineClaimResult.message,
-          `(${mineClaimResult.claimed_reward} ${mineClaimResult.reward_type})`,
-        );
-      } catch (mineError) {
-        // Mine claim hatası kritik değil, loading işlemini engellemez
-        console.warn(
-          `Warning: Mine claim failed for user ${_id}:`,
-          mineError.message,
-        );
+        .populate('hilti_data.hilti');
+      if (!updatedUser) {
+        throw new NotFoundException('Something went wrong while loading...');
       }
-
-      // Final user data'yı tekrar getir (mine claim sonrası güncel data için)
-      const finalUser = await this.userModel
-        .findById(_id)
-        .populate('miner_data.miner')
-        .populate('hilti_data.hilti')
-        .exec();
-
-      if (!finalUser) {
-        throw new Error('User not found after update');
-      }
-
       // Get merged achievements with claim status
-      const mergedAchievements =
-        this.userAchivementService.returnMergedAchivements(finalUser);
+      const mergedAchivements =
+        this.userAchivementService.returnMergedAchivements(updatedUser!);
+
+      const minerData = await this.userMineService.calculateMinerData(
+        {
+          miner: updatedUser.miner_data.miner as unknown as MinerDocument,
+          last_mine: updatedUser.miner_data.last_mine,
+        },
+        updatedUser.is_premium,
+        updatedUser.is_auto_mining,
+      );
+      console.log('minerData for client:', minerData);
 
       return {
-        user: finalUser,
+        user: {
+          ...updatedUser.toObject(),
+          miner_data: {
+            ...updatedUser.toObject().miner_data,
+            max_periods: minerData.max_periods,
+            claimable_periods: minerData.claimable_periods,
+            next_mine: minerData.next_mine,
+          },
+        },
         hiltis,
         miners,
-        achievements: mergedAchievements,
+        achievements: mergedAchivements,
         message: 'User updated successfully',
       };
     } catch (error) {

@@ -43,15 +43,22 @@ export interface IMinerDetail {
   reward_type: EMinerRewardType;
   profit_per_hour: number;
   stone_price_to_upgrade: number;
+  __v?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IMinerData {
   miner: IMinerDetail;
-  last_mine: Date;
+  max_periods: number;
+  claimable_periods: number;
+  last_mine: string;
+  next_mine: string;
 }
 
 export interface IUserMinerState {
   current_miner: IMinerDetail;
+
   all_miners: IMinerDetail[];
 }
 
@@ -100,6 +107,7 @@ export interface IUser {
   boosters: IUserBooster[];
   achievements: IAchievement[];
   is_premium: boolean;
+  is_auto_mining: boolean;
   invited_by: string | null;
   invite_count: number;
   created_at: string;
