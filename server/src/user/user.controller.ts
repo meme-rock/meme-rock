@@ -35,6 +35,7 @@ export class UserController {
     @Body() user: CreateUserDto,
     @Headers('x-telegram-init-data') initData: string,
   ) {
+    console.log('Loading user:', user_id);
     return await this.userService.loading(user_id, user, initData);
   }
 
