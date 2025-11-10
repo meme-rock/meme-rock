@@ -13,6 +13,7 @@ import { UserHiltiService } from './user-hilti.service';
 
 import { BotModule } from 'src/bot/bot.module';
 import { MinerService } from 'src/miner/miner.service';
+import { HelpersService } from 'src/helpers/helpers.service';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MinerService } from 'src/miner/miner.service';
     UserAchivementService,
     UserHiltiService,
     MinerService,
+    HelpersService,
   ],
 })
 export class UserModule {}

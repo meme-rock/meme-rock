@@ -8,6 +8,7 @@ import achievementsReducer from "./slices/achievementsSlice";
 import { boosterApi } from "./services/booster/booster-api";
 import { marketApi } from "./services/market/market-api";
 import { minerApi } from "./services/miner/miner-api";
+import { ranksApi } from "./services/ranks/ranks-api";
 
 export const store = configureStore({
   reducer: {
@@ -20,13 +21,15 @@ export const store = configureStore({
     [boosterApi.reducerPath]: boosterApi.reducer,
     [marketApi.reducerPath]: marketApi.reducer,
     [minerApi.reducerPath]: minerApi.reducer,
+    [ranksApi.reducerPath]: ranksApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       userApi.middleware,
       boosterApi.middleware,
       marketApi.middleware,
-      minerApi.middleware
+      minerApi.middleware,
+      ranksApi.middleware
     ),
 });
 

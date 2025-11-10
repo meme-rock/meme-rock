@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import {
@@ -9,21 +9,12 @@ import {
   Pickaxe,
   User,
   Crown,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { useGetLeaderboardQuery } from "../redux/services/ranks/ranks-api";
 
 type LeaderboardTab = "ranking" | "weekly";
-
-interface LeaderboardUser {
-  rank: number;
-  userId: string;
-  username: string;
-  photoUrl?: string;
-  minerLevel: number;
-  hiltiLevel: number;
-  profitPerHour: number;
-  totalCoins: number;
-  isPremium: boolean;
-}
 
 interface WeeklyInviteUser {
   rank: number;
@@ -41,95 +32,52 @@ export const LeaderboardPage = () => {
     shallowEqual
   );
 
-  // Mock data - Backend'den gelecek
-  const leaderboardUsers: LeaderboardUser[] = useMemo(
-    () => [
-      {
-        rank: 1,
-        userId: "123456",
-        username: "CryptoKing",
-        photoUrl: undefined,
-        minerLevel: 5,
-        hiltiLevel: 5,
-        profitPerHour: 15000,
-        totalCoins: 1250000,
-        isPremium: true,
-      },
-      {
-        rank: 2,
-        userId: "789012",
-        username: "MoonMiner",
-        photoUrl: undefined,
-        minerLevel: 5,
-        hiltiLevel: 4,
-        profitPerHour: 12500,
-        totalCoins: 980000,
-        isPremium: true,
-      },
-      {
-        rank: 3,
-        userId: "345678",
-        username: "DiamondHands",
-        photoUrl: undefined,
-        minerLevel: 4,
-        hiltiLevel: 5,
-        profitPerHour: 11000,
-        totalCoins: 875000,
-        isPremium: false,
-      },
-      // Add more mock users
-      ...Array.from({ length: 7 }, (_, i) => ({
-        rank: i + 4,
-        userId: `user_${i + 4}`,
-        username: `Player${i + 4}`,
-        photoUrl: undefined,
-        minerLevel: 3 - Math.floor(i / 3),
-        hiltiLevel: 3 - Math.floor(i / 3),
-        profitPerHour: 8000 - i * 500,
-        totalCoins: 500000 - i * 50000,
-        isPremium: false,
-      })),
-    ],
-    []
-  );
+  // Gerçek API'den veri çek
+  const {
+    data: leaderboardData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetLeaderboardQuery(currentUserId, {
+    skip: !currentUserId, // currentUserId yoksa sorgu yapma
+    refetchOnMountOrArgChange: true, // Her mount'ta fresh data
+  });
 
-  const weeklyInviteUsers: WeeklyInviteUser[] = useMemo(
-    () => [
-      {
-        rank: 1,
-        userId: "user1",
-        username: "InviteChamp",
-        photoUrl: undefined,
-        weeklyInvites: 145,
-        isPremium: true,
-      },
-      {
-        rank: 2,
-        userId: "user2",
-        username: "Referrer Pro",
-        photoUrl: undefined,
-        weeklyInvites: 98,
-        isPremium: true,
-      },
-      {
-        rank: 3,
-        userId: "user3",
-        username: "ShareMaster",
-        photoUrl: undefined,
-        weeklyInvites: 76,
-        isPremium: false,
-      },
-      ...Array.from({ length: 7 }, (_, i) => ({
-        rank: i + 4,
-        userId: `invite_user_${i + 4}`,
-        username: `Inviter${i + 4}`,
-        photoUrl: undefined,
-        weeklyInvites: 50 - i * 5,
-        isPremium: false,
-      })),
-    ],
-    []
-  );
+  // Weekly invite mock data (henüz backend'de yok)
+  const weeklyInviteUsers: WeeklyInviteUser[] = [
+    {
+      rank: 1,
+      userId: "user1",
+      username: "InviteChamp",
+      photoUrl: undefined,
+      weeklyInvites: 145,
+      isPremium: true,
+    },
+    {
+      rank: 2,
+      userId: "user2",
+      username: "Referrer Pro",
+      photoUrl: undefined,
+      weeklyInvites: 98,
+      isPremium: true,
+    },
+    {
+      rank: 3,
+      userId: "user3",
+      username: "ShareMaster",
+      photoUrl: undefined,
+      weeklyInvites: 76,
+      isPremium: false,
+    },
+    ...Array.from({ length: 7 }, (_, i) => ({
+      rank: i + 4,
+      userId: `invite_user_${i + 4}`,
+      username: `Inviter${i + 4}`,
+      photoUrl: undefined,
+      weeklyInvites: 50 - i * 5,
+      isPremium: false,
+    })),
+  ];
 
   // Calculate time until weekly reset (every Monday 00:00 UTC)
   const getTimeUntilReset = () => {
@@ -239,36 +187,88 @@ export const LeaderboardPage = () => {
         {/* Rankings Tab */}
         {activeTab === "ranking" && (
           <div className="space-y-3">
-            {leaderboardUsers.map((user) => {
-              const isCurrentUser = user.userId === currentUserId;
-              return (
-                <div
-                  key={user.userId}
-                  className={`bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border rounded-2xl p-4 transition-all duration-300 ${
-                    isCurrentUser
-                      ? "border-purple-500/50 ring-2 ring-purple-500/30"
-                      : "border-slate-700/50 hover:border-slate-600/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Rank */}
-                    <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getRankColor(
-                        user.rank
-                      )} flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0`}
-                    >
-                      {user.rank <= 3 ? (
-                        <span className="text-2xl">
-                          {getRankIcon(user.rank)}
-                        </span>
-                      ) : (
-                        <span className="text-lg">#{user.rank}</span>
-                      )}
-                    </div>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-12 h-12 text-purple-400 animate-spin mb-4" />
+                <p className="text-slate-400 text-sm">Loading leaderboard...</p>
+              </div>
+            )}
 
-                    {/* Avatar */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-slate-800">
+            {/* Error State */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+                <p className="text-red-400 text-sm mb-4">
+                  Failed to load leaderboard
+                </p>
+                <button
+                  onClick={() => refetch()}
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Your Rank Display (Always show at top) */}
+            {!isLoading &&
+              !isError &&
+              leaderboardData &&
+              leaderboardData.currentUserRank > 0 && (
+                <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-xl border border-purple-500/50 rounded-2xl p-5 mb-4 shadow-lg shadow-purple-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl p-3">
+                        <Trophy className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 font-medium mb-1">
+                          Your Current Rank
+                        </p>
+                        <p className="text-3xl font-bold bg-gradient-to-r from-purple-200 to-blue-200 bg-clip-text text-transparent">
+                          #{leaderboardData.currentUserRank.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">Keep mining!</p>
+                      <p className="text-xs text-purple-300 font-semibold">
+                        Climb higher 🚀
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            {/* Leaderboard List */}
+            {!isLoading &&
+              !isError &&
+              leaderboardData?.leaderboard.map((user) => {
+                return (
+                  <div
+                    key={user._id}
+                    className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border border-slate-700/50 hover:border-slate-600/50 rounded-2xl p-4 transition-all duration-300"
+                  >
+                    {/* Header: Rank, Avatar, Username, Premium */}
+                    <div className="flex items-center gap-3 mb-3">
+                      {/* Rank Badge */}
+                      <div
+                        className={`w-14 h-14 rounded-xl bg-gradient-to-br ${getRankColor(
+                          user.rank
+                        )} flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0`}
+                      >
+                        {user.rank <= 3 ? (
+                          <span className="text-2xl">
+                            {getRankIcon(user.rank)}
+                          </span>
+                        ) : (
+                          <span className="text-lg">#{user.rank}</span>
+                        )}
+                      </div>
+
+                      {/* Avatar */}
+                      <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-slate-800 flex-shrink-0">
                         {user.photoUrl ? (
                           <img
                             src={user.photoUrl}
@@ -277,70 +277,99 @@ export const LeaderboardPage = () => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-cyan-600">
-                            <User className="w-6 h-6 text-white" />
+                            <User className="w-7 h-7 text-white" />
                           </div>
                         )}
                       </div>
-                      {user.isPremium && (
-                        <div className="absolute -top-1 -right-1 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full p-0.5">
-                          <Crown className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </div>
 
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-white truncate">
+                      {/* Username & Premium Badge */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-white text-lg truncate mb-1">
                           {user.username}
                         </h3>
-                        {isCurrentUser && (
-                          <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold">
-                            YOU
-                          </span>
+                        {user.isPremium && (
+                          <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/40 rounded-lg px-2 py-1 w-fit">
+                            <Crown className="w-3.5 h-3.5 text-yellow-400" />
+                            <span className="text-xs font-semibold text-yellow-300">
+                              Premium
+                            </span>
+                          </div>
                         )}
                       </div>
+                    </div>
 
-                      {/* Levels */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-400/30 rounded px-1.5 py-0.5">
-                          <Pickaxe className="w-3 h-3 text-blue-400" />
-                          <span className="text-[10px] text-blue-300">
-                            Lv {user.minerLevel}
+                    {/* Levels Row */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-400/30 rounded-lg px-2 py-1.5">
+                        <Pickaxe className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs text-blue-300 font-semibold">
+                          Lv {user.minerLevel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-400/30 rounded-lg px-2 py-1.5">
+                        <img
+                          src="/jackhammer.svg"
+                          alt="Hilti"
+                          className="w-4 h-4"
+                        />
+                        <span className="text-xs text-purple-300 font-semibold">
+                          Lv {user.hiltiLevel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-400/30 rounded-lg px-2 py-1.5">
+                        <Users className="w-4 h-4 text-green-400" />
+                        <span className="text-xs text-green-300 font-semibold">
+                          {user.inviteCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stats Row - Bigger & Better */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Profit Per Hour */}
+                      <div className="bg-gradient-to-br from-blue-950/60 to-blue-900/40 border border-blue-700/40 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <img src="/rock.svg" alt="Rock" className="w-5 h-5" />
+                          <span className="text-xs text-blue-300/80 font-medium">
+                            Per Hour
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 bg-purple-500/10 border border-purple-400/30 rounded px-1.5 py-0.5">
-                          <img
-                            src="/jackhammer.svg"
-                            alt="Hilti"
-                            className="w-3 h-3"
-                          />
-                          <span className="text-[10px] text-purple-300">
-                            Lv {user.hiltiLevel}
-                          </span>
-                        </div>
+                        <p className="text-lg font-bold text-blue-200">
+                          {user.profitPerHour.toLocaleString()}
+                        </p>
                       </div>
 
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-slate-400">Per Hour: </span>
-                          <span className="text-cyan-400 font-bold">
-                            {user.profitPerHour.toLocaleString()}
+                      {/* Total Coins */}
+                      <div className="bg-gradient-to-br from-blue-950/60 to-blue-900/40 border border-blue-700/40 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <img src="/rock.svg" alt="Rock" className="w-5 h-5" />
+                          <span className="text-xs text-blue-300/80 font-medium">
+                            Total
                           </span>
                         </div>
-                        <div>
-                          <span className="text-slate-400">Total: </span>
-                          <span className="text-amber-400 font-bold">
-                            {user.totalCoins.toLocaleString()}
-                          </span>
-                        </div>
+                        <p className="text-lg font-bold text-blue-200">
+                          {user.airdropCoins.toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>
+                );
+              })}
+
+            {/* Empty State */}
+            {!isLoading &&
+              !isError &&
+              leaderboardData?.leaderboard.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Trophy className="w-16 h-16 text-slate-600 mb-4" />
+                  <p className="text-slate-400 text-sm">
+                    No players on the leaderboard yet
+                  </p>
+                  <p className="text-slate-500 text-xs mt-2">
+                    Be the first to mine and claim the top spot!
+                  </p>
                 </div>
-              );
-            })}
+              )}
           </div>
         )}
 

@@ -17,6 +17,8 @@ import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
 import { ACHIVEMENTS } from 'src/common/config';
 import { UserAchivementService } from './user-achivement.service';
 import { MinerService } from 'src/miner/miner.service';
+import { BotService } from 'src/bot/bot.service';
+import { HelpersService } from 'src/helpers/helpers.service';
 
 @Injectable()
 export class UserService {
@@ -25,9 +27,6 @@ export class UserService {
   // private readonly MINING_COOLDOWN_MS = 15 * 1000;
 
   // Offline toplanabilecek maksimum periyot sayıları
-  private readonly MAX_CLAIMS_STANDARD = 2; // 2 periyot (örn. 2 saat)
-  private readonly MAX_CLAIMS_AUTO_MINING = 6; // 6 periyot (örn. 6 saat)
-  private readonly MAX_CLAIMS_PREMIUM = 24; // 24 periyot (örn. 24 saat)
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
@@ -35,6 +34,8 @@ export class UserService {
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
     private userAchivementService: UserAchivementService,
     private minerService: MinerService,
+    private botService: BotService,
+    private helpersService: HelpersService,
   ) {}
 
   /**
@@ -71,7 +72,6 @@ export class UserService {
 
   async loading(_id: string, user: CreateUserDto, initData: string) {
     try {
-      console.log('Loading service called for user:', _id);
       const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
         await Promise.all([
           // Hiltis
@@ -89,73 +89,22 @@ export class UserService {
             .populate('hilti_data.hilti')
             .exec(),
         ]);
-      console.log('hiltis', hiltis);
-      console.log('level1Miner', level1Miner);
-      console.log('level1Hilti', level1Hilti);
+
       if (!level1Miner || !level1Hilti) {
         throw new Error('LEVEL_1 miner or hilti not found in database');
       }
 
       //? Create new user if not exists
       if (!existingUser) {
-        // Create new user
-        const newUser = await this.userModel.create({
-          _id,
-          telegram_data: user.telegram_data,
-          balance_data: {},
-          payment_data: {},
-          airdrop_data: {},
-          ad_data: {},
-          miner_data: {
-            miner: level1Miner._id,
-            last_mine: new Date(),
-          },
-          hilti_data: {
-            hilti: level1Hilti._id,
-          },
-          boosters: [],
-          is_premium: false,
-          invited_by: null,
-          invite_count: 0,
-          created_at: new Date(),
-          last_online: new Date(),
-        });
-
-        // Populate and return new user
-        const populatedUser = await this.userModel
-          .findById(_id)
-          .populate('miner_data.miner')
-          .populate('hilti_data.hilti')
-          .exec();
-
-        if (!populatedUser) {
-          throw new Error('Failed to create new user');
-        }
-
-        const mergedAchivements =
-          this.userAchivementService.returnMergedAchivements(populatedUser);
-
-        const nextMineTime = new Date(
-          newUser.miner_data.last_mine.getTime() + this.MINING_COOLDOWN_MS,
-        );
-        console.log('New user created:', _id);
-        return {
-          user: populatedUser,
+        const newUser = await this.saveNewUser(
+          user,
+          initData,
           hiltis,
           miners,
-          achievements: mergedAchivements,
-          mine_claim: {
-            success: true,
-            claimed_reward: 0,
-            reward_type: level1Miner.reward_type,
-            periods_claimed: 0,
-            last_mine: newUser.miner_data.last_mine,
-            next_mine: nextMineTime,
-            mining_cooldown_ms: this.MINING_COOLDOWN_MS,
-            message: 'NEW_USER',
-          },
-          message: 'User created successfully',
-        };
+          level1Miner,
+          level1Hilti,
+        );
+        return newUser;
       }
       //? New user creation end
 
@@ -230,6 +179,151 @@ export class UserService {
     }
   }
 
+  async saveNewUser(
+    user: CreateUserDto,
+    initData: string,
+    hiltis: Hilti[],
+    miners: Miner[],
+    level1Miner: Miner,
+    level1Hilti: Hilti,
+  ) {
+    try {
+      const parsedData = new URLSearchParams(initData);
+      const user_ = JSON.parse(parsedData.get('user') || '{}');
+      const telegram_id = user_.id.toString();
+      const inviter_id = parsedData.get('start_param')?.toString() || null;
+
+      console.log('telegram_id', telegram_id);
+      console.log('inviter_id', inviter_id);
+      console.log('user_', user);
+      console.log('parsedData', parsedData);
+
+      const newUser = await this.userModel.create({
+        _id: telegram_id,
+        telegram_data: user.telegram_data,
+        balance_data: {},
+        payment_data: {},
+        airdrop_data: {},
+        ad_data: {},
+        miner_data: {
+          miner: level1Miner._id,
+          last_mine: new Date(),
+        },
+        hilti_data: {
+          hilti: level1Hilti._id,
+        },
+        boosters: [],
+        is_premium: false,
+        invited_by: inviter_id || null,
+        invite_count: 0,
+        created_at: new Date(),
+        last_online: new Date(),
+      });
+
+      // Populate and return new user
+      const populatedUser = await this.userModel
+        .findById(telegram_id)
+        .populate('miner_data.miner')
+        .populate('hilti_data.hilti')
+        .exec();
+
+      if (!populatedUser) {
+        throw new Error('Failed to create new user');
+      }
+
+      const mergedAchivements =
+        this.userAchivementService.returnMergedAchivements(populatedUser);
+
+      const nextMineTime = new Date(
+        newUser.miner_data.last_mine.getTime() + this.MINING_COOLDOWN_MS,
+      );
+      if (inviter_id && inviter_id !== telegram_id) {
+        await this.handleInviter(
+          inviter_id,
+          telegram_id,
+          user.telegram_data.username || user.telegram_data.first_name,
+        );
+      }
+      console.log('New user created:', telegram_id);
+      return {
+        user: populatedUser,
+        hiltis,
+        miners,
+        achievements: mergedAchivements,
+        mine_claim: {
+          success: true,
+          claimed_reward: 0,
+          reward_type: level1Miner.reward_type,
+          periods_claimed: 0,
+          last_mine: newUser.miner_data.last_mine,
+          next_mine: nextMineTime,
+          mining_cooldown_ms: this.MINING_COOLDOWN_MS,
+          message: 'NEW_USER',
+        },
+        message: 'User created successfully',
+      };
+    } catch (error) {
+      console.error('Error in saveNewUser service:', error);
+      throw error;
+    }
+  }
+  async handleInviter(
+    inviter_id: string,
+    new_user_telegram_id: string, // New parameter
+    new_user_username: string, // New parameter
+  ): Promise<void> {
+    try {
+      // 1. Atomically increment the invite_count and get the updated user
+      const inviter = await this.userModel.findByIdAndUpdate(
+        inviter_id,
+        {
+          $inc: { invite_count: 1 },
+        },
+        { new: true }, // 'new: true' returns the document *after* the update
+      );
+
+      // If inviter doesn't exist (e.g., deleted account), stop.
+      if (!inviter) {
+        return;
+      }
+
+      // 2. Get the new total invite count
+      const totalInvites = inviter.invite_count;
+
+      // 3. Escape the new user's name for MarkdownV2
+      // This prevents errors if the name has characters like '.', '(', '!', etc.
+      // (Assuming 'escapeTextForMarkdownV2' is in your HelpersService)
+      const escapedFirstName =
+        this.helpersService.safeMarkdown(new_user_username);
+
+      // 4. Create the MarkdownV2 message
+      // Note: We must escape special characters like '!', '.', '(', ')'
+      const message = [
+        this.helpersService.safeMarkdown('✨ New Invite!'),
+        '',
+        this.helpersService.safeMarkdown(
+          'A new user just joined using your invite link 🤝',
+        ),
+        '',
+        `👤 *User:* [@${escapedFirstName}](tg://user?id=${new_user_telegram_id})`,
+        `📈 *Total Invites:* \`${totalInvites}\``,
+        '',
+        this.helpersService.safeMarkdown('Thanks for growing our community 🌱'),
+      ].join('\n');
+
+      // 5. Send the notification
+      await this.botService.sendNotificationToUser(
+        Number(inviter_id),
+        message, // Send the new formatted message
+      );
+    } catch (error) {
+      // IMPORTANT: We only log the error.
+      // We do NOT 'throw error' here.
+      // If sending the notification fails (e.g., bot blocked),
+      // it should NOT stop the new user from logging in.
+      console.error('Error in handleInviter service:', error);
+    }
+  }
   async getBoosters() {
     try {
       const boosters = await this.boosterModel.find();

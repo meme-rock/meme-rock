@@ -15,6 +15,7 @@ import { ThrottleTestController } from './common/controllers/throttle-test.contr
 import { MarketModule } from './market/market.module';
 import { HelpersModule } from './helpers/helpers.module';
 import { MinerModule } from './miner/miner.module';
+import { RanksModule } from './ranks/ranks.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -66,6 +67,7 @@ if (!mongoUri) {
     BotModule,
     MarketModule,
     HelpersModule,
+    RanksModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

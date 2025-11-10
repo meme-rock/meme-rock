@@ -103,8 +103,8 @@ export class BotController implements OnModuleInit {
           '✅ *Payment Successful\\!*',
           '',
           // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
-          `*Deposit:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
-          `*Stones:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
+          `*Deposit:* \`${this.helpersService.safeMarkdown(String(amount))} TON\``,
+          `*Stones:* \`${this.helpersService.safeMarkdown(String(market_details.total_stones))}\``,
           '',
           '🎉 Your balance has been *successfully updated\\!*',
           '_Please refresh the app to see the latest changes\\._',
