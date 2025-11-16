@@ -1,14 +1,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 
 export type BoosterDocument = HydratedDocument<Booster>;
 
 // Unlock requirements interface
-export interface BoosterUnlockRequirements {
-  stone?: number;
-  dust?: number;
-  invite?: number;
+@Schema({ _id: false }) // Alt belge olduğu için _id'ye gerek yok
+class UnlockOptions {
+  @Prop({ required: true, type: String, enum: EBoosterUnlockCurrencyType })
+  type: EBoosterUnlockCurrencyType;
+
+  @Prop({ required: true, type: Number })
+  amount: number;
 }
 
 // Level costs and profits structure
@@ -29,8 +33,8 @@ export class Booster {
   @Prop({ required: true, type: Number })
   max_level: number; // Maximum level this booster can be upgraded to
 
-  @Prop({ type: Object, default: {} })
-  unlock_requirements: BoosterUnlockRequirements; // Requirements to unlock this booster
+  @Prop({ type: [UnlockOptions], default: [] })
+  unlock_options: UnlockOptions[]; // Requirements to unlock this booster
 
   @Prop({ type: [Object], default: [] })
   level_data: LevelData[]; // Array of level data (costs and profits per level)

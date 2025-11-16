@@ -1,15 +1,10 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { StoneTodustExchange } from "../components/dust/Exchange";
 import { AdRewardSection } from "../components/dust/AdRewardSection";
-import { SpinWheelButton } from "../components/dust/SpinWheelButton";
-import { SpinWheelModal } from "../components/dust/SpinWheelModal";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 
 export const DustPage = () => {
-  const [showSpinWheel, setShowSpinWheel] = useState(false);
-
   // Select only balance_data to avoid re-renders from displayRocks updates
   const balanceData = useSelector(
     (state: RootState) => state.user.balance_data,
@@ -64,27 +59,7 @@ export const DustPage = () => {
         >
           <AdRewardSection />
         </motion.div>
-
-        {/* Spin Wheel Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <SpinWheelButton
-            userDust={balanceData.dust}
-            onClick={() => setShowSpinWheel(true)}
-          />
-        </motion.div>
       </div>
-
-      {/* Spin Wheel Modal */}
-      {showSpinWheel && (
-        <SpinWheelModal
-          userDust={balanceData.dust}
-          onClose={() => setShowSpinWheel(false)}
-        />
-      )}
 
       {/* Adsgram is now integrated via window.Adsgram.init() - no component needed */}
     </div>

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock } from "lucide-react";
 import { IHiltiDetail } from "../../types";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface HiltiDisplayProps {
   selectedHilti: IHiltiDetail;
@@ -99,7 +100,7 @@ export const HiltiDisplay = ({
                   className="w-5 h-5 object-contain drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]"
                 />
                 <span className="text-white font-bold text-sm">
-                  +{totalIncome.toLocaleString()}/h
+                  +{formatInteger(totalIncome)}/h
                 </span>
               </div>
             </div>
@@ -138,7 +139,7 @@ export const HiltiDisplay = ({
                 className="w-4 h-4 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
               />
               <span className="text-white font-bold text-sm">
-                +{selectedHilti.profit_per_hour.toLocaleString()}/h
+                +{formatInteger(selectedHilti.profit_per_hour)}/h
               </span>
             </div>
           </div>
@@ -167,7 +168,7 @@ export const HiltiDisplay = ({
                 className="w-4 h-4 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
               />
               <span className="text-white font-bold text-sm">
-                +{userProfitPerHour.toLocaleString()}/h
+                +{formatInteger(userProfitPerHour)}/h
               </span>
             </div>
           </div>

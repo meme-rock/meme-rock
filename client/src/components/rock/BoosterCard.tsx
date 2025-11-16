@@ -9,15 +9,20 @@ import {
   X,
 } from "lucide-react";
 import { IBooster } from "../../types";
+import { EBoosterUnlockCurrencyType } from "../../types/enums";
 import {
   useUnlockBoosterMutation,
   useUpgradeBoosterMutation,
 } from "../../redux/services/booster/booster-api";
+import { formatInteger } from "../../utils/formatNumber";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import WebApp from "@twa-dev/sdk";
 import { useState } from "react";
 import { BoosterConfirmModal } from "./BoosterConfirmModal";
+import Lottie from "lottie-react";
+import animatedStar from "../../../public/animated-star.json";
+import animatedTon from "../../../public/animated-ton.json";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -37,22 +42,40 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   const currentLevel = booster.current_level || 0;
   const isUnlocked = booster.is_unlocked || false;
 
-  // Check unlock requirements
-  const requirements = booster.unlock_requirements;
-  const hasStoneReq = (requirements.stone ?? 0) > 0;
-  const hasDustReq = (requirements.dust ?? 0) > 0;
-  const hasInviteReq = (requirements.invite ?? 0) > 0;
+  // Parse unlock options array
+  const unlockOptions = booster.unlock_options || [];
 
-  // Check if user meets requirements
+  // Separate options by type
+  const stoneOption = unlockOptions.find(
+    (opt) => opt.type === EBoosterUnlockCurrencyType.STONE
+  );
+  const dustOption = unlockOptions.find(
+    (opt) => opt.type === EBoosterUnlockCurrencyType.DUST
+  );
+  const inviteOption = unlockOptions.find(
+    (opt) => opt.type === EBoosterUnlockCurrencyType.INVITE
+  );
+  const tonOption = unlockOptions.find(
+    (opt) => opt.type === EBoosterUnlockCurrencyType.TON
+  );
+  const starOption = unlockOptions.find(
+    (opt) => opt.type === EBoosterUnlockCurrencyType.STAR
+  );
+
+  // Check if user meets requirements (STONE, DUST, INVITE)
   const meetsStoneReq =
-    !hasStoneReq || user.balance_data.stone >= (requirements.stone ?? 0);
+    !stoneOption || user.balance_data.stone >= stoneOption.amount;
   const meetsDustReq =
-    !hasDustReq || user.balance_data.dust >= (requirements.dust ?? 0);
+    !dustOption || user.balance_data.dust >= dustOption.amount;
   const meetsInviteReq =
-    !hasInviteReq || user.invite_count >= (requirements.invite ?? 0);
+    !inviteOption || user.invite_count >= inviteOption.amount;
 
-  // All requirements met
+  // All non-payment requirements met (STONE, DUST, INVITE only)
   const allRequirementsMet = meetsStoneReq && meetsDustReq && meetsInviteReq;
+
+  // Has payment options (TON or STAR)
+  const hasPaymentOptions = !!tonOption || !!starOption;
+  const hasNonPaymentOptions = !!stoneOption || !!dustOption || !!inviteOption;
 
   const handleUnlockClick = () => {
     if (!allRequirementsMet) {
@@ -233,41 +256,111 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2 relative z-10">
+      <div className="flex flex-col gap-2 relative z-10">
         {isLevelLocked ? (
           <div></div>
         ) : !isUnlocked ? (
-          <button
-            onClick={handleUnlockClick}
-            disabled={isUnlocking || !allRequirementsMet}
-            className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 relative overflow-hidden group ${
-              isUnlocking
-                ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600"
-                : allRequirementsMet
-                ? "bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:via-cyan-400 hover:to-blue-500 active:scale-95 shadow-lg shadow-cyan-500/30"
-                : "bg-gradient-to-r from-gray-700 to-gray-800 cursor-not-allowed opacity-60"
-            }`}
-          >
-            {/* Shine effect - only when unlockable */}
-            {allRequirementsMet && !isUnlocking && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-            )}
-            {isUnlocking ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10" />
-                <span className="relative z-10">Unlocking...</span>
-              </>
-            ) : (
-              <>
-                {allRequirementsMet ? (
-                  <Unlock className="w-5 h-5 relative z-10" />
-                ) : (
-                  <Lock className="w-5 h-5 relative z-10" />
+          <>
+            {/* Regular unlock button (STONE, DUST, INVITE) */}
+            {hasNonPaymentOptions && (
+              <button
+                onClick={handleUnlockClick}
+                disabled={isUnlocking || !allRequirementsMet}
+                className={`w-full px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 relative overflow-hidden group ${
+                  isUnlocking
+                    ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600"
+                    : allRequirementsMet
+                    ? "bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:via-cyan-400 hover:to-blue-500 active:scale-95 shadow-lg shadow-cyan-500/30"
+                    : "bg-gradient-to-r from-gray-700 to-gray-800 cursor-not-allowed opacity-60"
+                }`}
+              >
+                {/* Shine effect - only when unlockable */}
+                {allRequirementsMet && !isUnlocking && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
                 )}
-                <span className="relative z-10">Unlock</span>
-              </>
+                {isUnlocking ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10" />
+                    <span className="relative z-10">Unlocking...</span>
+                  </>
+                ) : (
+                  <>
+                    {allRequirementsMet ? (
+                      <Unlock className="w-5 h-5 relative z-10" />
+                    ) : (
+                      <Lock className="w-5 h-5 relative z-10" />
+                    )}
+                    <span className="relative z-10">Unlock</span>
+                  </>
+                )}
+              </button>
             )}
-          </button>
+
+            {/* Payment options separator */}
+            {hasNonPaymentOptions && hasPaymentOptions && (
+              <div className="flex items-center gap-3 py-2">
+                <div className="flex-1 h-px bg-gray-700/50"></div>
+                <span className="text-xs text-gray-500 font-semibold">
+                  OR PAY WITH
+                </span>
+                <div className="flex-1 h-px bg-gray-700/50"></div>
+              </div>
+            )}
+
+            {/* Payment buttons (TON and STAR) */}
+            {hasPaymentOptions && (
+              <div className="flex items-center gap-2">
+                {/* STAR Payment Button */}
+                {starOption && (
+                  <button
+                    onClick={() => {
+                      // TODO: Implement purchaseBooster endpoint
+                      WebApp.showAlert(
+                        `STAR payment coming soon!\n\nPrice: ${starOption.amount} STARS\n\nThis will use the purchaseBooster endpoint.`
+                      );
+                    }}
+                    className="flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 relative overflow-hidden group bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-95"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                    <div className="w-7 h-7 relative z-10">
+                      <Lottie animationData={animatedStar} loop={true} />
+                    </div>
+                    <span className="relative z-10 text-lg font-bold">
+                      {starOption.amount}
+                    </span>
+                  </button>
+                )}
+
+                {/* OR Separator - only show if both options exist */}
+                {tonOption && starOption && (
+                  <span className="text-gray-400 font-bold text-sm px-1">
+                    OR
+                  </span>
+                )}
+
+                {/* TON Payment Button */}
+                {tonOption && (
+                  <button
+                    onClick={() => {
+                      // TODO: Implement purchaseBooster endpoint
+                      WebApp.showAlert(
+                        `TON payment coming soon!\n\nPrice: ${tonOption.amount} TON\n\nThis will use the purchaseBooster endpoint.`
+                      );
+                    }}
+                    className="flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 relative overflow-hidden group bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-95"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                    <div className="w-7 h-7 relative z-10">
+                      <Lottie animationData={animatedTon} loop={true} />
+                    </div>
+                    <span className="relative z-10 text-lg font-bold">
+                      {tonOption.amount}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         ) : isMaxLevel ? (
           <button
             disabled
@@ -295,9 +388,7 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
             ) : (
               <>
                 <TrendingUp className="w-4 h-4 relative z-10" />
-                <span className="relative z-10 text-lg font-bold">
-                  Upgrade
-                </span>
+                <span className="relative z-10 text-lg font-bold">Upgrade</span>
               </>
             )}
           </button>
@@ -327,13 +418,13 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       )}
 
       {/* Unlock Requirements - Show below unlock button */}
-      {!isLevelLocked && !isUnlocked && (
+      {!isLevelLocked && !isUnlocked && hasNonPaymentOptions && (
         <div className="mt-4 pt-4 border-t border-gray-800/50 relative z-10">
           <p className="text-xs text-gray-400 font-semibold mb-3">
             Unlock Requirements:
           </p>
           <div className="space-y-2">
-            {hasStoneReq && (
+            {stoneOption && (
               <div
                 className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
                   meetsStoneReq
@@ -353,16 +444,16 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
                       meetsStoneReq ? "text-green-300" : "text-red-300"
                     }`}
                   >
-                    {requirements.stone?.toLocaleString()} Stone
+                    {formatInteger(stoneOption.amount)} Stone
                   </span>
                 </div>
                 <span className="text-xs text-gray-400">
-                  {user.balance_data.stone.toLocaleString()} /{" "}
-                  {requirements.stone?.toLocaleString()}
+                  {formatInteger(user.balance_data.stone)} /{" "}
+                  {formatInteger(stoneOption.amount)}
                 </span>
               </div>
             )}
-            {hasDustReq && (
+            {dustOption && (
               <div
                 className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
                   meetsDustReq
@@ -382,16 +473,16 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
                       meetsDustReq ? "text-green-300" : "text-red-300"
                     }`}
                   >
-                    {requirements.dust?.toLocaleString()} Dust
+                    {formatInteger(dustOption.amount)} Dust
                   </span>
                 </div>
                 <span className="text-xs text-gray-400">
-                  {user.balance_data.dust.toLocaleString()} /{" "}
-                  {requirements.dust?.toLocaleString()}
+                  {formatInteger(user.balance_data.dust)} /{" "}
+                  {formatInteger(dustOption.amount)}
                 </span>
               </div>
             )}
-            {hasInviteReq && (
+            {inviteOption && (
               <div
                 className={`flex items-center justify-between px-3 py-2 rounded-lg border ${
                   meetsInviteReq
@@ -411,12 +502,12 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
                       meetsInviteReq ? "text-green-300" : "text-red-300"
                     }`}
                   >
-                    {requirements.invite} Friend
-                    {requirements.invite !== 1 ? "s" : ""}
+                    {inviteOption.amount} Friend
+                    {inviteOption.amount !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <span className="text-xs text-gray-400">
-                  {user.invite_count} / {requirements.invite}
+                  {user.invite_count} / {inviteOption.amount}
                 </span>
               </div>
             )}
@@ -443,14 +534,18 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
         type="unlock"
         boosterTitle={booster.title}
         cost={{
-          amount: hasStoneReq
-            ? requirements.stone!
-            : hasDustReq
-            ? requirements.dust!
+          amount: stoneOption
+            ? stoneOption.amount
+            : dustOption
+            ? dustOption.amount
             : 0,
-          currency: hasStoneReq ? "stone" : hasDustReq ? "dust" : "rock",
+          currency: stoneOption ? "stone" : dustOption ? "dust" : "rock",
         }}
-        requirements={requirements}
+        requirements={{
+          stone: stoneOption?.amount,
+          dust: dustOption?.amount,
+          invite: inviteOption?.amount,
+        }}
         userBalance={{
           stone: user.balance_data.stone,
           dust: user.balance_data.dust,

@@ -9,4 +9,9 @@ export class RanksController {
   async getLeaderboard(@Param('user_id') user_id: string) {
     return await this.ranksService.getLeaderBoard(user_id);
   }
+
+  @Get('get-weekly-invites-leaderboard')
+  async getWeeklyInvitesLeaderboard() {
+    return await this.ranksService.getWeeklyInvitesLeaderboard();
+  }
 }

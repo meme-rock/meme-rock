@@ -100,7 +100,6 @@ export class BotService {
         parse_mode: 'MarkdownV2',
       });
 
-      this.logger.log(`Notification sent to user ${user_id}: ${message}`);
       return { success: true, message: 'Notification sent successfully' };
     } catch (error) {
       const errorMessage =

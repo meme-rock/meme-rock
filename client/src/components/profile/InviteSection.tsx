@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { formatInteger } from "../../utils/formatNumber";
 import { Users, Copy, Check, Gift } from "lucide-react";
 import { useState } from "react";
 
@@ -53,7 +54,7 @@ export const InviteSection = ({
         <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
           <p className="text-xs text-gray-400 mb-1">Bonus per invite</p>
           <p className="text-lg font-bold text-yellow-400">
-            +{bonusPerInvite.toLocaleString()} $ROCK
+            +{formatInteger(bonusPerInvite)} $ROCK
           </p>
         </div>
       </div>

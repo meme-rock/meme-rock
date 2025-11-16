@@ -41,3 +41,11 @@ export enum EHiltiLevel {
   LEVEL_4 = "LEVEL_4",
   LEVEL_5 = "LEVEL_5",
 }
+
+export enum EBoosterUnlockCurrencyType {
+  STONE = "STONE",
+  DUST = "DUST",
+  INVITE = "INVITE",
+  TON = "TON",
+  STAR = "STAR",
+}

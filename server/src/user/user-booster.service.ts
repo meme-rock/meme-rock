@@ -5,6 +5,7 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
+import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
 
 @Injectable()
 export class UserBoosterService {
@@ -69,7 +70,7 @@ export class UserBoosterService {
           title: dbBooster.title,
           required_hilti_level: dbBooster.required_hilti_level,
           max_level: dbBooster.max_level,
-          unlock_requirements: dbBooster.unlock_requirements,
+          unlock_options: dbBooster.unlock_options,
           image_url: dbBooster.image_url,
           is_unlocked: !!userBoosterData,
           current_level: currentLevel,
@@ -235,23 +236,69 @@ export class UserBoosterService {
         throw new BadRequestException('Booster not found');
       }
 
-      // Requirements
-      const requirements = booster.unlock_requirements || {};
-      const requiredStone = requirements.stone || 0;
-      const requiredDust = requirements.dust || 0;
-      const requiredInvites = requirements.invite || 0;
       const requiredHiltiLevel = parseInt(
         booster.required_hilti_level.split('_')[1],
       );
 
+      const unlockOptions = booster.unlock_options || [];
+
+      // Sadece non-payment option'ları kontrol et (STONE, DUST, INVITE)
+      const nonPaymentOptions = unlockOptions.filter(
+        (opt) =>
+          opt.type === EBoosterUnlockCurrencyType.STONE ||
+          opt.type === EBoosterUnlockCurrencyType.DUST ||
+          opt.type === EBoosterUnlockCurrencyType.INVITE,
+      );
+
+      if (nonPaymentOptions.length === 0) {
+        throw new BadRequestException(
+          'This booster can only be purchased with TON or STARS. Use purchase endpoint instead.',
+        );
+      }
+
+      // Tüm gereksinimleri karşılaması gereken bir dizi oluştur
+      let currencyType: EBoosterUnlockCurrencyType | undefined;
+      let currencyAmount: number = 0;
+      let userBalanceField:
+        | 'balance_data.stone'
+        | 'balance_data.dust'
+        | 'invite_count'
+        | undefined;
+
+      // Her bir requirement için işlem yap
+      const requirements = nonPaymentOptions.map((opt) => {
+        let field: 'balance_data.stone' | 'balance_data.dust' | 'invite_count';
+        switch (opt.type) {
+          case EBoosterUnlockCurrencyType.STONE:
+            field = 'balance_data.stone';
+            break;
+          case EBoosterUnlockCurrencyType.DUST:
+            field = 'balance_data.dust';
+            break;
+          case EBoosterUnlockCurrencyType.INVITE:
+            field = 'invite_count';
+            break;
+          default:
+            throw new BadRequestException('Invalid currency type');
+        }
+        return { type: opt.type, amount: opt.amount, field };
+      });
+
+      // İlk requirement'ı alalım (backward compatibility için)
+      if (requirements.length > 0) {
+        currencyType = requirements[0].type;
+        currencyAmount = requirements[0].amount;
+        userBalanceField = requirements[0].field;
+      }
+
+      const hasCost = requirements.length > 0 && currencyAmount > 0;
       // Level 1 profit (unlock sonrası kazanç)
       const levelOneProfit = booster.level_data?.[0]?.profit_per_hour || 0;
 
       // Build query conditions
       const queryConditions: any = {
         _id: user_id,
-        // Booster zaten unlock edilmiş mi kontrolü
-        'boosters.booster': { $nin: [booster_id] },
+        'boosters.booster': { $nin: [booster_id] }, // Zaten kilidi açılmamış olmalı
         // Hilti level kontrolü
         $expr: {
           $gte: [
@@ -263,21 +310,16 @@ export class UserBoosterService {
             requiredHiltiLevel,
           ],
         },
-        // Invite kontrolü
-        invite_count: { $gte: requiredInvites },
       };
 
-      // Stone requirement varsa ekle
-      if (requiredStone > 0) {
-        queryConditions['balance_data.stone'] = { $gte: requiredStone };
-      }
+      // TÜM GEREKSİNİMLER için bakiye kontrolü ekle
+      requirements.forEach((req) => {
+        if (req.amount > 0) {
+          queryConditions[req.field] = { $gte: req.amount };
+        }
+      });
 
-      // Dust requirement varsa ekle
-      if (requiredDust > 0) {
-        queryConditions['balance_data.dust'] = { $gte: requiredDust };
-      }
-
-      // Build update operations
+      // Atomik Güncelleme Operasyonlarını (Update) Oluştur
       const updateOperations: any = {
         $push: {
           boosters: {
@@ -290,21 +332,18 @@ export class UserBoosterService {
         },
       };
 
-      // Stone harcama
-      if (requiredStone > 0) {
-        updateOperations.$inc['balance_data.stone'] = -requiredStone;
-      }
-
-      // Dust harcama
-      if (requiredDust > 0) {
-        updateOperations.$inc['balance_data.dust'] = -requiredDust;
-      }
+      // SADECE STONE VE DUST için maliyet düşülür, INVITE için düşülmez (sadece kontrol)
+      requirements.forEach((req) => {
+        if (req.amount > 0 && req.type !== EBoosterUnlockCurrencyType.INVITE) {
+          updateOperations.$inc[req.field] = -req.amount;
+        }
+      });
 
       // ATOMİK İŞLEM - TÜM KONTROLLER VE GÜNCELLEMELER TEK SORGUDA
       const updatedUser = await this.userModel.findOneAndUpdate(
         queryConditions,
         updateOperations,
-        { new: true },
+        { new: true }, // Güncellenmiş kullanıcı belgesini döndür
       );
 
       // Başarısız olursa detaylı hata kontrolü
@@ -331,28 +370,33 @@ export class UserBoosterService {
           );
         }
 
-        if (
-          requiredStone > 0 &&
-          userAfterFail.balance_data.stone < requiredStone
-        ) {
-          throw new BadRequestException(
-            `Insufficient stones. Required: ${requiredStone.toLocaleString()}, Available: ${userAfterFail.balance_data.stone.toLocaleString()}`,
-          );
-        }
+        // TÜM GEREKSİNİMLER için bakiye kontrolü
+        for (const req of requirements) {
+          if (req.amount > 0) {
+            let userBalance = 0;
+            let currencyName = '';
 
-        if (
-          requiredDust > 0 &&
-          userAfterFail.balance_data.dust < requiredDust
-        ) {
-          throw new BadRequestException(
-            `Insufficient dust. Required: ${requiredDust.toLocaleString()}, Available: ${userAfterFail.balance_data.dust.toLocaleString()}`,
-          );
-        }
+            switch (req.type) {
+              case EBoosterUnlockCurrencyType.STONE:
+                userBalance = userAfterFail.balance_data.stone || 0;
+                currencyName = 'Stone';
+                break;
+              case EBoosterUnlockCurrencyType.DUST:
+                userBalance = userAfterFail.balance_data.dust || 0;
+                currencyName = 'Dust';
+                break;
+              case EBoosterUnlockCurrencyType.INVITE:
+                userBalance = userAfterFail.invite_count || 0;
+                currencyName = 'Invites';
+                break;
+            }
 
-        if (userAfterFail.invite_count < requiredInvites) {
-          throw new BadRequestException(
-            `Not enough invites. Required: ${requiredInvites}, Current: ${userAfterFail.invite_count}`,
-          );
+            if (userBalance < req.amount) {
+              throw new BadRequestException(
+                `Insufficient ${currencyName}. Required: ${req.amount.toLocaleString()}, Available: ${userBalance.toLocaleString()}`,
+              );
+            }
+          }
         }
 
         throw new BadRequestException(
@@ -411,7 +455,7 @@ export class UserBoosterService {
       title: dbBooster.title,
       required_hilti_level: dbBooster.required_hilti_level,
       max_level: dbBooster.max_level,
-      unlock_requirements: dbBooster.unlock_requirements,
+      unlock_options: dbBooster.unlock_options,
       image_url: dbBooster.image_url,
       is_unlocked: isUnlocked,
       current_level: currentLevel,

@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { useMemo } from "react";
-import { getResponsiveFontSize } from "../../utils/formatNumber";
+import { getResponsiveFontSize, formatNumber } from "../../utils/formatNumber";
 
 export const RockCounter = () => {
   const displayRocks = useSelector(
@@ -97,7 +97,7 @@ export const RockCounter = () => {
                   className="w-5 h-5 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
                 />
                 <span className="text-cyan-400 font-bold text-sm">
-                  +{totalProfitPerHour.toFixed(2)}
+                  +{formatNumber(totalProfitPerHour, 2)}
                 </span>
               </div>
             </div>

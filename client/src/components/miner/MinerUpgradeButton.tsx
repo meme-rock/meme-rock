@@ -5,6 +5,7 @@ import { RootState } from "../../redux/store";
 import { memo, useMemo } from "react";
 import { IMinerDetail } from "../../types";
 import WebApp from "@twa-dev/sdk";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface MinerUpgradeButtonProps {
   selectedMiner: IMinerDetail;
@@ -70,7 +71,11 @@ export const MinerUpgradeButton = memo(
               onClick={() => {
                 if (!canUpgrade) {
                   WebApp.showAlert(
-                    `You need ${requiredStone.toLocaleString()} stone to upgrade. You have ${userStoneBalance.toLocaleString()} stone.`
+                    `You need ${formatInteger(
+                      requiredStone
+                    )} stone to upgrade. You have ${formatInteger(
+                      userStoneBalance
+                    )} stone.`
                   );
                   return;
                 }
@@ -123,8 +128,8 @@ export const MinerUpgradeButton = memo(
                           hasEnoughStone ? "text-cyan-200" : "text-red-400"
                         }`}
                       >
-                        {userStoneBalance.toLocaleString()} /{" "}
-                        {requiredStone.toLocaleString()}
+                        {formatInteger(userStoneBalance)} /{" "}
+                        {formatInteger(requiredStone)}
                       </span>
                     </div>
                   </div>
@@ -205,7 +210,7 @@ export const MinerUpgradeButton = memo(
                         className="w-5 h-5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]"
                       />
                       <span className="text-xs font-bold text-gray-300">
-                        {requiredStone.toLocaleString()} stone to upgrade
+                        {formatInteger(requiredStone)} stone to upgrade
                       </span>
                     </div>
                   </div>

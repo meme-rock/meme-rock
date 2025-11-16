@@ -165,6 +165,9 @@ export class User {
   @Prop({ type: Number, default: 0 })
   invite_count: number;
 
+  @Prop({ type: Number, default: 0, index: true })
+  weekly_invite_count: number;
+
   @Prop({ type: Date, default: Date.now() })
   created_at: Date;
 

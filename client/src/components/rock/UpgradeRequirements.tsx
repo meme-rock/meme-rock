@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { CheckCircle, ArrowUp, Users } from "lucide-react";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface UpgradeRequirementsProps {
   nextLevel: number;
@@ -168,7 +169,7 @@ export const UpgradeRequirements = ({
                   Spend Dust
                 </p>
                 <p className="text-xs text-gray-400">
-                  {dustSpent.toLocaleString()} / {requiredDust.toLocaleString()}
+                  {formatInteger(dustSpent)} / {formatInteger(requiredDust)}
                 </p>
               </div>
             </div>
@@ -240,8 +241,8 @@ export const UpgradeRequirements = ({
                 Spend Stones
               </p>
               <p className="text-xs text-gray-400">
-                {stonesSpent.toLocaleString()} /{" "}
-                {requiredStones.toLocaleString()}
+                {formatInteger(stonesSpent)} /{" "}
+                {formatInteger(requiredStones)}
               </p>
             </div>
           </div>

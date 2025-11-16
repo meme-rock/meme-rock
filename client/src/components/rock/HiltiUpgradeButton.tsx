@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Lock, ArrowUp, CheckCircle } from "lucide-react";
 import { IHiltiDetail } from "../../types";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface HiltiUpgradeButtonProps {
   selectedHilti: IHiltiDetail;
@@ -122,11 +123,11 @@ export const HiltiUpgradeButton = ({
                         hasEnoughStone ? "text-green-400" : "text-red-400"
                       }`}
                     >
-                      {userStoneBalance.toLocaleString()}
+                      {formatInteger(userStoneBalance)}
                     </span>
                     <span className="text-gray-500">/</span>
                     <span className="text-cyan-400">
-                      {requiredStone.toLocaleString()}
+                      {formatInteger(requiredStone)}
                     </span>
                   </p>
                 </div>
@@ -215,11 +216,11 @@ export const HiltiUpgradeButton = ({
                           : "text-red-400"
                       }`}
                     >
-                      {userProfitPerHour.toLocaleString()}
+                      {formatInteger(userProfitPerHour)}
                     </span>
                     <span className="text-gray-500">/</span>
                     <span className="text-purple-400">
-                      {requiredProfitPerHour.toLocaleString()}
+                      {formatInteger(requiredProfitPerHour)}
                     </span>
                   </p>
                 </div>

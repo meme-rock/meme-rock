@@ -3,12 +3,15 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsNotEmpty,
+  IsNotIn,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 
 export class LevelDataDto {
@@ -21,15 +24,14 @@ export class LevelDataDto {
   @IsNumber()
   profit_per_hour: number;
 }
-export class UnlockRequirementsDto {
-  @IsNumber()
-  stone?: number;
+export class UnlockOptionsDto {
+  @IsNotEmpty()
+  @IsEnum(EBoosterUnlockCurrencyType)
+  type: EBoosterUnlockCurrencyType; // <-- Tipi sadeleştir. Bırak validator işini yapsın.
 
   @IsNumber()
-  dust?: number;
-
-  @IsNumber()
-  invite?: number;
+  @IsNotEmpty()
+  amount: number;
 }
 
 export class CreateBoosterDto {
@@ -42,8 +44,10 @@ export class CreateBoosterDto {
   @IsNumber()
   max_level: number;
 
-  @IsObject()
-  unlock_requirements: UnlockRequirementsDto;
+  @IsArray()
+  @ValidateNested({ each: true }) // Dizinin her elemanını doğrula
+  @Type(() => UnlockOptionsDto) // <-- Gelen objeyi UnlockOptionsDto'ya dönüştürür
+  unlock_options: UnlockOptionsDto[];
 
   // Dizi olarak tanımla ve her elemanın LevelDataDto olduğunu belirt
   @IsArray()

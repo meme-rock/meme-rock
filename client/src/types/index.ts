@@ -1,4 +1,5 @@
 import {
+  EBoosterUnlockCurrencyType,
   EHiltiLevel,
   EMinerLevel,
   EMinerRewardType,
@@ -144,11 +145,10 @@ export interface IBooster {
   title: string;
   required_hilti_level: EHiltiLevel | string;
   max_level: number;
-  unlock_requirements: {
-    stone?: number;
-    dust?: number;
-    invite?: number;
-  };
+  unlock_options: {
+    type: EBoosterUnlockCurrencyType;
+    amount: number;
+  }[];
   level_data: IBoosterLevelData[];
   image_url: string;
   is_unlocked: boolean;

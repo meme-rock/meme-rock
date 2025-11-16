@@ -7,6 +7,7 @@ import {
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
 } from "../../redux/services/user/user-api";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface StoneTodustExchangeProps {
   userStones: number;
@@ -171,7 +172,7 @@ export const StoneTodustExchange = ({
               className="w-8 h-8"
             />
             <span className="text-white font-bold text-xl">
-              {amount.toLocaleString()}
+              {formatInteger(amount)}
             </span>
           </div>
 
@@ -186,10 +187,7 @@ export const StoneTodustExchange = ({
               className="w-8 h-8"
             />
             <span className="text-amber-400 font-bold text-xl">
-              {convertedAmount.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}
+              {formatInteger(convertedAmount)}
             </span>
           </div>
         </div>
@@ -225,10 +223,10 @@ export const StoneTodustExchange = ({
           <div className="flex justify-between mt-2 text-xs text-gray-500">
             <span>{minAmount}</span>
             <span className="text-gray-400">
-              Available: {maxAmount.toLocaleString()}{" "}
+              Available: {formatInteger(maxAmount)}{" "}
               {exchangeType === "stone-to-dust" ? "Stone" : "Dust"}
             </span>
-            <span>{maxAmount.toLocaleString()}</span>
+            <span>{formatInteger(maxAmount)}</span>
           </div>
         </div>
 
@@ -285,7 +283,7 @@ export const StoneTodustExchange = ({
                       className="w-6 h-6"
                     />
                     <span className="text-white font-bold text-lg">
-                      {amount.toLocaleString()}
+                      {formatInteger(amount)}
                     </span>
                   </div>
                 </div>
@@ -305,10 +303,7 @@ export const StoneTodustExchange = ({
                       className="w-6 h-6"
                     />
                     <span className="text-amber-400 font-bold text-lg">
-                      {convertedAmount.toLocaleString(undefined, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
+                      {formatInteger(convertedAmount)}
                     </span>
                   </div>
                 </div>

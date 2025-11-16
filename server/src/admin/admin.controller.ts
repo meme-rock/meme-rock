@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { CreateMinerDto } from './dto/miners.dto';
 import { CreateHiltiDto } from './dto/hiltis.dto';
 import { CreateBoosterDto } from './dto/boosters.dto';
+import { AdminRanksService } from './admin.ranks.service';
 
 @Controller('admin')
 export class AdminController {
@@ -56,6 +57,17 @@ export class AdminController {
     @Param('id') id: string,
     @Body() booster: CreateBoosterDto,
   ) {
+    console.log('update-booster working...');
     return this.adminService.updateBooster(id, booster);
+  }
+}
+
+@Controller('admin/schedules')
+export class AdminRanksController {
+  constructor(private readonly adminRanksService: AdminRanksService) {}
+
+  @Post('handle-weekly-invites')
+  async handleWeeklyInvites() {
+    return this.adminRanksService.handleWeeklyInvitesLeaderboardRewards();
   }
 }

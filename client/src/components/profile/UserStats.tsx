@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { BarChart3, Zap, Trophy, Target } from "lucide-react";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface Stat {
   label: string;
@@ -27,7 +28,7 @@ export const UserStats = ({ stats }: UserStatsProps) => {
     },
     {
       label: "Total Stones",
-      value: stats.totalStones.toLocaleString(),
+      value: formatInteger(stats.totalStones),
       icon: <BarChart3 className="w-5 h-5" />,
       color: "blue",
     },

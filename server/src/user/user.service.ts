@@ -13,8 +13,7 @@ import { EMinerLevel, EMinerRewardType } from 'src/common/enums/miners.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
-import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
-import { ACHIVEMENTS } from 'src/common/config';
+
 import { UserAchivementService } from './user-achivement.service';
 import { MinerService } from 'src/miner/miner.service';
 import { BotService } from 'src/bot/bot.service';
@@ -51,23 +50,22 @@ export class UserService {
     profitPerHour: number,
     hiltiRockIncome: number,
   ): number {
-    const now = Date.now();
-    const lastOnlineTime = new Date(lastOnline).getTime();
+    const elapsedMilliseconds = Date.now() - new Date(lastOnline).getTime();
 
-    // Calculate elapsed minutes with millisecond precision
-    const elapsedMilliseconds = now - lastOnlineTime;
+    // 1. Saatlik kârı kuruş cinsinden tam sayıya çevir
+    const totalProfitPerHourInCents = Math.round(
+      (profitPerHour + hiltiRockIncome) * 100,
+    );
 
-    // Total profit per hour and convert to per minute
-    const totalProfitPerHour = profitPerHour + hiltiRockIncome;
-    // (Saatlik Kâr / 3,600,000 milisaniye)
-    const profitPerMillisecond = totalProfitPerHour / (1000 * 60 * 60);
+    const MS_PER_HOUR = 1000 * 60 * 60;
 
-    // 3. Toplam kazancı hesapla
-    // (Geçen Milisaniye * Milisaniye Başına Kâr)
-    const pendingRocks = elapsedMilliseconds * profitPerMillisecond;
+    // 2. Toplam kuruş kazancını hesapla
+    const pendingCents =
+      (totalProfitPerHourInCents / MS_PER_HOUR) * elapsedMilliseconds;
 
-    // 4. Kazancı tam sayıya yuvarla
-    return Math.floor(pendingRocks);
+    // 3. En yakın tam kuruşa yuvarla (Örn: 133.54 -> 134)
+    // Bu, veritabanına eklenecek tam sayı değeridir.
+    return Math.round(pendingCents);
   }
 
   async loading(_id: string, user: CreateUserDto, initData: string) {
@@ -161,6 +159,10 @@ export class UserService {
       return {
         user: {
           ...updatedUser.toObject(),
+          airdrop_data: {
+            ...updatedUser.toObject().airdrop_data,
+            rock_coins: updatedUser.airdrop_data.rock_coins / 100,
+          },
           miner_data: {
             ...updatedUser.toObject().miner_data,
             max_periods: minerData.max_periods,
@@ -234,8 +236,13 @@ export class UserService {
       const mergedAchivements =
         this.userAchivementService.returnMergedAchivements(populatedUser);
 
-      const nextMineTime = new Date(
-        newUser.miner_data.last_mine.getTime() + this.MINING_COOLDOWN_MS,
+      const minerData = await this.minerService.calculateMinerData(
+        {
+          miner: populatedUser.miner_data.miner as unknown as MinerDocument,
+          last_mine: populatedUser.miner_data.last_mine,
+        },
+        populatedUser.is_premium,
+        populatedUser.is_auto_mining,
       );
       if (inviter_id && inviter_id !== telegram_id) {
         await this.handleInviter(
@@ -246,20 +253,18 @@ export class UserService {
       }
       console.log('New user created:', telegram_id);
       return {
-        user: populatedUser,
+        user: {
+          ...populatedUser.toObject(),
+          miner_data: {
+            ...populatedUser.toObject().miner_data,
+            max_periods: minerData.max_periods,
+            claimable_periods: minerData.claimable_periods,
+            next_mine: minerData.next_mine,
+          },
+        },
         hiltis,
         miners,
         achievements: mergedAchivements,
-        mine_claim: {
-          success: true,
-          claimed_reward: 0,
-          reward_type: level1Miner.reward_type,
-          periods_claimed: 0,
-          last_mine: newUser.miner_data.last_mine,
-          next_mine: nextMineTime,
-          mining_cooldown_ms: this.MINING_COOLDOWN_MS,
-          message: 'NEW_USER',
-        },
         message: 'User created successfully',
       };
     } catch (error) {
@@ -277,11 +282,12 @@ export class UserService {
       const inviter = await this.userModel.findByIdAndUpdate(
         inviter_id,
         {
-          $inc: { invite_count: 1 },
+          $inc: { invite_count: 1, weekly_invite_count: 1 },
         },
-        { new: true }, // 'new: true' returns the document *after* the update
+        { new: true, projection: { invite_count: 1, weekly_invite_count: 1 } }, // 'new: true' returns the document *after* the update
       );
 
+      console.log('inviter', inviter);
       // If inviter doesn't exist (e.g., deleted account), stop.
       if (!inviter) {
         return;
@@ -289,7 +295,7 @@ export class UserService {
 
       // 2. Get the new total invite count
       const totalInvites = inviter.invite_count;
-
+      const weeklyInvites = inviter.weekly_invite_count;
       // 3. Escape the new user's name for MarkdownV2
       // This prevents errors if the name has characters like '.', '(', '!', etc.
       // (Assuming 'escapeTextForMarkdownV2' is in your HelpersService)
@@ -307,6 +313,7 @@ export class UserService {
         '',
         `👤 *User:* [@${escapedFirstName}](tg://user?id=${new_user_telegram_id})`,
         `📈 *Total Invites:* \`${totalInvites}\``,
+        `📈 *Weekly Invites:* \`${weeklyInvites}\``,
         '',
         this.helpersService.safeMarkdown('Thanks for growing our community 🌱'),
       ].join('\n');

@@ -19,6 +19,14 @@ export type LeaderboardResponse = {
   currentUserRank: number;
 };
 
+export type WeeklyInviteLeaderboardUser = {
+  _id: string;
+  username: string;
+  photoUrl?: string;
+  rank: number;
+  inviteCount: number;
+};
+
 export const ranksApi = createApi({
   reducerPath: "ranksApi",
   baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/ranks`),
@@ -29,7 +37,20 @@ export const ranksApi = createApi({
         method: "GET",
       }),
     }),
+    getWeeklyInvitesLeaderboard: builder.query<
+      WeeklyInviteLeaderboardUser[],
+      void
+    >({
+      query: () => ({
+        url: `/get-weekly-invites-leaderboard`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useGetLeaderboardQuery, useLazyGetLeaderboardQuery } = ranksApi;
+export const {
+  useGetLeaderboardQuery,
+  useLazyGetLeaderboardQuery,
+  useGetWeeklyInvitesLeaderboardQuery,
+} = ranksApi;

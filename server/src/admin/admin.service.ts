@@ -110,7 +110,6 @@ export class AdminService {
   }
 
   //! BOOSTERS
-
   async getBoosters() {
     try {
       return this.boosterModel.find();
@@ -121,6 +120,7 @@ export class AdminService {
       };
     }
   }
+
   async createBooster(booster: CreateBoosterDto) {
     try {
       const createdBooster = await this.boosterModel.create(booster);

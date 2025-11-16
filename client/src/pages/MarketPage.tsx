@@ -17,6 +17,7 @@ import {
   useTonAddress,
   SendTransactionRequest,
 } from "@tonconnect/ui-react";
+import { formatNumber, formatInteger } from "../utils/formatNumber";
 
 type CurrencyType = "stars" | "ton";
 
@@ -255,13 +256,13 @@ export const MarketPage = ({}: MarketPageProps) => {
                         }`}
                       >
                         {selectedCurrency === "stars"
-                          ? item.currency.toLocaleString()
-                          : item.currency.toFixed(2)}
+                          ? formatInteger(item.currency)
+                          : formatNumber(item.currency, 2)}
                       </span>
                     </div>
                     {item.bonus ? (
                       <div className="text-green-400 text-sm font-medium">
-                        +{item.bonus} bonus stones
+                        +{formatInteger(item.bonus)} bonus stones
                       </div>
                     ) : null}
                   </div>
@@ -274,7 +275,7 @@ export const MarketPage = ({}: MarketPageProps) => {
                       className="w-5 h-5 filter brightness-110"
                     />
                     <div className="text-white font-bold text-xl">
-                      {item.stones}
+                      {formatInteger(item.stones)}
                     </div>
                   </div>
                   <div className="text-gray-500 text-sm">stones</div>

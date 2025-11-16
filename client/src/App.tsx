@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LoadingScreen } from "./components/loading/LoadingScreen";
 import { TopBar } from "./components/TopBar";
@@ -56,12 +56,6 @@ function App() {
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };
-
-  // Telegram Web App initialization
-  useEffect(() => {
-    // Telegram Web App SDK initialization would go here
-    console.log("Meme Rock Telegram Mini App initialized");
-  }, []);
 
   if (isLoading) {
     return <LoadingScreen onComplete={handleLoadingComplete} />;

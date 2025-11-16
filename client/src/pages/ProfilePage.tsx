@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
+import { formatNumber, formatInteger } from "../utils/formatNumber";
 
 export const ProfilePage = () => {
   const [copied, setCopied] = useState(false);
@@ -160,7 +161,7 @@ export const ProfilePage = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm text-purple-200">Total Invites</span>
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
-                {inviteCount}
+                {formatInteger(inviteCount)}
               </span>
             </div>
           </div>
@@ -218,7 +219,7 @@ export const ProfilePage = () => {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-400">Base Coins:</span>
                 <span className="text-white font-bold">
-                  {baseReward.toLocaleString()}
+                  {formatNumber(baseReward, 2)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -231,7 +232,7 @@ export const ProfilePage = () => {
                   Potential Reward:
                 </span>
                 <span className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                  {potentialReward.toLocaleString()}
+                  {formatNumber(potentialReward, 2)}
                 </span>
               </div>
             </div>
