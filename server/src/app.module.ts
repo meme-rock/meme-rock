@@ -16,6 +16,7 @@ import { MarketModule } from './market/market.module';
 import { HelpersModule } from './helpers/helpers.module';
 import { MinerModule } from './miner/miner.module';
 import { RanksModule } from './ranks/ranks.module';
+import { BoosterModule } from './booster/booster.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -68,6 +69,7 @@ if (!mongoUri) {
     MarketModule,
     HelpersModule,
     RanksModule,
+    BoosterModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

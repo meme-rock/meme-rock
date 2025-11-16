@@ -6,7 +6,7 @@ import { IBooster } from "../../../types";
 
 export const boosterApi = createApi({
   reducerPath: "boosterApi",
-  baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/user-booster`),
+  baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/booster`),
   endpoints: (builder) => ({
     getBoosters: builder.mutation({
       query: ({ user_id }: { user_id: string }) => ({

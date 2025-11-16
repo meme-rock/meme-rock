@@ -10,8 +10,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UserBoosterService } from './user-booster.service';
-import { UnlockUserBoosterDto } from './dto/user-boosters.dto';
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { BotService } from 'src/bot/bot.service';
@@ -105,41 +103,6 @@ export class UserController {
   ) {
     return await this.botService.testRefundStarsPayment(
       telegram_payment_charge_id,
-    );
-  }
-}
-
-@UseGuards(CustomThrottlerGuard)
-@Controller('user-booster')
-export class UserBoosterController {
-  constructor(private readonly userBoosterService: UserBoosterService) {}
-
-  @Get('get-boosters/:user_id')
-  async getBoosters(@Param('user_id') user_id: string) {
-    return await this.userBoosterService.loadBoosters(user_id);
-  }
-
-  @Post('unlock-booster/:user_id')
-  @Throttle({ strict: { limit: 1, ttl: 1000 } })
-  async unlockBooster(
-    @Param('user_id') user_id: string,
-    @Body() booster: UnlockUserBoosterDto,
-  ) {
-    return await this.userBoosterService.unlockUserBooster(
-      user_id,
-      booster.booster_id,
-    );
-  }
-
-  @Post('upgrade-booster/:user_id')
-  @Throttle({ strict: { limit: 1, ttl: 1000 } })
-  async upgradeBooster(
-    @Param('user_id') user_id: string,
-    @Body() booster: UnlockUserBoosterDto,
-  ) {
-    return await this.userBoosterService.upgradeUserBooster(
-      user_id,
-      booster.booster_id,
     );
   }
 }

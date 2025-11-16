@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from 'src/schemas/user.schema';
-import { Miner, MinerDocument } from 'src/schemas/miner.schema';
-import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
+import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
+import { Miner, MinerDocument } from 'src/schemas/miner.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
 import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
 
 @Injectable()
-export class UserBoosterService {
+export class BoosterService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
