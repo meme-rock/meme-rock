@@ -742,4 +742,18 @@ export class UserService {
     try {
     } catch (error) {}
   }
+
+  async getBalanceData(user_id: string) {
+    try {
+      const user = await this.userModel
+        .findById(user_id)
+        .select('balance_data')
+        .lean()
+        .exec();
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+      return user.balance_data;
+    } catch (error) {}
+  }
 }

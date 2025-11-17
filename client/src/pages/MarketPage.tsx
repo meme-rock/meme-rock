@@ -18,6 +18,7 @@ import {
   SendTransactionRequest,
 } from "@tonconnect/ui-react";
 import { formatNumber, formatInteger } from "../utils/formatNumber";
+import { useGetBalanceDataMutation } from "../redux/services/user/user-api";
 
 type CurrencyType = "stars" | "ton";
 
@@ -49,15 +50,14 @@ interface MarketPageProps {
 export const MarketPage = ({}: MarketPageProps) => {
   const [tonConnectUI] = useTonConnectUI();
   const walletAddress = useTonAddress();
-  const [transaction, setTransaction] = useState<SendTransactionRequest | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
+  const [getBalanceData] = useGetBalanceDataMutation();
   const user = useSelector((state: RootState) => state.user);
   const [starsToStonesMutation] = useStarsToStonesMutation();
   const [tonToStonesMutation] = useTonToStonesMutation();
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyType>("stars");
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [processingItemId, setProcessingItemId] = useState<string | null>(null);
 
   // API'den market verilerini çek
   const {
@@ -84,9 +84,15 @@ export const MarketPage = ({}: MarketPageProps) => {
     })) || [];
 
   const handlePurchase = async (item: PricingItem) => {
+    // Prevent multiple simultaneous purchases
+    if (isPaymentProcessing) {
+      return;
+    }
+
     switch (selectedCurrency) {
       case "stars":
         try {
+          setProcessingItemId(item.id);
           const { invoice_link } = await starsToStonesMutation({
             user_id: user._id,
             stars_price: item.currency,
@@ -95,14 +101,31 @@ export const MarketPage = ({}: MarketPageProps) => {
           console.log("invoiceLink: ", invoice_link);
 
           if (!invoice_link) {
+            setProcessingItemId(null);
             WebApp.showAlert("Something went wrong during invoice generation.");
             return;
           }
 
           // WebApp objesinin Telegram Web App içinden erişilebilir olduğunu varsayıyoruz
-          WebApp.openInvoice(invoice_link);
+          WebApp.openInvoice(invoice_link, async (status) => {
+            if (status === "paid") {
+              // Show loading animation during processing
+              setIsPaymentProcessing(true);
+              // sleep 2 seconds
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              await getBalanceData({ user_id: user._id }).unwrap();
+              // Hide loading animation after balance is loaded
+              setIsPaymentProcessing(false);
+              setProcessingItemId(null);
+            } else {
+              // If payment was cancelled or failed
+              setProcessingItemId(null);
+            }
+          });
         } catch (error) {
           console.error("❌ Stars to Stones error:", error);
+          setIsPaymentProcessing(false);
+          setProcessingItemId(null);
           // Hata ayrıntılarını kullanıcıya göstermek isteyebilirsiniz
           WebApp.showAlert("Failed to create invoice. Please try again.");
         }
@@ -110,8 +133,10 @@ export const MarketPage = ({}: MarketPageProps) => {
 
       case "ton":
         try {
+          setProcessingItemId(item.id);
           console.log(`${item.currency} TON'a tıklandı`);
           if (!walletAddress) {
+            setProcessingItemId(null);
             WebApp.showAlert("Please connect your wallet first!");
             tonConnectUI.openModal();
             return;
@@ -125,12 +150,23 @@ export const MarketPage = ({}: MarketPageProps) => {
           if (!response) {
             throw new Error("Failed to create transaction");
           }
-          setTransaction(response as SendTransactionRequest);
           console.log("Backend'den Gelen Payload İçeriği ", response);
+
+          // Show loading during TON transaction
+          setIsPaymentProcessing(true);
           await tonConnectUI.sendTransaction(
             response as SendTransactionRequest
           );
-        } catch (error) {}
+          // Wait for transaction to be processed
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await getBalanceData({ user_id: user._id }).unwrap();
+          setIsPaymentProcessing(false);
+          setProcessingItemId(null);
+        } catch (error) {
+          console.error("❌ TON to Stones error:", error);
+          setIsPaymentProcessing(false);
+          setProcessingItemId(null);
+        }
         break;
 
       default:
@@ -221,68 +257,84 @@ export const MarketPage = ({}: MarketPageProps) => {
 
         {/* Pricing Cards - Click to Expand */}
         <div className="space-y-3">
-          {currentPricing.map((item) => (
-            <div
-              key={item.id}
-              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all duration-300 cursor-pointer"
-              onClick={() => handlePurchase(item)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      selectedCurrency === "stars"
-                        ? "bg-yellow-500/20 border border-yellow-500/30"
-                        : "bg-blue-500/20 border border-blue-500/30"
-                    }`}
-                  >
-                    {selectedCurrency === "stars" ? (
-                      <div className="w-10 h-10">
-                        <Lottie animationData={starAnimation} loop={true} />
+          {currentPricing.map((item) => {
+            const isProcessingThisItem = processingItemId === item.id;
+            const isDisabled = isPaymentProcessing || isProcessingThisItem;
+
+            return (
+              <div
+                key={item.id}
+                className={`bg-gray-900/50 backdrop-blur-sm border rounded-xl p-4 transition-all duration-300 ${
+                  isDisabled
+                    ? "border-gray-700 opacity-60 cursor-not-allowed"
+                    : "border-gray-800 hover:border-gray-700 cursor-pointer"
+                }`}
+                onClick={() => !isDisabled && handlePurchase(item)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        selectedCurrency === "stars"
+                          ? "bg-yellow-500/20 border border-yellow-500/30"
+                          : "bg-blue-500/20 border border-blue-500/30"
+                      }`}
+                    >
+                      {isProcessingThisItem ? (
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : selectedCurrency === "stars" ? (
+                        <div className="w-10 h-10">
+                          <Lottie animationData={starAnimation} loop={true} />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10">
+                          <Lottie animationData={tonAnimation} loop={true} />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`text-lg font-bold ${
+                            selectedCurrency === "stars"
+                              ? "text-yellow-400"
+                              : "text-blue-400"
+                          }`}
+                        >
+                          {selectedCurrency === "stars"
+                            ? formatInteger(item.currency)
+                            : formatNumber(item.currency, 2)}
+                        </span>
+                        {isProcessingThisItem && (
+                          <span className="text-gray-400 text-sm">
+                            Processing...
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <div className="w-10 h-10">
-                        <Lottie animationData={tonAnimation} loop={true} />
-                      </div>
-                    )}
+                      {item.bonus ? (
+                        <div className="text-green-400 text-sm font-medium">
+                          +{formatInteger(item.bonus)} bonus stones
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                  <div>
+                  <div className="flex flex-col items-end space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span
-                        className={`text-lg font-bold ${
-                          selectedCurrency === "stars"
-                            ? "text-yellow-400"
-                            : "text-blue-400"
-                        }`}
-                      >
-                        {selectedCurrency === "stars"
-                          ? formatInteger(item.currency)
-                          : formatNumber(item.currency, 2)}
-                      </span>
-                    </div>
-                    {item.bonus ? (
-                      <div className="text-green-400 text-sm font-medium">
-                        +{formatInteger(item.bonus)} bonus stones
+                      <img
+                        src="/stone.svg"
+                        alt="Stone"
+                        className="w-5 h-5 filter brightness-110"
+                      />
+                      <div className="text-white font-bold text-xl">
+                        {formatInteger(item.stones)}
                       </div>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <img
-                      src="/stone.svg"
-                      alt="Stone"
-                      className="w-5 h-5 filter brightness-110"
-                    />
-                    <div className="text-white font-bold text-xl">
-                      {formatInteger(item.stones)}
                     </div>
+                    <div className="text-gray-500 text-sm">stones</div>
                   </div>
-                  <div className="text-gray-500 text-sm">stones</div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

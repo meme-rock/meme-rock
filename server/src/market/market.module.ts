@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { BotModule } from 'src/bot/bot.module';
@@ -16,10 +16,11 @@ import { HelpersModule } from 'src/helpers/helpers.module';
       { name: User.name, schema: UserSchema },
       { name: TonPayments.name, schema: TonPaymentsSchema },
     ]),
-    BotModule,
+    forwardRef(() => BotModule),
     HelpersModule,
   ],
   controllers: [MarketController],
   providers: [MarketService],
+  exports: [MarketService],
 })
 export class MarketModule {}

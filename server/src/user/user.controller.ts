@@ -105,4 +105,9 @@ export class UserController {
       telegram_payment_charge_id,
     );
   }
+
+  @Get('get-balance-data/:user_id')
+  async getBalanceData(@Param('user_id') user_id: string) {
+    return await this.userService.getBalanceData(user_id);
+  }
 }

@@ -11,6 +11,7 @@ import {
 import { IBooster } from "../../types";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
 import {
+  usePurchaseBoosterWithStarsMutation,
   useUnlockBoosterMutation,
   useUpgradeBoosterMutation,
 } from "../../redux/services/booster/booster-api";
@@ -23,6 +24,7 @@ import { BoosterConfirmModal } from "./BoosterConfirmModal";
 import Lottie from "lottie-react";
 import animatedStar from "../../../public/animated-star.json";
 import animatedTon from "../../../public/animated-ton.json";
+import { useGetBoostersMutation } from "../../redux/services/booster/booster-api";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -31,14 +33,48 @@ interface BoosterCardProps {
 
 export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   const user = useSelector((state: RootState) => state.user);
+
   const [unlockBooster, { isLoading: isUnlocking }] =
     useUnlockBoosterMutation();
   const [upgradeBooster, { isLoading: isUpgrading }] =
     useUpgradeBoosterMutation();
+  const [getBoosters] = useGetBoostersMutation();
 
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
 
+  //? Mutations
+  const [purchaseBoosterWithStars, { isLoading: isPurchasingWithStars }] =
+    usePurchaseBoosterWithStarsMutation();
+  const handlePurchase = async () => {
+    try {
+      const { invoice_link } = await purchaseBoosterWithStars({
+        user_id: user._id,
+        booster_id: booster._id,
+      }).unwrap();
+      if (!invoice_link) {
+        throw new Error("Failed to purchase booster with stars");
+      }
+      WebApp.openInvoice(invoice_link, async (status) => {
+        if (status === "paid") {
+          // Show loading animation during processing
+          setIsPaymentProcessing(true);
+          // sleep 2 seconds
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await getBoosters({ user_id: user._id }).unwrap();
+          // Hide loading animation after boosters are loaded
+          setIsPaymentProcessing(false);
+        }
+      });
+    } catch (error) {
+      console.error("❌ Purchase Booster with Stars error:", error);
+      setIsPaymentProcessing(false);
+      WebApp.showAlert(
+        "Failed to purchase booster with stars. Please try again."
+      );
+    }
+  };
   const currentLevel = booster.current_level || 0;
   const isUnlocked = booster.is_unlocked || false;
 
@@ -313,21 +349,32 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
                 {/* STAR Payment Button */}
                 {starOption && (
                   <button
-                    onClick={() => {
-                      // TODO: Implement purchaseBooster endpoint
-                      WebApp.showAlert(
-                        `STAR payment coming soon!\n\nPrice: ${starOption.amount} STARS\n\nThis will use the purchaseBooster endpoint.`
-                      );
-                    }}
-                    className="flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 relative overflow-hidden group bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-95"
+                    onClick={handlePurchase}
+                    disabled={isPurchasingWithStars || isPaymentProcessing}
+                    className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 relative overflow-hidden group ${
+                      isPurchasingWithStars || isPaymentProcessing
+                        ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-yellow-600 to-amber-600"
+                        : "bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-95"
+                    }`}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                    <div className="w-7 h-7 relative z-10">
-                      <Lottie animationData={animatedStar} loop={true} />
-                    </div>
-                    <span className="relative z-10 text-lg font-bold">
-                      {starOption.amount}
-                    </span>
+                    {isPurchasingWithStars || isPaymentProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10" />
+                        <span className="relative z-10 text-sm">
+                          {isPaymentProcessing ? "Processing..." : "Opening..."}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-7 h-7 relative z-10">
+                          <Lottie animationData={animatedStar} loop={true} />
+                        </div>
+                        <span className="relative z-10 text-lg font-bold">
+                          {starOption.amount}
+                        </span>
+                      </>
+                    )}
                   </button>
                 )}
 

@@ -158,6 +158,29 @@ export const boosterApi = createApi({
         }
       },
     }),
+    purchaseBoosterWithStars: builder.mutation({
+      query: ({
+        user_id,
+        booster_id,
+      }: {
+        user_id: string;
+        booster_id: string;
+      }) => ({
+        url: `/purchase-booster-with-stars/${user_id}`,
+        method: "POST",
+        body: { booster_id },
+      }),
+      async onQueryStarted(_arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("✅ purchaseBoosterWithStars data received:", data);
+          return data;
+        } catch (error) {
+          console.log("❌ purchaseBoosterWithStars error: ", error);
+          throw error;
+        }
+      },
+    }),
   }),
 });
 
@@ -165,4 +188,5 @@ export const {
   useGetBoostersMutation,
   useUnlockBoosterMutation,
   useUpgradeBoosterMutation,
+  usePurchaseBoosterWithStarsMutation,
 } = boosterApi;

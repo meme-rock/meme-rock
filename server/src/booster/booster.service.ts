@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
@@ -6,6 +12,9 @@ import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Miner, MinerDocument } from 'src/schemas/miner.schema';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
+import { StarMarketItem } from 'src/common/config';
+import { BotService } from 'src/bot/bot.service';
+import { EPaymentType } from 'src/common/enums/star-payload.enum';
 
 @Injectable()
 export class BoosterService {
@@ -14,6 +23,8 @@ export class BoosterService {
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
+    @Inject(forwardRef(() => BotService))
+    private readonly botService: BotService,
   ) {}
 
   async loadBoosters(user_id: string) {
@@ -425,6 +436,91 @@ export class BoosterService {
     }
   }
 
+  async unlockBoosterForStars(user_id: string, booster_id: string) {
+    try {
+      const booster = await this.boosterModel.findById(booster_id).lean();
+      if (!booster) {
+        throw new BadRequestException('Booster not found');
+      }
+      const levelOneProfit = booster.level_data?.[0]?.profit_per_hour || 0;
+
+      const requiredHiltiLevel = parseInt(
+        booster.required_hilti_level.split('_')[1],
+      );
+      const unlockOptions = booster.unlock_options || [];
+
+      // Sadece payment option'ları kontrol et (STAR, TON) birlite olma
+      const paymentOptions = unlockOptions.filter(
+        (opt) =>
+          opt.type === EBoosterUnlockCurrencyType.STAR ||
+          opt.type === EBoosterUnlockCurrencyType.TON,
+      );
+
+      if (paymentOptions.length === 0) {
+        throw new BadRequestException(
+          'Booster requires stars or ton to be purchased',
+        );
+      }
+
+      const queryConditions: any = {
+        _id: user_id,
+        'boosters.booster': { $nin: [booster_id] }, // Zaten kilidi açılmamış olmalı
+        // Hilti level kontrolü
+        $expr: {
+          $gte: [
+            {
+              $toInt: {
+                $arrayElemAt: [{ $split: ['$hilti_data.hilti', '_'] }, 1],
+              },
+            },
+            requiredHiltiLevel,
+          ],
+        },
+      };
+
+      // Atomik Güncelleme Operasyonlarını (Update) Oluştur
+      const updateOperations: any = {
+        $push: {
+          boosters: {
+            booster: booster_id,
+            current_level: 1,
+          },
+        },
+        $inc: {
+          'airdrop_data.profit_per_hour': levelOneProfit,
+        },
+      };
+
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        queryConditions,
+        updateOperations,
+        { new: true }, // Güncellenmiş kullanıcı belgesini döndür
+      );
+      if (!updatedUser) {
+        this.botService.sendNotificationToUser(
+          parseInt(user_id),
+          'Failed to unlock booster. Please try again',
+        );
+        throw new BadRequestException(
+          'Failed to unlock booster. Please try again',
+        );
+      }
+
+      this.botService.sendNotificationToUser(
+        parseInt(user_id),
+        [
+          `✅ *Booster Unlocked\\!*`,
+          '',
+          `*${booster.title}* Booster has been unlocked successfully`,
+        ].join('\n'),
+      );
+      return true;
+    } catch (error) {
+      console.error('Error in unlockBoosterForStars:', error);
+      throw error;
+    }
+  }
+
   // Helper method: Frontend için booster bilgisini hazırla
   private prepareBoosterInfo(
     dbBooster: any,
@@ -461,5 +557,61 @@ export class BoosterService {
       current_level: currentLevel,
       level_data: filteredLevelData,
     };
+  }
+
+  async createInvoiceLinkForBoosterPurchase(
+    user_id: string,
+    booster_id: string,
+  ) {
+    try {
+      const user = await this.userModel.findById(user_id);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const booster = await this.boosterModel.findById(booster_id).lean();
+      if (!booster) {
+        throw new NotFoundException('Booster not found');
+      }
+      const stars_price = booster.unlock_options.find(
+        (opt) => opt.type === EBoosterUnlockCurrencyType.STAR,
+      )?.amount;
+      if (!stars_price) {
+        throw new BadRequestException('Booster requires stars to be purchased');
+      }
+      const payload = JSON.stringify({
+        payment_type: EPaymentType.BOOSTER,
+        user_id: user_id,
+        stars_price: stars_price,
+        booster_title: booster.title,
+        booster_id: booster_id,
+      });
+      const prices = [
+        {
+          label: `${stars_price} Stars`,
+          amount: stars_price,
+        },
+      ];
+      const invoice_link = await this.botService.createInvoiceLink(
+        `${booster.title} Booster`,
+        `Purchase for ${booster.title} Booster for ${stars_price} Stars`,
+        payload,
+        '',
+        prices,
+      );
+      if (!invoice_link) {
+        throw new BadRequestException('Invoice link could not be created');
+      }
+      return {
+        invoice_link: invoice_link,
+      };
+    } catch (error) {
+      console.error('Error in purchaseBoosterWithStars:', error);
+      throw error;
+    }
+  }
+
+  async purchaseBoosterWithTON(user_id: string, booster_id: string) {
+    try {
+    } catch (error) {}
   }
 }

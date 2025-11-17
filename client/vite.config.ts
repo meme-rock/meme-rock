@@ -6,6 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["pencil-reprint-affects-ribbon.trycloudflare.com"],
+    allowedHosts: ["skin-bloom-cure-cst.trycloudflare.com"],
   },
 });

@@ -10,6 +10,7 @@ import {
 } from "../../slices/userSlice";
 import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
+import { BalanceData } from "./responses";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -265,6 +266,26 @@ export const userApi = createApi({
         }
       },
     }),
+    getBalanceData: builder.mutation<BalanceData, { user_id: string }>({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/get-balance-data/${user_id}`,
+        method: "GET",
+      }),
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Balance data received:", data);
+          dispatch(
+            updateUserStones({
+              stones: data.stone,
+            })
+          );
+        } catch (error) {
+          console.log("❌ getBalanceData error: ", error);
+          throw error;
+        }
+      },
+    }),
   }),
 });
 
@@ -275,4 +296,5 @@ export const {
   useDustToStoneExchangeMutation,
   useClaimAchievementMutation,
   useUpgradeHiltiMutation,
+  useGetBalanceDataMutation,
 } = userApi;

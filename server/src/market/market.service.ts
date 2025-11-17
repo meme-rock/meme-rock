@@ -26,6 +26,7 @@ import {
 } from './contract/PurchaseStone_PurchaseStone';
 import { ETonPaymentStatus } from 'src/common/enums/ton-payments.enum';
 import { HelpersService } from 'src/helpers/helpers.service';
+import { EPaymentType } from 'src/common/enums/star-payload.enum';
 
 @Injectable()
 export class MarketService {
@@ -48,6 +49,8 @@ export class MarketService {
     };
   }
   async createPaymentWithStarsLink(user_id: string, stars_price: number) {
+    try {
+    } catch (error) {}
     const user = await this.userModel.findById(user_id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -60,6 +63,7 @@ export class MarketService {
       throw new NotFoundException('Market details not found');
     }
     const payload = JSON.stringify({
+      payment_type: EPaymentType.STONE,
       user_id: user_id,
       stars_price: stars_price,
       stone_amount: market_details.stone_amount,
@@ -85,6 +89,50 @@ export class MarketService {
     return {
       invoice_link: invoice_link,
     };
+  }
+
+  async handleStarsPayment(user_id: string, amount: number) {
+    try {
+      const market_details = STONE_MARKET_STAR.find(
+        (item: StarMarketItem) =>
+          item.stars_price.toString() === amount.toString(),
+      );
+      if (!market_details) {
+        return false;
+      }
+
+      //* Ödeme Başarılıysa
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        user_id,
+        {
+          $inc: {
+            'balance_data.stone': market_details.total_stones,
+          },
+        },
+        { new: true },
+      );
+      if (!updatedUser) {
+        return false;
+      }
+      await this.botService.sendNotificationToUser(
+        parseInt(user_id),
+        [
+          // NOT: statik "!" karakterlerini Telegram için kaçırıyoruz: \!
+          '✅ *Payment Successful\\!*',
+          '',
+          // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
+          `*Deposit:* \`${this.helpersService.safeMarkdown(String(amount))} Stars\``,
+          `*Stones:* \`${this.helpersService.safeMarkdown(String(market_details.total_stones))}\``,
+          '',
+          '🎉 Your balance has been *successfully updated\\!*',
+          '_Please refresh the app to see the latest changes\\._',
+        ].join('\n'),
+      );
+      return true;
+    } catch (error) {
+      this.logger.error('Error: ' + error);
+      return false;
+    }
   }
 
   //! TON SERVICE
