@@ -6,6 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["skin-bloom-cure-cst.trycloudflare.com"],
+    allowedHosts: ["ellen-quarters-unlikely-bottle.trycloudflare.com"],
   },
 });

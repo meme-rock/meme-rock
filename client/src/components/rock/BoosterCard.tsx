@@ -21,9 +21,7 @@ import { RootState } from "../../redux/store";
 import WebApp from "@twa-dev/sdk";
 import { useState } from "react";
 import { BoosterConfirmModal } from "./BoosterConfirmModal";
-import Lottie from "lottie-react";
-import animatedStar from "../../../public/animated-star.json";
-import animatedTon from "../../../public/animated-ton.json";
+import { PaymentButtons } from "../shared/PaymentButtons";
 import { useGetBoostersMutation } from "../../redux/services/booster/booster-api";
 
 interface BoosterCardProps {
@@ -345,67 +343,19 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
 
             {/* Payment buttons (TON and STAR) */}
             {hasPaymentOptions && (
-              <div className="flex items-center gap-2">
-                {/* STAR Payment Button */}
-                {starOption && (
-                  <button
-                    onClick={handlePurchase}
-                    disabled={isPurchasingWithStars || isPaymentProcessing}
-                    className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 relative overflow-hidden group ${
-                      isPurchasingWithStars || isPaymentProcessing
-                        ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-yellow-600 to-amber-600"
-                        : "bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-95"
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                    {isPurchasingWithStars || isPaymentProcessing ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10" />
-                        <span className="relative z-10 text-sm">
-                          {isPaymentProcessing ? "Processing..." : "Opening..."}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-7 h-7 relative z-10">
-                          <Lottie animationData={animatedStar} loop={true} />
-                        </div>
-                        <span className="relative z-10 text-lg font-bold">
-                          {starOption.amount}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* OR Separator - only show if both options exist */}
-                {tonOption && starOption && (
-                  <span className="text-gray-400 font-bold text-sm px-1">
-                    OR
-                  </span>
-                )}
-
-                {/* TON Payment Button */}
-                {tonOption && (
-                  <button
-                    onClick={() => {
-                      // TODO: Implement purchaseBooster endpoint
-                      WebApp.showAlert(
-                        `TON payment coming soon!\n\nPrice: ${tonOption.amount} TON\n\nThis will use the purchaseBooster endpoint.`
-                      );
-                    }}
-                    className="flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 relative overflow-hidden group bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-95"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                    <div className="w-7 h-7 relative z-10">
-                      <Lottie animationData={animatedTon} loop={true} />
-                    </div>
-                    <span className="relative z-10 text-lg font-bold">
-                      {tonOption.amount}
-                    </span>
-                  </button>
-                )}
-              </div>
+              <PaymentButtons
+                starOption={starOption}
+                tonOption={tonOption}
+                onStarClick={handlePurchase}
+                onTonClick={() => {
+                  // TODO: Implement purchaseBooster endpoint
+                  WebApp.showAlert(
+                    `TON payment coming soon!\n\nPrice: ${tonOption?.amount} TON\n\nThis will use the purchaseBooster endpoint.`
+                  );
+                }}
+                isStarLoading={isPurchasingWithStars}
+                isProcessing={isPaymentProcessing}
+              />
             )}
           </>
         ) : isMaxLevel ? (

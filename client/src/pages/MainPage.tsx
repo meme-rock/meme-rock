@@ -2,13 +2,18 @@ import { useMemo, useState } from "react";
 import { RockCounter } from "../components/rock/RockCounter";
 import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { AchievementsModal } from "../components/main/AchievementsModal";
+import { PremiumModal } from "../components/premium/PremiumModal";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Calendar, Pickaxe, Trophy } from "lucide-react";
+import { User, Gift, Pickaxe, Trophy, Crown, Sparkles } from "lucide-react";
+import WebApp from "@twa-dev/sdk";
 
 export const MainPage = () => {
   // Select only needed fields to avoid re-renders from displayRocks updates
+
+  const user = useSelector((state: RootState) => state.user);
+
   const currentMiner = useSelector(
     (state: RootState) => state.miner.current_miner,
     shallowEqual
@@ -32,13 +37,24 @@ export const MainPage = () => {
     [currentHilti._id]
   );
 
-  const dailyStreak = 7;
   const [showDailyRewardModal, setShowDailyRewardModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [isPaymentProcessing] = useState(false);
   const currentRewardDay = 7;
 
   const handleClaimReward = (day: number) => {
     console.log(`Claiming reward for day ${day}`);
+  };
+
+  const handlePremiumStarPurchase = async () => {
+    // TODO: Implement premium purchase with stars
+    WebApp.showAlert("Premium purchase with STARS coming soon!");
+  };
+
+  const handlePremiumTonPurchase = async () => {
+    // TODO: Implement premium purchase with TON
+    WebApp.showAlert("Premium purchase with TON coming soon!");
   };
 
   return (
@@ -85,12 +101,14 @@ export const MainPage = () => {
                   <h2 className="text-lg font-bold text-white mb-1">
                     {telegramData?.username || "Guest"}
                   </h2>
-                  <div className="flex items-center gap-1.5 bg-orange-500/10 px-2 py-0.5 rounded-lg border border-orange-500/20 w-fit">
-                    <Calendar className="w-3 h-3 text-orange-400" />
-                    <span className="text-xs font-semibold text-orange-300">
-                      {dailyStreak} Day Streak
-                    </span>
-                  </div>
+                  {user.is_premium && (
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/40 rounded-lg px-2 py-1 w-fit">
+                      <Crown className="w-3.5 h-3.5 text-yellow-400" />
+                      <span className="text-xs font-semibold text-yellow-300">
+                        Premium
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -116,7 +134,7 @@ export const MainPage = () => {
             </div>
 
             {/* Action Buttons - Daily Reward & Achievements */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               {/* Daily Reward Button */}
               <button
                 onClick={() => setShowDailyRewardModal(true)}
@@ -173,6 +191,30 @@ export const MainPage = () => {
                 </div>
               </button>
             </div>
+
+            {/* Get Premium Button - Only show if user is not premium */}
+            {!user.is_premium && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                onClick={() => setShowPremiumModal(true)}
+                className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/20 via-yellow-500/20 to-orange-500/20 p-[2px] hover:from-amber-400/30 hover:via-yellow-400/30 hover:to-orange-400/30 transition-all duration-300 active:scale-95"
+              >
+                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="bg-gradient-to-br from-amber-500 to-yellow-600 p-1.5 rounded-lg">
+                      <Crown className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
+                        Get Premium
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.button>
+            )}
           </div>
         </motion.div>
 
@@ -199,6 +241,17 @@ export const MainPage = () => {
       <AchievementsModal
         isOpen={showAchievementsModal}
         onClose={() => setShowAchievementsModal(false)}
+      />
+
+      {/* Premium Modal */}
+      <PremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onStarPurchase={handlePremiumStarPurchase}
+        onTonPurchase={handlePremiumTonPurchase}
+        isProcessing={isPaymentProcessing}
+        premiumStarPrice={500}
+        premiumTonPrice={0.5}
       />
     </div>
   );
