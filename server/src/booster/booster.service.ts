@@ -559,57 +559,6 @@ export class BoosterService {
     };
   }
 
-  async createInvoiceLinkForBoosterPurchase(
-    user_id: string,
-    booster_id: string,
-  ) {
-    try {
-      const user = await this.userModel.findById(user_id);
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-      const booster = await this.boosterModel.findById(booster_id).lean();
-      if (!booster) {
-        throw new NotFoundException('Booster not found');
-      }
-      const stars_price = booster.unlock_options.find(
-        (opt) => opt.type === EBoosterUnlockCurrencyType.STAR,
-      )?.amount;
-      if (!stars_price) {
-        throw new BadRequestException('Booster requires stars to be purchased');
-      }
-      const payload = JSON.stringify({
-        payment_type: EPaymentType.BOOSTER,
-        user_id: user_id,
-        stars_price: stars_price,
-        booster_title: booster.title,
-        booster_id: booster_id,
-      });
-      const prices = [
-        {
-          label: `${stars_price} Stars`,
-          amount: stars_price,
-        },
-      ];
-      const invoice_link = await this.botService.createInvoiceLink(
-        `${booster.title} Booster`,
-        `Purchase for ${booster.title} Booster for ${stars_price} Stars`,
-        payload,
-        '',
-        prices,
-      );
-      if (!invoice_link) {
-        throw new BadRequestException('Invoice link could not be created');
-      }
-      return {
-        invoice_link: invoice_link,
-      };
-    } catch (error) {
-      console.error('Error in purchaseBoosterWithStars:', error);
-      throw error;
-    }
-  }
-
   async purchaseBoosterWithTON(user_id: string, booster_id: string) {
     try {
     } catch (error) {}

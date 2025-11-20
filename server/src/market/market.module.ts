@@ -9,12 +9,14 @@ import {
   TonPaymentsSchema,
 } from 'src/schemas/ton-payments.schema';
 import { HelpersModule } from 'src/helpers/helpers.module';
+import { MarketItem, MarketItemSchema } from 'src/schemas/market.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: TonPayments.name, schema: TonPaymentsSchema },
+      { name: MarketItem.name, schema: MarketItemSchema },
     ]),
     forwardRef(() => BotModule),
     HelpersModule,

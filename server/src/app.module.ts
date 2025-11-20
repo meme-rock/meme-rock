@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { TonModule } from './ton/ton.module';
+import { TonModule } from './purchases/ton/ton.module';
 import { AdminModule } from './admin/admin.module';
 import { BotModule } from './bot/bot.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -17,6 +17,7 @@ import { HelpersModule } from './helpers/helpers.module';
 import { MinerModule } from './miner/miner.module';
 import { RanksModule } from './ranks/ranks.module';
 import { BoosterModule } from './booster/booster.module';
+import { StarModule } from './purchases/star/star.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -70,6 +71,8 @@ if (!mongoUri) {
     HelpersModule,
     RanksModule,
     BoosterModule,
+    StarModule,
+    TonModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

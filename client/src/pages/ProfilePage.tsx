@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { formatNumber, formatInteger } from "../utils/formatNumber";
+import { TonConnectButton } from "@tonconnect/ui-react";
 
 export const ProfilePage = () => {
   const [copied, setCopied] = useState(false);
@@ -135,13 +136,7 @@ export const ProfilePage = () => {
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleConnectWallet}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Wallet className="w-5 h-5" />
-              Connect Wallet
-            </button>
+            <TonConnectButton />
           )}
 
           <p className="text-xs text-slate-400 mt-3 text-center">

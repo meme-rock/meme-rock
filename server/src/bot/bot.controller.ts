@@ -27,6 +27,7 @@ import { HelpersService } from 'src/helpers/helpers.service';
 import { EPaymentType } from 'src/common/enums/star-payload.enum';
 import { BoosterService } from 'src/booster/booster.service';
 import { MarketService } from 'src/market/market.service';
+import { StarService } from 'src/purchases/star/star.service';
 
 @Update()
 export class BotController implements OnModuleInit {
@@ -38,6 +39,7 @@ export class BotController implements OnModuleInit {
     private readonly helpersService: HelpersService,
     private readonly boosterService: BoosterService,
     private readonly marketService: MarketService,
+    private readonly starService: StarService,
   ) {}
 
   onModuleInit() {
@@ -89,12 +91,12 @@ export class BotController implements OnModuleInit {
           await this.boosterService.unlockBoosterForStars(user_id, booster_id);
           break;
         case EPaymentType.STONE:
-          const amount = JSON.parse(payload).stars_price;
-          const success = await this.marketService.handleStarsPayment(
+          const stone_amount = JSON.parse(payload).stars_price;
+          const stone_result = await this.marketService.handleStarsPayment(
             user_id,
-            amount,
+            stone_amount,
           );
-          if (!success) {
+          if (!stone_result) {
             return await this.botService.refundStarsPayment(
               ctx,
               'Your payment refunded, Something went wrong',
@@ -103,6 +105,19 @@ export class BotController implements OnModuleInit {
 
           break;
         case EPaymentType.PREMIUM:
+          const premium_amount = JSON.parse(payload).stars_price;
+          console.log('premium payment received');
+          const premium_result = await this.starService.givePremiumToUser(
+            user_id,
+            premium_amount,
+          );
+          console.log('premium_result:', premium_result);
+          if (!premium_result) {
+            return await this.botService.refundStarsPayment(
+              ctx,
+              'Your payment refunded, Something went wrong',
+            );
+          }
           break;
         default:
           return await this.botService.refundStarsPayment(
@@ -116,6 +131,10 @@ export class BotController implements OnModuleInit {
       // Örneğin: await this.telegramService.activateUserService(userId, payload);
     } catch (error) {
       console.log('Başarılı Ödeme hatası:', error);
+      return await this.botService.refundStarsPayment(
+        ctx,
+        'Your payment refunded, Something went wrong',
+      );
     }
   }
 

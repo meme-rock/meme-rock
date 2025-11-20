@@ -110,4 +110,9 @@ export class UserController {
   async getBalanceData(@Param('user_id') user_id: string) {
     return await this.userService.getBalanceData(user_id);
   }
+
+  @Get('is-premium/:user_id')
+  async isPremium(@Param('user_id') user_id: string) {
+    return await this.userService.isPremium(user_id);
+  }
 }

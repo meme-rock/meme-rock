@@ -9,6 +9,8 @@ import { boosterApi } from "./services/booster/booster-api";
 import { marketApi } from "./services/market/market-api";
 import { minerApi } from "./services/miner/miner-api";
 import { ranksApi } from "./services/ranks/ranks-api";
+import { starApi } from "./services/star/star-api";
+import { tonApi } from "./services/ton/ton-api";
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +24,8 @@ export const store = configureStore({
     [marketApi.reducerPath]: marketApi.reducer,
     [minerApi.reducerPath]: minerApi.reducer,
     [ranksApi.reducerPath]: ranksApi.reducer,
+    [starApi.reducerPath]: starApi.reducer,
+    [tonApi.reducerPath]: tonApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -29,7 +33,9 @@ export const store = configureStore({
       boosterApi.middleware,
       marketApi.middleware,
       minerApi.middleware,
-      ranksApi.middleware
+      ranksApi.middleware,
+      starApi.middleware,
+      tonApi.middleware
     ),
 });
 

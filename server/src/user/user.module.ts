@@ -13,6 +13,7 @@ import { UserHiltiService } from './user-hilti.service';
 import { BotModule } from 'src/bot/bot.module';
 import { MinerService } from 'src/miner/miner.service';
 import { HelpersService } from 'src/helpers/helpers.service';
+import { MarketItem, MarketItemSchema } from 'src/schemas/market.schema';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HelpersService } from 'src/helpers/helpers.service';
       { name: Miner.name, schema: MinerSchema },
       { name: Hilti.name, schema: HiltiSchema },
       { name: Booster.name, schema: BoosterSchema },
+      { name: MarketItem.name, schema: MarketItemSchema },
     ]),
     BotModule, // BotService'i kullanabilmek için
   ],

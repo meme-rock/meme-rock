@@ -12,6 +12,7 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { HelpersModule } from 'src/helpers/helpers.module';
 import { BoosterModule } from 'src/booster/booster.module';
 import { MarketModule } from 'src/market/market.module';
+import { StarModule } from 'src/purchases/star/star.module';
 @Module({
   imports: [
     // ⚠️ ÖNEMLİ: ConfigService kullanmak için forRootAsync kullanıyoruz.
@@ -53,6 +54,7 @@ import { MarketModule } from 'src/market/market.module';
     HelpersModule,
     forwardRef(() => BoosterModule),
     forwardRef(() => MarketModule),
+    forwardRef(() => StarModule),
   ],
   providers: [BotController, BotService, BroadcastService],
   exports: [BotService],

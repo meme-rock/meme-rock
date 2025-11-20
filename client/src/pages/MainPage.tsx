@@ -6,13 +6,15 @@ import { PremiumModal } from "../components/premium/PremiumModal";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Pickaxe, Trophy, Crown, Sparkles } from "lucide-react";
-import WebApp from "@twa-dev/sdk";
+import { User, Gift, Pickaxe, Trophy, Crown } from "lucide-react";
 
 export const MainPage = () => {
   // Select only needed fields to avoid re-renders from displayRocks updates
 
   const user = useSelector((state: RootState) => state.user);
+  const premiumMarketItem = useSelector(
+    (state: RootState) => state.user.premium_market_item
+  );
 
   const currentMiner = useSelector(
     (state: RootState) => state.miner.current_miner,
@@ -40,21 +42,10 @@ export const MainPage = () => {
   const [showDailyRewardModal, setShowDailyRewardModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [isPaymentProcessing] = useState(false);
   const currentRewardDay = 7;
 
   const handleClaimReward = (day: number) => {
     console.log(`Claiming reward for day ${day}`);
-  };
-
-  const handlePremiumStarPurchase = async () => {
-    // TODO: Implement premium purchase with stars
-    WebApp.showAlert("Premium purchase with STARS coming soon!");
-  };
-
-  const handlePremiumTonPurchase = async () => {
-    // TODO: Implement premium purchase with TON
-    WebApp.showAlert("Premium purchase with TON coming soon!");
   };
 
   return (
@@ -245,13 +236,11 @@ export const MainPage = () => {
 
       {/* Premium Modal */}
       <PremiumModal
+        user_id={user._id}
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
-        onStarPurchase={handlePremiumStarPurchase}
-        onTonPurchase={handlePremiumTonPurchase}
-        isProcessing={isPaymentProcessing}
-        premiumStarPrice={500}
-        premiumTonPrice={0.5}
+        premiumStarPrice={premiumMarketItem?.stars_price || 500}
+        premiumTonPrice={premiumMarketItem?.ton_price || 0.5}
       />
     </div>
   );

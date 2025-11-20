@@ -7,6 +7,8 @@ import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { CreateHiltiDto } from './dto/hiltis.dto';
 import { CreateBoosterDto } from './dto/boosters.dto';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
+import { MarketItem, MarketItemDocument } from 'src/schemas/market.schema';
+import { CreateMarketItemDto } from './dto/market.dto';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +16,8 @@ export class AdminService {
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
+    @InjectModel(MarketItem.name)
+    private marketItemModel: Model<MarketItemDocument>,
   ) {}
 
   //! HILTIS
@@ -147,6 +151,54 @@ export class AdminService {
       return {
         booster: updatedBooster,
         message: 'Booster updated successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  //! MARKET
+  async getMarket() {
+    try {
+      return this.marketItemModel.find();
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  async createMarketItem(marketItem: CreateMarketItemDto) {
+    try {
+      const createdMarketItem = await this.marketItemModel.create(marketItem);
+      return {
+        marketItem: createdMarketItem,
+        message: 'Market item created successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  async updateMarketItem(id: string, marketItem: CreateMarketItemDto) {
+    try {
+      const updatedMarketItem = await this.marketItemModel.findOneAndUpdate(
+        { _id: id },
+        marketItem,
+        {
+          new: true,
+        },
+      );
+      return {
+        marketItem: updatedMarketItem,
+        message: 'Market item updated successfully',
       };
     } catch (error) {
       console.log('Error: ', error);

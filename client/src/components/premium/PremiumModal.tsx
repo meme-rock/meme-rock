@@ -2,30 +2,105 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Crown, Zap, Rocket, Star, Check } from "lucide-react";
 import { PaymentButtons } from "../shared/PaymentButtons";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
+import WebApp from "@twa-dev/sdk";
+import { useState } from "react";
+import { usePurchasePremiumWithStarsMutation } from "../../redux/services/star/star-api";
+import { usePurchasePremiumWithTonMutation } from "../../redux/services/ton/ton-api";
+import { useIsPremiumMutation } from "../../redux/services/user/user-api";
+import {
+  useTonConnectUI,
+  useTonAddress,
+  SendTransactionRequest,
+} from "@tonconnect/ui-react";
 
 interface PremiumModalProps {
+  user_id: string;
   isOpen: boolean;
   onClose: () => void;
-  onStarPurchase: () => void;
-  onTonPurchase: () => void;
-  isStarLoading?: boolean;
-  isTonLoading?: boolean;
-  isProcessing?: boolean;
   premiumStarPrice?: number;
   premiumTonPrice?: number;
 }
 
 export const PremiumModal = ({
+  user_id,
   isOpen,
   onClose,
-  onStarPurchase,
-  onTonPurchase,
-  isStarLoading = false,
-  isTonLoading = false,
-  isProcessing = false,
   premiumStarPrice = 500,
   premiumTonPrice = 0.5,
 }: PremiumModalProps) => {
+  const [tonConnectUI] = useTonConnectUI();
+  const walletAddress = useTonAddress();
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+
+  const [
+    purchasePremiumWithStars,
+    { isLoading: isPurchasingPremiumWithStars },
+  ] = usePurchasePremiumWithStarsMutation();
+
+  const [purchasePremiumWithTon, { isLoading: isPurchasingPremiumWithTon }] =
+    usePurchasePremiumWithTonMutation();
+
+  const [isPremium] = useIsPremiumMutation();
+
+  const handleStarPurchase = async () => {
+    try {
+      const { invoice_link } = await purchasePremiumWithStars({
+        user_id: user_id,
+      }).unwrap();
+
+      if (!invoice_link) {
+        throw new Error("Failed to purchase premium with stars");
+      }
+
+      WebApp.openInvoice(invoice_link, async (status) => {
+        if (status === "paid") {
+          // Show loading animation during processing
+          setIsPaymentProcessing(true);
+          // Wait 2 seconds for payment confirmation
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await isPremium({ user_id: user_id }).unwrap();
+          // Refresh user data to update premium status
+          WebApp.showAlert("Premium purchased successfully");
+          // Hide loading animation after user data is loaded
+          setIsPaymentProcessing(false);
+          // Close modal after successful purchase
+          onClose();
+        }
+      });
+    } catch (error) {
+      console.error("❌ Purchase Premium with Stars error:", error);
+      setIsPaymentProcessing(false);
+      WebApp.showAlert(
+        "Failed to purchase premium with stars. Please try again."
+      );
+    }
+  };
+  const handleTonPurchase = async () => {
+    try {
+      setIsPaymentProcessing(true);
+      if (!walletAddress) {
+        WebApp.showAlert("Please connect your wallet first!");
+        tonConnectUI.openModal();
+        setIsPaymentProcessing(false);
+        return;
+      }
+      const response = await purchasePremiumWithTon({
+        user_id: user_id,
+        wallet_address: walletAddress,
+      }).unwrap();
+      if (!response) {
+        throw new Error("Failed to purchase premium with ton");
+      }
+      await tonConnectUI.sendTransaction(response as SendTransactionRequest);
+      setIsPaymentProcessing(false);
+    } catch (error) {
+      console.error("❌ Purchase Premium with Ton error:", error);
+      setIsPaymentProcessing(false);
+      WebApp.showAlert(
+        "Failed to purchase premium with ton. Please try again."
+      );
+    }
+  };
   const premiumBenefits = [
     {
       icon: <Zap className="w-5 h-5 text-yellow-400" />,
@@ -77,7 +152,7 @@ export const PremiumModal = ({
               {/* Close button */}
               <button
                 onClick={onClose}
-                disabled={isProcessing}
+                disabled={isPaymentProcessing}
                 className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-gray-800/80 hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5 text-gray-400" />
@@ -145,11 +220,11 @@ export const PremiumModal = ({
                         }
                       : undefined
                   }
-                  onStarClick={onStarPurchase}
-                  onTonClick={onTonPurchase}
-                  isStarLoading={isStarLoading}
-                  isTonLoading={isTonLoading}
-                  isProcessing={isProcessing}
+                  onStarClick={handleStarPurchase}
+                  onTonClick={handleTonPurchase}
+                  isStarLoading={isPurchasingPremiumWithStars}
+                  isTonLoading={isPurchasingPremiumWithTon}
+                  isProcessing={isPaymentProcessing}
                 />
               </div>
             </motion.div>

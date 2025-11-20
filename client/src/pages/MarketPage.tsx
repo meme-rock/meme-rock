@@ -3,11 +3,8 @@ import Lottie from "lottie-react";
 import starAnimation from "../../public/animated-star.json";
 import tonAnimation from "../../public/animated-ton.json";
 import star from "../../public/star.json";
-import {
-  useLoadStonesMarketDataQuery,
-  useStarsToStonesMutation,
-  useTonToStonesMutation,
-} from "../redux/services/market/market-api";
+import { useLoadStonesMarketDataQuery } from "../redux/services/market/market-api";
+import { usePurchaseStonesWithStarsMutation } from "../redux/services/star/star-api";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import WebApp from "@twa-dev/sdk";
@@ -19,6 +16,7 @@ import {
 } from "@tonconnect/ui-react";
 import { formatNumber, formatInteger } from "../utils/formatNumber";
 import { useGetBalanceDataMutation } from "../redux/services/user/user-api";
+import { usePurchaseStonesWithTonMutation } from "../redux/services/ton/ton-api";
 
 type CurrencyType = "stars" | "ton";
 
@@ -52,8 +50,9 @@ export const MarketPage = ({}: MarketPageProps) => {
   const walletAddress = useTonAddress();
   const [getBalanceData] = useGetBalanceDataMutation();
   const user = useSelector((state: RootState) => state.user);
-  const [starsToStonesMutation] = useStarsToStonesMutation();
-  const [tonToStonesMutation] = useTonToStonesMutation();
+  const [purchaseStonesWithStarsMutation] =
+    usePurchaseStonesWithStarsMutation();
+  const [purchaseStonesWithTonMutation] = usePurchaseStonesWithTonMutation();
   const [selectedCurrency, setSelectedCurrency] =
     useState<CurrencyType>("stars");
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
@@ -93,7 +92,7 @@ export const MarketPage = ({}: MarketPageProps) => {
       case "stars":
         try {
           setProcessingItemId(item.id);
-          const { invoice_link } = await starsToStonesMutation({
+          const { invoice_link } = await purchaseStonesWithStarsMutation({
             user_id: user._id,
             stars_price: item.currency,
           }).unwrap();
@@ -141,9 +140,9 @@ export const MarketPage = ({}: MarketPageProps) => {
             tonConnectUI.openModal();
             return;
           }
-          const response = await tonToStonesMutation({
+          const response = await purchaseStonesWithTonMutation({
             user_id: user._id,
-            stone_amount: item.stones,
+            ton_price: item.currency,
             wallet_address: walletAddress,
           }).unwrap();
           console.log("response: ", response);
@@ -250,7 +249,7 @@ export const MarketPage = ({}: MarketPageProps) => {
                 alt="TON"
                 className="w-8 h-8 filter brightness-110"
               />
-              <span>TON +20%</span>
+              <span>TON +30%</span>
             </button>
           </div>
         </div>

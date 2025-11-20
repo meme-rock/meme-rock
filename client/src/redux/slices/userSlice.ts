@@ -6,6 +6,11 @@ type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
   displayRocks: number;
   lastCounterUpdate: number;
+  // Premium market item pricing
+  premium_market_item?: {
+    ton_price: number;
+    stars_price: number;
+  };
 };
 
 const initialState: UserState = {
@@ -173,6 +178,18 @@ export const userSlice = createSlice({
         achievement_id: achievement.id,
       }));
     },
+    setPremiumMarketItem: (
+      state,
+      action: PayloadAction<{
+        ton_price: number;
+        stars_price: number;
+      }>
+    ) => {
+      state.premium_market_item = action.payload;
+    },
+    setIsPremium: (state, action: PayloadAction<boolean>) => {
+      state.is_premium = action.payload;
+    },
   },
 });
 
@@ -189,6 +206,8 @@ export const {
   updateUserOnStoneToDustExchange,
   updateUserOnDustToStoneExchange,
   updateUserAchievements,
+  setPremiumMarketItem,
+  setIsPremium,
 } = userSlice.actions;
 
 export default userSlice.reducer;

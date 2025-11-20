@@ -9,6 +9,7 @@ import { AdminRanksService } from './admin.ranks.service';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { BotService } from 'src/bot/bot.service';
 import { HelpersService } from 'src/helpers/helpers.service';
+import { MarketItem, MarketItemSchema } from 'src/schemas/market.schema';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { HelpersService } from 'src/helpers/helpers.service';
       { name: Miner.name, schema: MinerSchema },
       { name: Hilti.name, schema: HiltiSchema },
       { name: Booster.name, schema: BoosterSchema },
+      { name: MarketItem.name, schema: MarketItemSchema },
     ]),
   ],
   controllers: [AdminController, AdminRanksController],

@@ -20,18 +20,6 @@ export class MarketController {
     return await this.marketService.getStonesMarketData();
   }
 
-  @Post('purchase-stones-with-stars/:user_id')
-  @Throttle({ strict: { limit: 1, ttl: 1000 } })
-  async purchaseStonesWithStars(
-    @Param('user_id') user_id: string,
-    @Body() { stars_price }: { stars_price: number },
-  ) {
-    return await this.marketService.createPaymentWithStarsLink(
-      user_id,
-      stars_price,
-    );
-  }
-
   @Post('purchase-stones-with-ton/:user_id')
   @Throttle({ strict: { limit: 1, ttl: 1000 } })
   async purchaseStonesWithTon(

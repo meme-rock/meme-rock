@@ -4,6 +4,7 @@ import { CreateMinerDto } from './dto/miners.dto';
 import { CreateHiltiDto } from './dto/hiltis.dto';
 import { CreateBoosterDto } from './dto/boosters.dto';
 import { AdminRanksService } from './admin.ranks.service';
+import { CreateMarketItemDto } from './dto/market.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -59,6 +60,25 @@ export class AdminController {
   ) {
     console.log('update-booster working...');
     return this.adminService.updateBooster(id, booster);
+  }
+
+  //! MARKET
+  @Get('get-market-items')
+  async getMarket() {
+    return this.adminService.getMarket();
+  }
+
+  @Post('create-market-item')
+  async createMarketItem(@Body() marketItem: CreateMarketItemDto) {
+    return this.adminService.createMarketItem(marketItem);
+  }
+
+  @Put('update-market-item/:id')
+  async updateMarketItem(
+    @Param('id') id: string,
+    @Body() marketItem: CreateMarketItemDto,
+  ) {
+    return this.adminService.updateMarketItem(id, marketItem);
   }
 }
 

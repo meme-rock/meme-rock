@@ -11,7 +11,6 @@ import {
 import { IBooster } from "../../types";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
 import {
-  usePurchaseBoosterWithStarsMutation,
   useUnlockBoosterMutation,
   useUpgradeBoosterMutation,
 } from "../../redux/services/booster/booster-api";
@@ -23,6 +22,13 @@ import { useState } from "react";
 import { BoosterConfirmModal } from "./BoosterConfirmModal";
 import { PaymentButtons } from "../shared/PaymentButtons";
 import { useGetBoostersMutation } from "../../redux/services/booster/booster-api";
+import { usePurchaseBoosterWithStarsMutation } from "../../redux/services/star/star-api";
+import {
+  useTonConnectUI,
+  useTonAddress,
+  SendTransactionRequest,
+} from "@tonconnect/ui-react";
+import { usePurchaseBoosterWithTonMutation } from "../../redux/services/ton/ton-api";
 
 interface BoosterCardProps {
   booster: IBooster;
@@ -30,6 +36,9 @@ interface BoosterCardProps {
 }
 
 export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
+  const [tonConnectUI] = useTonConnectUI();
+  const walletAddress = useTonAddress();
+
   const user = useSelector((state: RootState) => state.user);
 
   const [unlockBooster, { isLoading: isUnlocking }] =
@@ -45,7 +54,9 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
   //? Mutations
   const [purchaseBoosterWithStars, { isLoading: isPurchasingWithStars }] =
     usePurchaseBoosterWithStarsMutation();
-  const handlePurchase = async () => {
+  const [purchaseBoosterWithTon, { isLoading: isPurchasingWithTon }] =
+    usePurchaseBoosterWithTonMutation();
+  const handleStarPurchase = async () => {
     try {
       const { invoice_link } = await purchaseBoosterWithStars({
         user_id: user._id,
@@ -70,6 +81,33 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
       setIsPaymentProcessing(false);
       WebApp.showAlert(
         "Failed to purchase booster with stars. Please try again."
+      );
+    }
+  };
+  const handleTonPurchase = async () => {
+    try {
+      setIsPaymentProcessing(true);
+      if (!walletAddress) {
+        WebApp.showAlert("Please connect your wallet first!");
+        tonConnectUI.openModal();
+        setIsPaymentProcessing(false);
+        return;
+      }
+      const response = await purchaseBoosterWithTon({
+        user_id: user._id,
+        booster_id: booster._id,
+        wallet_address: walletAddress,
+      }).unwrap();
+      if (!response) {
+        throw new Error("Failed to purchase booster with ton");
+      }
+      await tonConnectUI.sendTransaction(response as SendTransactionRequest);
+      setIsPaymentProcessing(false);
+    } catch (error) {
+      console.error("❌ Purchase Booster with Ton error:", error);
+      setIsPaymentProcessing(false);
+      WebApp.showAlert(
+        "Failed to purchase booster with ton. Please try again."
       );
     }
   };
@@ -346,14 +384,10 @@ export const BoosterCard = ({ booster, isLevelLocked }: BoosterCardProps) => {
               <PaymentButtons
                 starOption={starOption}
                 tonOption={tonOption}
-                onStarClick={handlePurchase}
-                onTonClick={() => {
-                  // TODO: Implement purchaseBooster endpoint
-                  WebApp.showAlert(
-                    `TON payment coming soon!\n\nPrice: ${tonOption?.amount} TON\n\nThis will use the purchaseBooster endpoint.`
-                  );
-                }}
+                onStarClick={handleStarPurchase}
+                onTonClick={handleTonPurchase}
                 isStarLoading={isPurchasingWithStars}
+                isTonLoading={isPurchasingWithTon}
                 isProcessing={isPaymentProcessing}
               />
             )}

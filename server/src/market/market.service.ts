@@ -27,6 +27,11 @@ import {
 import { ETonPaymentStatus } from 'src/common/enums/ton-payments.enum';
 import { HelpersService } from 'src/helpers/helpers.service';
 import { EPaymentType } from 'src/common/enums/star-payload.enum';
+import {
+  EMarketItemType,
+  MarketItem,
+  MarketItemDocument,
+} from 'src/schemas/market.schema';
 
 @Injectable()
 export class MarketService {
@@ -40,58 +45,49 @@ export class MarketService {
     @InjectModel(TonPayments.name)
     private tonPaymentsModel: Model<TonPaymentsDocument>,
     private readonly helpersService: HelpersService,
+    @InjectModel(MarketItem.name)
+    private marketItemModel: Model<MarketItemDocument>,
   ) {}
 
   async getStonesMarketData() {
-    return {
-      star_market: STONE_MARKET_STAR,
-      ton_market: STONE_MARKET_TON,
-    };
-  }
-  async createPaymentWithStarsLink(user_id: string, stars_price: number) {
-    try {
-    } catch (error) {}
-    const user = await this.userModel.findById(user_id);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    const market_items = await this.marketItemModel
+      .find({
+        type: EMarketItemType.STONE,
+      })
+      .sort({ stars_price: 1 }) // Küçükten büyüğe sıralamak her zaman iyidir
+      .lean()
+      .exec();
 
-    const market_details = STONE_MARKET_STAR.find(
-      (item: StarMarketItem) => item.stars_price === stars_price,
-    );
-    if (!market_details) {
-      throw new NotFoundException('Market details not found');
-    }
-    const payload = JSON.stringify({
-      payment_type: EPaymentType.STONE,
-      user_id: user_id,
-      stars_price: stars_price,
-      stone_amount: market_details.stone_amount,
-      stone_bonus: market_details.stone_bonus,
-      total_stones: market_details.total_stones,
-    });
-    const prices = [
-      {
-        label: `${market_details.total_stones} Stones`,
-        amount: market_details.stars_price,
-      },
-    ];
-    const invoice_link = await this.botService.createInvoiceLink(
-      `${market_details.total_stones} Stones`,
-      `Purchase for ${market_details.total_stones} Stones for ${market_details.stars_price} Stars`,
-      payload,
-      '',
-      prices,
-    );
-    if (!invoice_link) {
-      throw new BadRequestException('Invoice link could not be created');
-    }
     return {
-      invoice_link: invoice_link,
+      // 1. Listeyi Star formatına dönüştür
+      star_market: market_items.map((item) => ({
+        stars_price: item.stars_price,
+        stone_amount: item.stone_amount,
+        stone_bonus: item.stone_bonus,
+        total_stones: item.total_stones,
+      })),
+
+      // 2. Aynı listeyi Ton formatına dönüştür
+      ton_market: market_items.map((item) => {
+        // Önce değerleri hesapla ve küsurattan kurtul (Math.floor ile aşağı yuvarladım)
+        // (item.stone_amount || 0) diyerek null riskini de sıfırlıyoruz.
+        const baseAmount = Math.floor((item.stone_amount || 0) * 1.3);
+        const bonusAmount = Math.floor((item.stone_bonus || 0) * 1.3);
+
+        // Total'i bu iki yeni değerin toplamı olarak ver ki matematik her zaman tutsun
+        const totalAmount = baseAmount + bonusAmount;
+
+        return {
+          ton_price: item.ton_price,
+          stone_amount: baseAmount,
+          stone_bonus: bonusAmount,
+          total_stones: totalAmount, // DB'deki total'i çarpmak yerine, yenileri toplamak daha garantidir
+        };
+      }),
     };
   }
 
-  async handleStarsPayment(user_id: string, amount: number) {
+  async handleStarsPayment(user_id: string, amount: number): Promise<boolean> {
     try {
       const market_details = STONE_MARKET_STAR.find(
         (item: StarMarketItem) =>

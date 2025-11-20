@@ -18,6 +18,11 @@ import { UserAchivementService } from './user-achivement.service';
 import { MinerService } from 'src/miner/miner.service';
 import { BotService } from 'src/bot/bot.service';
 import { HelpersService } from 'src/helpers/helpers.service';
+import {
+  EMarketItemType,
+  MarketItem,
+  MarketItemDocument,
+} from 'src/schemas/market.schema';
 
 @Injectable()
 export class UserService {
@@ -31,6 +36,9 @@ export class UserService {
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
+    @InjectModel(MarketItem.name)
+    private marketItemModel: Model<MarketItemDocument>,
+
     private userAchivementService: UserAchivementService,
     private minerService: MinerService,
     private botService: BotService,
@@ -70,24 +78,38 @@ export class UserService {
 
   async loading(_id: string, user: CreateUserDto, initData: string) {
     try {
-      const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
-        await Promise.all([
-          // Hiltis
-          this.hiltiModel.find().lean().exec(),
-          // Miners
-          this.minerModel.find().lean().exec(),
-          // Level 1 Miner
-          this.minerModel.findById(EMinerLevel.LEVEL_1).lean().exec(),
-          // Level 1 Hilti
-          this.hiltiModel.findById(EHiltiLevel.LEVEL_1).lean().exec(),
-          // Existing User
-          this.userModel
-            .findById(_id)
-            .populate('miner_data.miner')
-            .populate('hilti_data.hilti')
-            .exec(),
-        ]);
-
+      const [
+        premium_market_item,
+        hiltis,
+        miners,
+        level1Miner,
+        level1Hilti,
+        existingUser,
+      ] = await Promise.all([
+        // Premium market item
+        this.marketItemModel
+          .findOne(
+            { type: EMarketItemType.PREMIUM },
+            { stars_price: 1, ton_price: 1, _id: 0 },
+          )
+          .lean()
+          .exec(),
+        // Hiltis
+        this.hiltiModel.find().lean().exec(),
+        // Miners
+        this.minerModel.find().lean().exec(),
+        // Level 1 Miner
+        this.minerModel.findById(EMinerLevel.LEVEL_1).lean().exec(),
+        // Level 1 Hilti
+        this.hiltiModel.findById(EHiltiLevel.LEVEL_1).lean().exec(),
+        // Existing User
+        this.userModel
+          .findById(_id)
+          .populate('miner_data.miner')
+          .populate('hilti_data.hilti')
+          .exec(),
+      ]);
+      console.log('premium_market_item', premium_market_item);
       if (!level1Miner || !level1Hilti) {
         throw new Error('LEVEL_1 miner or hilti not found in database');
       }
@@ -101,6 +123,7 @@ export class UserService {
           miners,
           level1Miner,
           level1Hilti,
+          premium_market_item as MarketItemDocument,
         );
         return newUser;
       }
@@ -173,6 +196,7 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        premium_market_item,
         message: 'User updated successfully',
       };
     } catch (error) {
@@ -188,6 +212,7 @@ export class UserService {
     miners: Miner[],
     level1Miner: Miner,
     level1Hilti: Hilti,
+    premium_market_item: MarketItemDocument,
   ) {
     try {
       const parsedData = new URLSearchParams(initData);
@@ -265,6 +290,7 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        premium_market_item,
         message: 'User created successfully',
       };
     } catch (error) {
@@ -337,6 +363,21 @@ export class UserService {
       return boosters;
     } catch (error) {
       console.error('Error in getBoosters service:', error);
+      throw error;
+    }
+  }
+  async isPremium(user_id: string): Promise<boolean> {
+    try {
+      const user = await this.userModel
+        .findOne({ _id: user_id, is_premium: true })
+        .lean()
+        .exec();
+      if (!user) {
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error in isPremium service:', error);
       throw error;
     }
   }

@@ -3,6 +3,8 @@ import { initDataHeader } from "../init-data-header";
 import type { IUser, IHiltiDetail, IMinerDetail } from "../../../types";
 import {
   loadingUser,
+  setPremiumMarketItem,
+  setIsPremium,
   updateUserDust,
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
@@ -29,6 +31,10 @@ export const userApi = createApi({
           is_claimed: boolean;
           claimed_at?: string;
         }>;
+        premium_market_item?: {
+          ton_price: number;
+          stars_price: number;
+        };
         mine_claim?: {
           success: boolean;
           claimed_reward: number;
@@ -90,6 +96,11 @@ export const userApi = createApi({
               type: "mineClaim/setMineClaimData",
               payload: data.mine_claim,
             });
+          }
+
+          // Store premium market item if available
+          if (data.premium_market_item) {
+            dispatch(setPremiumMarketItem(data.premium_market_item));
           }
         } catch (error) {
           console.error("Error loading user data:", error);
@@ -286,6 +297,22 @@ export const userApi = createApi({
         }
       },
     }),
+    isPremium: builder.mutation<boolean, { user_id: string }>({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/is-premium/${user_id}`,
+        method: "GET",
+      }),
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Is premium data received:", data);
+          dispatch(setIsPremium(data));
+        } catch (error) {
+          console.log("❌ isPremium error: ", error);
+          throw error;
+        }
+      },
+    }),
   }),
 });
 
@@ -297,4 +324,5 @@ export const {
   useClaimAchievementMutation,
   useUpgradeHiltiMutation,
   useGetBalanceDataMutation,
+  useIsPremiumMutation,
 } = userApi;

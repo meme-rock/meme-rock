@@ -37,16 +37,4 @@ export class BoosterController {
       booster.booster_id,
     );
   }
-
-  @Post('purchase-booster-with-stars/:user_id')
-  @Throttle({ strict: { limit: 1, ttl: 1000 } })
-  async purchaseBoosterWithStars(
-    @Param('user_id') user_id: string,
-    @Body() { booster_id }: { booster_id: string },
-  ) {
-    return await this.boosterService.createInvoiceLinkForBoosterPurchase(
-      user_id,
-      booster_id,
-    );
-  }
 }
