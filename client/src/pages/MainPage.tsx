@@ -6,7 +6,13 @@ import { PremiumModal } from "../components/premium/PremiumModal";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion } from "framer-motion";
-import { User, Gift, Pickaxe, Trophy, Crown } from "lucide-react";
+import { User, Tv, Gift, Pickaxe, Trophy, Crown, X } from "lucide-react";
+
+import { StoneTodustExchange } from "../components/main/exchange/Exchange";
+import { CgArrowsExchange } from "react-icons/cg";
+
+import { AdRewardSection } from "../components/main/ads/AdRewardSection";
+import { AnimatePresence } from "framer-motion";
 
 export const MainPage = () => {
   // Select only needed fields to avoid re-renders from displayRocks updates
@@ -42,6 +48,8 @@ export const MainPage = () => {
   const [showDailyRewardModal, setShowDailyRewardModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [showAdRewardModal, setShowAdRewardModal] = useState(false);
   const currentRewardDay = 7;
 
   const handleClaimReward = (day: number) => {
@@ -218,6 +226,36 @@ export const MainPage = () => {
         >
           <RockCounter />
         </motion.div>
+
+        {/* Exchange and Watch Ads Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="w-full grid grid-cols-2 gap-3 mt-4"
+        >
+          <button
+            onClick={() => setShowExchangeModal(true)}
+            className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/20 via-cyan-500/20 to-blue-500/20 p-[2px] hover:from-blue-400/30 hover:via-cyan-400/30 hover:to-blue-400/30 transition-all duration-300 active:scale-95"
+          >
+            <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300 flex items-center justify-center gap-2">
+              <CgArrowsExchange className="w-4 h-4 text-orange-300" />
+              <span className="text-sm font-bold text-blue-100">Exchange</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setShowAdRewardModal(true)}
+            className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-purple-500/20 p-[2px] hover:from-purple-400/30 hover:via-pink-400/30 hover:to-purple-400/30 transition-all duration-300 active:scale-95"
+          >
+            <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300 flex items-center justify-center gap-2">
+              <Tv className="w-4 h-4 text-purple-500" />
+              <span className="text-sm font-bold text-purple-100">
+                Watch Ads
+              </span>
+            </div>
+          </button>
+        </motion.div>
       </div>
 
       {/* Daily Reward Modal */}
@@ -242,6 +280,67 @@ export const MainPage = () => {
         premiumStarPrice={premiumMarketItem?.stars_price || 500}
         premiumTonPrice={premiumMarketItem?.ton_price || 0.5}
       />
+      {/* Exchange Modal */}
+      <AnimatePresence>
+        {showExchangeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            onClick={() => setShowExchangeModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -top-12 right-0">
+                <button
+                  onClick={() => setShowExchangeModal(false)}
+                  className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white border border-slate-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <StoneTodustExchange />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Ad Reward Modal */}
+      <AnimatePresence>
+        {showAdRewardModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAdRewardModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute -top-12 right-0">
+                <button
+                  onClick={() => setShowAdRewardModal(false)}
+                  className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white border border-slate-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <AdRewardSection />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

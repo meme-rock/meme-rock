@@ -10,7 +10,6 @@ export const Navbar = () => {
     { id: "mine", label: "Mine", icon: Pickaxe, path: "/mine" },
     // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
     { id: "rock", label: "$ROCK", icon: "/jackhammer.svg", path: "/rock" },
-    { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },
     { id: "leaderboard", label: "Ranks", icon: Trophy, path: "/leaderboard" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },

@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
 import { Loader2, Tv, AlertCircle, CheckCircle } from "lucide-react";
-import { useAdExtra } from "../../ad/hooks/useAdExtra";
-import { useAdsgram } from "../../ad/hooks/useAdsgram";
+import { useAdExtra } from "../../../ad/hooks/useAdExtra";
+import { useAdsgram } from "../../../ad/hooks/useAdsgram";
 import { useState, useEffect } from "react";
-import { useUpdateUserDustAfterAdRewardMutation } from "../../redux/services/user/user-api";
+import { useUpdateUserDustAfterAdRewardMutation } from "../../../redux/services/user/user-api";
 import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
+import { RootState } from "../../../redux/store";
 
 const ADSGRAM_BLOCK_ID = import.meta.env.VITE_ADSGRAM_BLOCK_ID || "";
 
@@ -122,12 +122,12 @@ export const AdRewardSection = () => {
                 >
                   <Loader2 className="w-5 h-5" />
                 </motion.div>
-                Watching Ad...
+                Loading...
               </>
             ) : (
               <>
                 <Tv className="w-5 h-5" />
-                Watch AdExtra
+                AdExtra
               </>
             )}
           </motion.button>
@@ -183,12 +183,12 @@ export const AdRewardSection = () => {
                 >
                   <Loader2 className="w-5 h-5" />
                 </motion.div>
-                Watching Ad...
+                Loading...
               </>
             ) : (
               <>
                 <Tv className="w-5 h-5" />
-                Watch Adsgram
+                Adsgram
               </>
             )}
           </motion.button>

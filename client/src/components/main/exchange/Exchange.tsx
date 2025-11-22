@@ -1,52 +1,31 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Check, X, ArrowLeftRight } from "lucide-react";
+import { ArrowRight, Check, X } from "lucide-react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
-import {
-  useStoneToDustExchangeMutation,
-  useDustToStoneExchangeMutation,
-} from "../../redux/services/user/user-api";
-import { formatInteger } from "../../utils/formatNumber";
+import { RootState } from "../../../redux/store";
+import { useDustToStoneExchangeMutation } from "../../../redux/services/user/user-api";
+import { formatInteger } from "../../../utils/formatNumber";
 
-interface StoneTodustExchangeProps {
-  userStones: number;
-}
-
-type ExchangeType = "stone-to-dust" | "dust-to-stone";
-
-export const StoneTodustExchange = ({
-  userStones,
-}: StoneTodustExchangeProps) => {
+export const StoneTodustExchange = () => {
   const user = useSelector((state: RootState) => state.user);
-  const [stoneToDustExchangeMutation] = useStoneToDustExchangeMutation();
   const [dustToStoneExchangeMutation] = useDustToStoneExchangeMutation();
-  const [exchangeType, setExchangeType] =
-    useState<ExchangeType>("stone-to-dust");
-  const [amount, setAmount] = useState(1);
-  const [inputValue, setInputValue] = useState("1");
+
+  const [amount, setAmount] = useState(100);
+  const [inputValue, setInputValue] = useState("100");
   const [isExchanging, setIsExchanging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const stoneToDustRate = 3; // 1 stone = 3 dust
   const dustToStoneRate = 100; // 100 dust = 1 stone
 
   const userDust = user.balance_data.dust;
 
   // For dust-to-stone, calculate max in steps of 100
-  const maxAmount =
-    exchangeType === "stone-to-dust"
-      ? userStones
-      : Math.floor(userDust / 100) * 100;
+  const maxAmount = Math.floor(userDust / 100) * 100;
+  const minAmount = 100;
+  const step = 100;
 
-  const minAmount = exchangeType === "stone-to-dust" ? 1 : 100;
-  const step = exchangeType === "stone-to-dust" ? 1 : 100;
-
-  // Calculate converted amount based on exchange type
-  const convertedAmount =
-    exchangeType === "stone-to-dust"
-      ? amount * stoneToDustRate
-      : amount / dustToStoneRate;
+  // Calculate converted amount
+  const convertedAmount = amount / dustToStoneRate;
 
   const handleAmountChange = (value: number) => {
     const clamped = Math.min(Math.max(minAmount, value), maxAmount);
@@ -62,29 +41,15 @@ export const StoneTodustExchange = ({
     const parsed = parseInt(inputValue) || minAmount;
 
     // For dust-to-stone, round to nearest 100
-    let adjustedValue = parsed;
-    if (exchangeType === "dust-to-stone") {
-      adjustedValue = Math.round(parsed / 100) * 100;
-    }
+    let adjustedValue = Math.round(parsed / 100) * 100;
 
     const finalValue = Math.min(Math.max(minAmount, adjustedValue), maxAmount);
     setAmount(finalValue);
     setInputValue(finalValue.toString());
   };
 
-  const handleExchangeTypeToggle = () => {
-    const newType =
-      exchangeType === "stone-to-dust" ? "dust-to-stone" : "stone-to-dust";
-    setExchangeType(newType);
-
-    // Set initial amount based on exchange type
-    const initialAmount = newType === "stone-to-dust" ? 1 : 100;
-    setAmount(initialAmount);
-    setInputValue(initialAmount.toString());
-  };
-
   const handleExchangeClick = () => {
-    if (amount < 1 || amount > maxAmount) return;
+    if (amount < minAmount || amount > maxAmount) return;
     setShowConfirmModal(true);
   };
 
@@ -98,25 +63,16 @@ export const StoneTodustExchange = ({
     setShowConfirmModal(false);
 
     try {
-      if (exchangeType === "stone-to-dust") {
-        const response = await stoneToDustExchangeMutation({
-          user_id: user._id,
-          stones: amount,
-        });
-        console.log("Stone to Dust exchange response:", response);
-      } else {
-        const response = await dustToStoneExchangeMutation({
-          user_id: user._id,
-          dust: amount,
-        });
-        console.log("Dust to Stone exchange response:", response);
-      }
+      const response = await dustToStoneExchangeMutation({
+        user_id: user._id,
+        dust: amount,
+      });
+      console.log("Dust to Stone exchange response:", response);
 
       setTimeout(() => {
         setIsExchanging(false);
-        const resetAmount = exchangeType === "stone-to-dust" ? 1 : 100;
-        setAmount(resetAmount);
-        setInputValue(resetAmount.toString());
+        setAmount(100);
+        setInputValue("100");
       }, 1000);
     } catch (error) {
       console.error("Error in exchange:", error);
@@ -130,47 +86,19 @@ export const StoneTodustExchange = ({
   return (
     <>
       <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-amber-500/30 rounded-xl p-5">
-        {/* Exchange Type Toggle - More Prominent */}
+        {/* Header - Replaced Toggle */}
         <div className="flex justify-center mb-5">
-          <motion.button
-            onClick={handleExchangeTypeToggle}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative flex items-center gap-3 bg-gradient-to-r from-amber-600/80 to-orange-600/80 hover:from-amber-500/90 hover:to-orange-500/90 px-6 py-3 rounded-xl border-2 border-amber-400/50 shadow-lg shadow-amber-500/20 transition-all overflow-hidden group"
-          >
-            {/* Shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-
-            <motion.div
-              animate={{ rotate: [0, 180, 0] }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                repeatDelay: 3,
-              }}
-            >
-              <ArrowLeftRight className="w-5 h-5 text-white drop-shadow-md" />
-            </motion.div>
-
-            <span className="text-white font-bold text-base drop-shadow-md relative z-10">
-              {exchangeType === "stone-to-dust"
-                ? "Stone → Dust"
-                : "Dust → Stone"}
+          <div className="flex items-center gap-2 bg-gradient-to-r from-amber-900/40 to-orange-900/40 px-4 py-2 rounded-lg border border-amber-500/20">
+            <span className="text-amber-200 font-bold">
+              Dust → Stone Exchange
             </span>
-          </motion.button>
+          </div>
         </div>
 
         {/* Exchange preview */}
         <div className="flex items-center justify-center gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <img
-              src={
-                exchangeType === "stone-to-dust" ? "/stone.svg" : "/dust.svg"
-              }
-              alt={exchangeType === "stone-to-dust" ? "Stone" : "Dust"}
-              className="w-8 h-8"
-            />
+            <img src="/dust.svg" alt="Dust" className="w-8 h-8" />
             <span className="text-white font-bold text-xl">
               {formatInteger(amount)}
             </span>
@@ -179,13 +107,7 @@ export const StoneTodustExchange = ({
           <ArrowRight className="w-5 h-5 text-amber-400" />
 
           <div className="flex items-center gap-2">
-            <img
-              src={
-                exchangeType === "stone-to-dust" ? "/dust.svg" : "/stone.svg"
-              }
-              alt={exchangeType === "stone-to-dust" ? "Dust" : "Stone"}
-              className="w-8 h-8"
-            />
+            <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
             <span className="text-amber-400 font-bold text-xl">
               {formatInteger(convertedAmount)}
             </span>
@@ -223,8 +145,7 @@ export const StoneTodustExchange = ({
           <div className="flex justify-between mt-2 text-xs text-gray-500">
             <span>{minAmount}</span>
             <span className="text-gray-400">
-              Available: {formatInteger(maxAmount)}{" "}
-              {exchangeType === "stone-to-dust" ? "Stone" : "Dust"}
+              Available: {formatInteger(maxAmount)} Dust
             </span>
             <span>{formatInteger(maxAmount)}</span>
           </div>
@@ -273,15 +194,7 @@ export const StoneTodustExchange = ({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">You give:</span>
                   <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        exchangeType === "stone-to-dust"
-                          ? "/stone.svg"
-                          : "/dust.svg"
-                      }
-                      alt={exchangeType === "stone-to-dust" ? "Stone" : "Dust"}
-                      className="w-6 h-6"
-                    />
+                    <img src="/dust.svg" alt="Dust" className="w-6 h-6" />
                     <span className="text-white font-bold text-lg">
                       {formatInteger(amount)}
                     </span>
@@ -293,15 +206,7 @@ export const StoneTodustExchange = ({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">You get:</span>
                   <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        exchangeType === "stone-to-dust"
-                          ? "/dust.svg"
-                          : "/stone.svg"
-                      }
-                      alt={exchangeType === "stone-to-dust" ? "Dust" : "Stone"}
-                      className="w-6 h-6"
-                    />
+                    <img src="/stone.svg" alt="Stone" className="w-6 h-6" />
                     <span className="text-amber-400 font-bold text-lg">
                       {formatInteger(convertedAmount)}
                     </span>

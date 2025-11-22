@@ -5,7 +5,6 @@ import { TopBar } from "./components/TopBar";
 import { Navbar } from "./components/Navbar";
 import { MainPage } from "./pages/MainPage";
 import { RockPage } from "./pages/RockPage";
-import { DustPage } from "./pages/DustPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -31,7 +30,6 @@ function AppContent() {
             <Route path="/" element={<MainPage />} />
             <Route path="/mine" element={<MinePage />} />
             <Route path="/rock" element={<RockPage />} />
-            <Route path="/dust" element={<DustPage />} />
             <Route
               path="/market"
               element={<MarketPage stones={user.balance_data.stone} />}
