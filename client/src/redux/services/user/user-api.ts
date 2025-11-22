@@ -11,7 +11,7 @@ import {
   updateUserStones,
 } from "../../slices/userSlice";
 import { setMinerData } from "../../slices/minerSlice";
-import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
+import { setHiltiData } from "../../slices/hiltiSlice";
 import { BalanceData } from "./responses";
 
 export const userApi = createApi({
@@ -227,56 +227,6 @@ export const userApi = createApi({
         }
       },
     }),
-
-    upgradeHilti: builder.mutation<
-      {
-        success: boolean;
-        data: {
-          new_hilti_level: string;
-          new_stone_balance: number;
-          new_profit_per_hour: number;
-          hilti: IHiltiDetail;
-        };
-      },
-      { user_id: string }
-    >({
-      query: ({ user_id }) => ({
-        url: `/upgrade-hilti/${user_id}`,
-        method: "POST",
-      }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log("Hilti upgraded successfully:", data);
-
-          // Update Redux with new hilti
-          dispatch(
-            upgradeHilti({
-              new_hilti: data.data.hilti,
-            })
-          );
-
-          // Update user state
-          const state = getState() as any;
-          const updatedUser = {
-            ...state.user,
-            balance_data: {
-              ...state.user.balance_data,
-              stone: data.data.new_stone_balance,
-            },
-            airdrop_data: {
-              ...state.user.airdrop_data,
-              profit_per_hour: data.data.new_profit_per_hour,
-            },
-          };
-
-          dispatch(loadingUser(updatedUser));
-        } catch (error) {
-          console.error("Error upgrading hilti:", error);
-          throw error;
-        }
-      },
-    }),
     getBalanceData: builder.mutation<BalanceData, { user_id: string }>({
       query: ({ user_id }: { user_id: string }) => ({
         url: `/get-balance-data/${user_id}`,
@@ -322,7 +272,6 @@ export const {
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
   useClaimAchievementMutation,
-  useUpgradeHiltiMutation,
   useGetBalanceDataMutation,
   useIsPremiumMutation,
 } = userApi;

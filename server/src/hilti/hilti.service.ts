@@ -5,40 +5,37 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from 'src/schemas/user.schema';
-import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
+import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
-export class UserHiltiService {
+export class HiltiService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
   ) {}
 
-  //! Upgrade Hilti
   async upgrade(user_id: string) {
-    // Find user
-    const user = await this.userModel.findById(user_id);
+    const user = await this.userModel
+      .findById(user_id)
+      .populate('hilti_data.hilti')
+      .lean()
+      .exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    // Find current hilti
-    const currentHilti = await this.hiltiModel.findById(user.hilti_data.hilti);
+    const currentHilti = user.hilti_data.hilti as unknown as HiltiDocument;
     if (!currentHilti) {
       throw new NotFoundException('Hilti not found');
     }
-
     // Check if already at maximum level
     if (currentHilti._id === EHiltiLevel.LEVEL_5) {
       throw new BadRequestException('Hilti is already at the maximum level');
     }
 
-    // Check requirements
     const requiredProfitPerHour = currentHilti.profit_per_hour_to_upgrade;
     const requiredStone = currentHilti.stone_price_to_upgrade;
-
     // Check if user meets profit per hour requirement
     if (user.airdrop_data.profit_per_hour < requiredProfitPerHour) {
       throw new BadRequestException(

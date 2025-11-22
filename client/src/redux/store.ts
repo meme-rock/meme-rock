@@ -11,6 +11,7 @@ import { minerApi } from "./services/miner/miner-api";
 import { ranksApi } from "./services/ranks/ranks-api";
 import { starApi } from "./services/star/star-api";
 import { tonApi } from "./services/ton/ton-api";
+import { hiltiApi } from "./services/hilti/hilti-api";
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ export const store = configureStore({
     [boosterApi.reducerPath]: boosterApi.reducer,
     [marketApi.reducerPath]: marketApi.reducer,
     [minerApi.reducerPath]: minerApi.reducer,
+    [hiltiApi.reducerPath]: hiltiApi.reducer,
     [ranksApi.reducerPath]: ranksApi.reducer,
     [starApi.reducerPath]: starApi.reducer,
     [tonApi.reducerPath]: tonApi.reducer,
@@ -33,6 +35,7 @@ export const store = configureStore({
       boosterApi.middleware,
       marketApi.middleware,
       minerApi.middleware,
+      hiltiApi.middleware,
       ranksApi.middleware,
       starApi.middleware,
       tonApi.middleware

@@ -14,7 +14,6 @@ import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { BotService } from 'src/bot/bot.service';
 import { UserAchivementService } from './user-achivement.service';
-import { UserHiltiService } from './user-hilti.service';
 
 @Controller('user')
 export class UserController {
@@ -22,7 +21,6 @@ export class UserController {
     private readonly userService: UserService,
     private readonly botService: BotService,
     private readonly userAchivementService: UserAchivementService,
-    private readonly userHiltiService: UserHiltiService,
   ) {}
 
   @Post('loading/:user_id')
@@ -35,13 +33,6 @@ export class UserController {
   ) {
     console.log('Loading user:', user_id);
     return await this.userService.loading(user_id, user, initData);
-  }
-
-  @Post('upgrade-hilti/:user_id')
-  @UseGuards(CustomThrottlerGuard)
-  @Throttle({ strict: { limit: 1, ttl: 2000 } }) // Kritik işlem - sıkı throttling
-  async upgradeHilti(@Param('user_id') user_id: string) {
-    return await this.userHiltiService.upgrade(user_id);
   }
 
   @Post('claim-achievement/:user_id')

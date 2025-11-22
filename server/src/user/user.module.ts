@@ -8,7 +8,6 @@ import { Miner, MinerSchema } from 'src/schemas/miner.schema';
 import { Hilti, HiltiSchema } from 'src/schemas/hilti.schema';
 import { Booster, BoosterSchema } from 'src/schemas/booster.schema';
 import { UserAchivementService } from './user-achivement.service';
-import { UserHiltiService } from './user-hilti.service';
 
 import { BotModule } from 'src/bot/bot.module';
 import { MinerService } from 'src/miner/miner.service';
@@ -27,13 +26,7 @@ import { MarketItem, MarketItemSchema } from 'src/schemas/market.schema';
     BotModule, // BotService'i kullanabilmek için
   ],
   controllers: [UserController],
-  providers: [
-    UserService,
-    UserAchivementService,
-    UserHiltiService,
-    MinerService,
-    HelpersService,
-  ],
+  providers: [UserService, UserAchivementService, MinerService, HelpersService],
 })
 export class UserModule {}
 

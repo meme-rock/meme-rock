@@ -18,6 +18,8 @@ import { MinerModule } from './miner/miner.module';
 import { RanksModule } from './ranks/ranks.module';
 import { BoosterModule } from './booster/booster.module';
 import { StarModule } from './purchases/star/star.module';
+import { DailyModule } from './daily/daily.module';
+import { HiltiModule } from './hilti/hilti.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -64,6 +66,7 @@ if (!mongoUri) {
     MongooseModule.forRoot(mongoUri),
     UserModule,
     MinerModule,
+    HiltiModule,
     TonModule,
     AdminModule,
     BotModule,
@@ -73,6 +76,7 @@ if (!mongoUri) {
     BoosterModule,
     StarModule,
     TonModule,
+    DailyModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

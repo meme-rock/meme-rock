@@ -8,7 +8,7 @@ import { BoosterPage } from "../components/rock/BoosterPage";
 import boosterAnimation from "../../public/animated-booster.json";
 import Lottie from "lottie-react";
 import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
-import { useUpgradeHiltiMutation } from "../redux/services/user/user-api";
+import { useUpgradeHiltiMutation } from "../redux/services/hilti/hilti-api";
 import WebApp from "@twa-dev/sdk";
 
 export const RockPage = () => {
