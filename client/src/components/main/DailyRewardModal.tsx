@@ -1,18 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Lock,
-  Star,
-  Gift,
-  Zap,
-  Crown,
-  Clock,
-  TrendingUp,
-  Calendar,
-} from "lucide-react";
+import { X, Lock, Check, Gift, Crown, Clock } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
+import { useCountdown } from "../../hooks/useCountdown";
 
 interface DailyRewardModalProps {
   isOpen: boolean;
@@ -55,6 +46,16 @@ export const DailyRewardModal = ({
     () => parseInt(currentMinerLevel.split("_")[1]),
     [currentMinerLevel]
   );
+
+  // Calculate next reset time (Next Midnight UTC)
+  const nextResetTime = useMemo(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setUTCHours(24, 0, 0, 0);
+    return nextMidnight.toISOString();
+  }, []);
+
+  const { formattedTime } = useCountdown(nextResetTime);
 
   const rewardDays: RewardDay[] = useMemo(
     () => [
@@ -152,7 +153,7 @@ export const DailyRewardModal = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 pb-20 overflow-y-auto"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
@@ -160,290 +161,192 @@ export const DailyRewardModal = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-amber-500/30 rounded-3xl w-full max-w-md shadow-xl overflow-hidden my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 pb-2">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Daily Rewards</h2>
+                <p className="text-slate-400 text-sm">
+                  Come back daily to earn more!
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             {/* Content */}
-            <div className="relative p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-2.5 rounded-xl">
-                    <Gift className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                      Daily Rewards
-                    </h2>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <Calendar className="w-3 h-3 text-amber-400" />
-                      <p className="text-amber-300/70 text-xs font-medium">
-                        Day {currentDay} of 10
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="group w-9 h-9 bg-gradient-to-br from-slate-800/80 to-slate-900/80 hover:from-slate-700/80 hover:to-slate-800/80 rounded-xl flex items-center justify-center transition-all border border-slate-700/50 hover:border-slate-600/50 shadow-lg"
-                >
-                  <X className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-                </button>
-              </div>
-
-              {/* Info Banners */}
-              <div className="space-y-2 mb-4">
-                {/* Miner Level Info */}
-                <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-2.5 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-400" />
-                  <p className="text-blue-200/80 text-xs font-medium">
-                    Level up your miner for bigger rewards!
-                  </p>
-                </div>
-
-                {/* Streak Warning */}
-                <div className="bg-gradient-to-r from-orange-900/20 to-red-900/20 border border-orange-500/30 rounded-lg p-2.5 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-orange-400" />
-                  <p className="text-orange-200/80 text-xs font-medium">
-                    Claim within 48 hours to keep your streak!
-                  </p>
-                </div>
-
-                {/* Premium Badge */}
-                {isPremium && (
-                  <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/40 rounded-lg p-2.5 flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-purple-400" />
-                    <p className="text-purple-200/90 text-xs font-medium">
-                      Premium Active - No dust cost & no ads!
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Enhanced Progress bar */}
+            <div className="p-6 pt-4">
+              {/* Progress Bar */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-400 font-medium">
-                    Progress
-                  </span>
-                  <span className="text-xs text-amber-400 font-bold">
-                    {currentDay}/10
-                  </span>
+                <div className="flex justify-between text-xs font-medium mb-2">
+                  <span className="text-slate-400">Your Progress</span>
+                  <span className="text-amber-400">{currentDay}/10 Days</span>
                 </div>
-                <div className="relative h-2 bg-slate-800/80 rounded-full overflow-hidden border border-slate-700/50">
+                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(currentDay / 10) * 100}%` }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 relative shadow-lg"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent animate-pulse" />
-                    <motion.div
-                      animate={{ x: [0, 100, 0] }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-20"
-                    />
-                  </motion.div>
+                    className="h-full bg-amber-500 rounded-full"
+                  />
                 </div>
               </div>
 
-              {/* Rewards Grid */}
-              <div className="grid grid-cols-5 gap-2 mb-6">
+              {/* Grid */}
+              <div className="grid grid-cols-5 gap-3 mb-8">
                 {rewardDays.map((day) => {
                   const isClaimed = day.isClaimed;
                   const isAvailable = day.isAvailable;
                   const isSelected = selectedDay === day.day;
+                  const isCurrent = day.day === currentDay;
 
                   return (
                     <button
                       key={day.day}
                       onClick={() => isAvailable && setSelectedDay(day.day)}
                       disabled={!isAvailable}
-                      className={`relative aspect-square rounded-xl transition-all duration-300 ${
-                        isClaimed
-                          ? "bg-gradient-to-br from-emerald-900/50 to-emerald-950/50 border-2 border-emerald-500/40 shadow-lg shadow-emerald-500/20"
-                          : isAvailable
-                          ? "bg-gradient-to-br from-amber-900/40 to-orange-950/40 border-2 border-amber-500/60 hover:border-amber-400 hover:scale-110 hover:shadow-xl hover:shadow-amber-500/30 cursor-pointer"
-                          : "bg-slate-900/50 border-2 border-slate-700/30 opacity-40"
-                      } ${
-                        isSelected && isAvailable
-                          ? "ring-2 ring-amber-400 scale-110 shadow-xl shadow-amber-500/40"
-                          : ""
+                      className={`relative aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                        isSelected
+                          ? "ring-2 ring-amber-500 bg-amber-500/10"
+                          : "bg-slate-800/50"
+                      } ${!isAvailable && "opacity-50 cursor-not-allowed"} ${
+                        isCurrent && !isClaimed ? "bg-amber-500/20" : ""
                       }`}
                     >
-                      {/* Day number */}
-                      <div className="absolute top-1 left-1 text-[10px] font-bold text-slate-400">
-                        {day.day}
+                      <span
+                        className={`text-[10px] font-bold ${
+                          isSelected ? "text-amber-400" : "text-slate-500"
+                        }`}
+                      >
+                        Day {day.day}
+                      </span>
+
+                      {/* Always show reward amount */}
+                      <div className="flex flex-col items-center">
+                        <img
+                          src="/stone.svg"
+                          alt="Stone"
+                          className={`w-5 h-5 ${
+                            !isAvailable || isClaimed ? "opacity-50" : ""
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] font-bold ${
+                            isClaimed
+                              ? "text-green-500"
+                              : !isAvailable
+                              ? "text-slate-500"
+                              : "text-white"
+                          }`}
+                        >
+                          {day.stoneReward}
+                        </span>
                       </div>
 
-                      {/* Center content */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        {isClaimed ? (
-                          <div className="relative">
-                            {/* Show reward amount */}
-                            <img
-                              src="/stone.svg"
-                              alt="Stone"
-                              className="w-6 h-6 mb-1 opacity-70"
-                            />
-                            <span className="text-xs font-bold text-emerald-300">
-                              {day.stoneReward}
-                            </span>
-                            {/* Green checkmark badge */}
-                            <div className="absolute -top-1 -right-1 bg-emerald-500 rounded-full p-0.5">
-                              <svg
-                                className="w-2.5 h-2.5 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={3}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        ) : !isAvailable ? (
-                          <Lock className="w-4 h-4 text-slate-600" />
-                        ) : (
-                          <>
-                            <img
-                              src="/stone.svg"
-                              alt="Stone"
-                              className="w-6 h-6 mb-1"
-                            />
-                            <span className="text-xs font-bold bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent">
-                              {day.stoneReward}
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Glow effect only for selected */}
-                      {isAvailable && !isClaimed && isSelected && (
-                        <div className="absolute inset-0 bg-amber-500/20 rounded-xl" />
+                      {/* Status Indicators */}
+                      {isClaimed && (
+                        <div className="absolute top-1 right-1 bg-green-500/20 p-0.5 rounded-full">
+                          <Check className="w-3 h-3 text-green-500" />
+                        </div>
+                      )}
+                      {!isAvailable && !isClaimed && (
+                        <div className="absolute top-1 right-1">
+                          <Lock className="w-3 h-3 text-slate-600" />
+                        </div>
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Selected reward display */}
-              <motion.div
-                key={selectedDay}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative bg-gradient-to-br from-slate-800/70 to-slate-900/70 border-2 border-amber-500/30 rounded-2xl p-5 mb-4 overflow-hidden"
-              >
-                <div className="relative flex items-center justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <div className="text-xs text-amber-300/70 font-medium">
-                        Day {selectedDay} Reward
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
-                      <span className="text-3xl font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                        {currentSelectedReward?.stoneReward}
-                      </span>
-                    </div>
+              {/* Action Area */}
+              <div className="text-center">
+                <div className="mb-4">
+                  <p className="text-slate-400 text-sm mb-1">
+                    Day {selectedDay} Reward
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
+                    <span className="text-3xl font-black text-white">
+                      {currentSelectedReward?.stoneReward}
+                    </span>
                   </div>
-
-                  {/* Cost Display */}
-                  {!isPremium && (
-                    <div
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg ${
-                        hasEnoughDust
-                          ? "bg-gradient-to-br from-slate-900/80 to-black/80 border-amber-500/30"
-                          : "bg-gradient-to-br from-red-900/40 to-red-950/40 border-red-500/40"
-                      }`}
-                    >
-                      <img src="/dust.svg" alt="Dust" className="w-5 h-5" />
-                      <span
-                        className={`text-sm font-bold ${
-                          hasEnoughDust ? "text-amber-400" : "text-red-400"
-                        }`}
-                      >
-                        {currentSelectedReward?.dustCost}
-                      </span>
-                    </div>
-                  )}
-
-                  {isPremium && (
-                    <div className="flex items-center gap-2 bg-gradient-to-br from-purple-900/40 to-pink-900/40 px-4 py-2 rounded-xl border border-purple-500/40 shadow-lg">
-                      <Crown className="w-5 h-5 text-purple-400" />
-                      <span className="text-sm font-bold text-purple-300">
-                        FREE
-                      </span>
-                    </div>
-                  )}
                 </div>
 
-                {/* Claim button */}
                 {currentSelectedReward?.isAvailable &&
                 !currentSelectedReward?.isClaimed ? (
-                  <>
-                    <div>
-                      <button
-                        onClick={handleClaimReward}
-                        disabled={!isPremium && !hasEnoughDust}
-                        className={`w-full font-bold py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                          !isPremium && !hasEnoughDust
-                            ? "bg-slate-800/50 border-2 border-slate-700/40 text-slate-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 hover:from-amber-500 hover:via-orange-400 hover:to-yellow-500 text-white"
-                        }`}
-                      >
-                        <Gift className="w-5 h-5" />
-                        <span>
-                          {isPremium ? "Claim Reward (FREE)" : "Claim Reward"}
-                        </span>
-                      </button>
-
-                      {/* Insufficient funds warning */}
-                      {!isPremium && !hasEnoughDust && (
-                        <p className="text-red-400 text-xs text-center mt-2">
-                          Insufficient Dust: Need{" "}
-                          {currentSelectedReward?.dustCost - userDust} more
-                        </p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleClaimReward}
+                      disabled={!isPremium && !hasEnoughDust}
+                      className={`w-full py-3.5 rounded-xl font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                        !isPremium && !hasEnoughDust
+                          ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                          : "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20"
+                      }`}
+                    >
+                      {isPremium ? (
+                        <>
+                          <Gift className="w-5 h-5" />
+                          Claim Free
+                        </>
+                      ) : (
+                        <>
+                          <span>Claim for</span>
+                          <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-lg">
+                            <img
+                              src="/dust.svg"
+                              alt="Dust"
+                              className="w-4 h-4"
+                            />
+                            <span>{currentSelectedReward?.dustCost}</span>
+                          </div>
+                        </>
                       )}
-                    </div>
+                    </button>
 
-                    {/* Premium CTA */}
+                    {!isPremium && !hasEnoughDust && (
+                      <p className="text-red-400 text-xs">
+                        Insufficient Dust (
+                        {currentSelectedReward?.dustCost - userDust} needed)
+                      </p>
+                    )}
+
                     {!isPremium && (
-                      <div className="mt-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/40 rounded-lg p-3 flex items-start gap-2">
-                        <Crown className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-purple-200 text-xs font-medium mb-1">
-                            Get Premium
-                          </p>
-                          <p className="text-purple-200/70 text-xs">
-                            Unlock free daily rewards & skip all ads!
-                          </p>
-                        </div>
+                      <div className="flex items-center justify-center gap-2 text-xs text-purple-400">
+                        <Crown className="w-3 h-3" />
+                        <span>Premium members claim for free</span>
                       </div>
                     )}
-                  </>
+                  </div>
                 ) : currentSelectedReward?.isClaimed ? (
-                  <div className="w-full bg-gradient-to-r from-emerald-900/40 to-emerald-950/40 border-2 border-emerald-500/40 text-emerald-400 font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
-                    <Star className="w-5 h-5 fill-emerald-400" />
+                  <div className="py-3.5 rounded-xl bg-green-500/10 text-green-500 font-bold flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" />
                     Claimed
                   </div>
                 ) : (
-                  <div className="w-full bg-slate-800/50 border-2 border-slate-700/40 text-slate-500 font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2">
+                  <div className="py-3.5 rounded-xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2">
                     <Lock className="w-5 h-5" />
                     Locked
                   </div>
                 )}
-              </motion.div>
+              </div>
+
+              {/* Reset Timer Footer */}
+              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-slate-500">
+                <Clock className="w-4 h-4" />
+                <span className="text-xs font-medium">
+                  Next reward in:{" "}
+                  <span className="text-slate-300 font-mono">
+                    {formattedTime}
+                  </span>
+                </span>
+              </div>
             </div>
           </motion.div>
         </motion.div>
