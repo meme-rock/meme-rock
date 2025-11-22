@@ -756,59 +756,6 @@ export function dictValueParserFactoryDeploy(): DictionaryValue<FactoryDeploy> {
     }
 }
 
-export type Deposit = {
-    $$type: 'Deposit';
-    amount: bigint;
-    paymentId: string;
-}
-
-export function storeDeposit(src: Deposit) {
-    return (builder: Builder) => {
-        const b_0 = builder;
-        b_0.storeUint(2560869873, 32);
-        b_0.storeInt(src.amount, 257);
-        b_0.storeStringRefTail(src.paymentId);
-    };
-}
-
-export function loadDeposit(slice: Slice) {
-    const sc_0 = slice;
-    if (sc_0.loadUint(32) !== 2560869873) { throw Error('Invalid prefix'); }
-    const _amount = sc_0.loadIntBig(257);
-    const _paymentId = sc_0.loadStringRefTail();
-    return { $$type: 'Deposit' as const, amount: _amount, paymentId: _paymentId };
-}
-
-export function loadTupleDeposit(source: TupleReader) {
-    const _amount = source.readBigNumber();
-    const _paymentId = source.readString();
-    return { $$type: 'Deposit' as const, amount: _amount, paymentId: _paymentId };
-}
-
-export function loadGetterTupleDeposit(source: TupleReader) {
-    const _amount = source.readBigNumber();
-    const _paymentId = source.readString();
-    return { $$type: 'Deposit' as const, amount: _amount, paymentId: _paymentId };
-}
-
-export function storeTupleDeposit(source: Deposit) {
-    const builder = new TupleBuilder();
-    builder.writeNumber(source.amount);
-    builder.writeString(source.paymentId);
-    return builder.build();
-}
-
-export function dictValueParserDeposit(): DictionaryValue<Deposit> {
-    return {
-        serialize: (src, builder) => {
-            builder.storeRef(beginCell().store(storeDeposit(src)).endCell());
-        },
-        parse: (src) => {
-            return loadDeposit(src.loadRef().beginParse());
-        }
-    }
-}
-
 export type DepositSuccess = {
     $$type: 'DepositSuccess';
     queryId: bigint;
@@ -870,6 +817,7 @@ export function dictValueParserDepositSuccess(): DictionaryValue<DepositSuccess>
 
 export type Withdraw = {
     $$type: 'Withdraw';
+    comment: string;
     amount: bigint;
     mode: bigint;
 }
@@ -878,6 +826,7 @@ export function storeWithdraw(src: Withdraw) {
     return (builder: Builder) => {
         const b_0 = builder;
         b_0.storeUint(1499400124, 32);
+        b_0.storeStringRefTail(src.comment);
         b_0.storeInt(src.amount, 257);
         b_0.storeUint(src.mode, 8);
     };
@@ -886,25 +835,29 @@ export function storeWithdraw(src: Withdraw) {
 export function loadWithdraw(slice: Slice) {
     const sc_0 = slice;
     if (sc_0.loadUint(32) !== 1499400124) { throw Error('Invalid prefix'); }
+    const _comment = sc_0.loadStringRefTail();
     const _amount = sc_0.loadIntBig(257);
     const _mode = sc_0.loadUintBig(8);
-    return { $$type: 'Withdraw' as const, amount: _amount, mode: _mode };
+    return { $$type: 'Withdraw' as const, comment: _comment, amount: _amount, mode: _mode };
 }
 
 export function loadTupleWithdraw(source: TupleReader) {
+    const _comment = source.readString();
     const _amount = source.readBigNumber();
     const _mode = source.readBigNumber();
-    return { $$type: 'Withdraw' as const, amount: _amount, mode: _mode };
+    return { $$type: 'Withdraw' as const, comment: _comment, amount: _amount, mode: _mode };
 }
 
 export function loadGetterTupleWithdraw(source: TupleReader) {
+    const _comment = source.readString();
     const _amount = source.readBigNumber();
     const _mode = source.readBigNumber();
-    return { $$type: 'Withdraw' as const, amount: _amount, mode: _mode };
+    return { $$type: 'Withdraw' as const, comment: _comment, amount: _amount, mode: _mode };
 }
 
 export function storeTupleWithdraw(source: Withdraw) {
     const builder = new TupleBuilder();
+    builder.writeString(source.comment);
     builder.writeNumber(source.amount);
     builder.writeNumber(source.mode);
     return builder.build();
@@ -925,9 +878,6 @@ export type Payments$Data = {
     $$type: 'Payments$Data';
     owner: Address;
     uniqueId: bigint;
-    lastSender: Address;
-    lastAmount: bigint;
-    lastPaymentId: string;
 }
 
 export function storePayments$Data(src: Payments$Data) {
@@ -935,11 +885,6 @@ export function storePayments$Data(src: Payments$Data) {
         const b_0 = builder;
         b_0.storeAddress(src.owner);
         b_0.storeInt(src.uniqueId, 257);
-        b_0.storeAddress(src.lastSender);
-        const b_1 = new Builder();
-        b_1.storeInt(src.lastAmount, 257);
-        b_1.storeStringRefTail(src.lastPaymentId);
-        b_0.storeRef(b_1.endCell());
     };
 }
 
@@ -947,38 +892,25 @@ export function loadPayments$Data(slice: Slice) {
     const sc_0 = slice;
     const _owner = sc_0.loadAddress();
     const _uniqueId = sc_0.loadIntBig(257);
-    const _lastSender = sc_0.loadAddress();
-    const sc_1 = sc_0.loadRef().beginParse();
-    const _lastAmount = sc_1.loadIntBig(257);
-    const _lastPaymentId = sc_1.loadStringRefTail();
-    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId, lastSender: _lastSender, lastAmount: _lastAmount, lastPaymentId: _lastPaymentId };
+    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId };
 }
 
 export function loadTuplePayments$Data(source: TupleReader) {
     const _owner = source.readAddress();
     const _uniqueId = source.readBigNumber();
-    const _lastSender = source.readAddress();
-    const _lastAmount = source.readBigNumber();
-    const _lastPaymentId = source.readString();
-    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId, lastSender: _lastSender, lastAmount: _lastAmount, lastPaymentId: _lastPaymentId };
+    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId };
 }
 
 export function loadGetterTuplePayments$Data(source: TupleReader) {
     const _owner = source.readAddress();
     const _uniqueId = source.readBigNumber();
-    const _lastSender = source.readAddress();
-    const _lastAmount = source.readBigNumber();
-    const _lastPaymentId = source.readString();
-    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId, lastSender: _lastSender, lastAmount: _lastAmount, lastPaymentId: _lastPaymentId };
+    return { $$type: 'Payments$Data' as const, owner: _owner, uniqueId: _uniqueId };
 }
 
 export function storeTuplePayments$Data(source: Payments$Data) {
     const builder = new TupleBuilder();
     builder.writeAddress(source.owner);
     builder.writeNumber(source.uniqueId);
-    builder.writeAddress(source.lastSender);
-    builder.writeNumber(source.lastAmount);
-    builder.writeString(source.lastPaymentId);
     return builder.build();
 }
 
@@ -1008,9 +940,8 @@ function initPayments_init_args(src: Payments_init_args) {
 }
 
 async function Payments_init(owner: Address, uniqueId: bigint) {
-    const __code = Cell.fromHex('b5ee9c7241020e0100028d000228ff008e88f4a413f4bcf2c80bed5320e303ed43d901090202710204017dbe28ef6a268690000c70e7d20408080eb807d206a00e8408080eb806a1868081288120811b60ac708fd20408080eb802c81688090b845840812716d9e3628c030002240201200507017db96c0ed44d0d200018e1cfa40810101d700fa40d401d0810101d700d430d01025102410236c158e11fa40810101d7005902d10121708b081024e2db3c6c518060008f8276f10017db8695ed44d0d200018e1cfa40810101d700fa40d401d0810101d700d430d01025102410236c158e11fa40810101d7005902d10121708b081024e2db3c6c5180800022003ee30eda2edfb01d072d721d200d200fa4021103450666f04f86102f862ed44d0d200018e1cfa40810101d700fa40d401d0810101d700d430d01025102410236c158e11fa40810101d7005902d10121708b081024e206925f06e07025d74920c21f9136e30d20c00026c121b0e302c000925f06e30df2c0820a0b0c01d63105d31f30208210595f07bcba8edb3034f8416f245b8167033224c705f2f4820898968070fb0283068824707f12c8cf8580ca00cf8440ce01fa02806acf40f400c901fb004034c87f01ca0055405045ce12810101cf00ce01c8810101cf0002c8ce12cdcdc9ed54db31e00d006a3034f842c8cf8508ce70cf0b6ec98042fb004034c87f01ca0055405045ce12810101cf00ce01c8810101cf0002c8ce12cdcdc9ed5401ba04c21f8ed5f8416f243081725833821005f5e100bc12f2f4728858707012c8cf8580ca00cf8440ce01fa02806acf40f400c901fb004034c87f01ca0055405045ce12810101cf00ce01c8810101cf0002c8ce12cdcdc9ed54db31e05f050d002c000000005769746864726177616c2053756363657373ae7f32dd');
+    const __code = Cell.fromHex('b5ee9c72410209010001960002e6ff008e88f4a413f4bcf2c80bed53208ede30eda2edfb01d072d721d200d200fa4021103450666f04f86102f862ed44d0fa40810101d700596c123002915be07021d74920c21f926c22e30d01c0008e19c21f8e14f8416f24303181368a32820afaf080bcf2f4db31e09130e2f2c082e1ed43d9010602027102040127be28ef6a2687d20408080eb802cb6096d9e3610c030002210127bcb6076a2687d20408080eb802cb6096d9e3610c050008f8276f1001be3101d31f218210595f07bcba8ece6c21d401d001810101d70030f8416f245b8167033224c705f2f4820898968070fb0220c2009172953083067001e202db3c40337f12c8cf8580ca00cf8440ce01fa02806acf40f400c901fb00db31e03032070142c87001cb1f6f00016f8c6d6f8c01db3c6f2201c993216eb396016f2259ccc9e8310800b620d74a21d7499720c20022c200b18e48036f22807f22cf31ab02a105ab025155b60820c2009a20aa0215d71803ce4014de596f025341a1c20099c8016f025044a1aa028e123133c20099d430d020d74a21d749927020e2e2e85f032b94ef8d');
     const builder = beginCell();
-    builder.storeUint(0, 1);
     initPayments_init_args({ $$type: 'Payments_init_args', owner, uniqueId })(builder);
     const __data = builder.endCell();
     return { code: __code, data: __data };
@@ -1053,8 +984,8 @@ export const Payments_errors = {
     135: { message: "Code of a contract was not found" },
     136: { message: "Invalid standard address" },
     138: { message: "Not a basechain address" },
+    13962: { message: "Amount is too low" },
     26371: { message: "Access denied: Only owner can withdraw" },
-    29272: { message: "too low" },
 } as const
 
 export const Payments_errors_backward = {
@@ -1094,8 +1025,8 @@ export const Payments_errors_backward = {
     "Code of a contract was not found": 135,
     "Invalid standard address": 136,
     "Not a basechain address": 138,
+    "Amount is too low": 13962,
     "Access denied: Only owner can withdraw": 26371,
-    "too low": 29272,
 } as const
 
 const Payments_types: ABIType[] = [
@@ -1112,35 +1043,30 @@ const Payments_types: ABIType[] = [
     {"name":"Deploy","header":2490013878,"fields":[{"name":"queryId","type":{"kind":"simple","type":"uint","optional":false,"format":64}}]},
     {"name":"DeployOk","header":2952335191,"fields":[{"name":"queryId","type":{"kind":"simple","type":"uint","optional":false,"format":64}}]},
     {"name":"FactoryDeploy","header":1829761339,"fields":[{"name":"queryId","type":{"kind":"simple","type":"uint","optional":false,"format":64}},{"name":"cashback","type":{"kind":"simple","type":"address","optional":false}}]},
-    {"name":"Deposit","header":2560869873,"fields":[{"name":"amount","type":{"kind":"simple","type":"int","optional":false,"format":257}},{"name":"paymentId","type":{"kind":"simple","type":"string","optional":false}}]},
     {"name":"DepositSuccess","header":3667243021,"fields":[{"name":"queryId","type":{"kind":"simple","type":"uint","optional":false,"format":64}},{"name":"paymentId","type":{"kind":"simple","type":"string","optional":false}},{"name":"payer","type":{"kind":"simple","type":"address","optional":false}}]},
-    {"name":"Withdraw","header":1499400124,"fields":[{"name":"amount","type":{"kind":"simple","type":"int","optional":false,"format":257}},{"name":"mode","type":{"kind":"simple","type":"uint","optional":false,"format":8}}]},
-    {"name":"Payments$Data","header":null,"fields":[{"name":"owner","type":{"kind":"simple","type":"address","optional":false}},{"name":"uniqueId","type":{"kind":"simple","type":"int","optional":false,"format":257}},{"name":"lastSender","type":{"kind":"simple","type":"address","optional":false}},{"name":"lastAmount","type":{"kind":"simple","type":"int","optional":false,"format":257}},{"name":"lastPaymentId","type":{"kind":"simple","type":"string","optional":false}}]},
+    {"name":"Withdraw","header":1499400124,"fields":[{"name":"comment","type":{"kind":"simple","type":"string","optional":false}},{"name":"amount","type":{"kind":"simple","type":"int","optional":false,"format":257}},{"name":"mode","type":{"kind":"simple","type":"uint","optional":false,"format":8}}]},
+    {"name":"Payments$Data","header":null,"fields":[{"name":"owner","type":{"kind":"simple","type":"address","optional":false}},{"name":"uniqueId","type":{"kind":"simple","type":"int","optional":false,"format":257}}]},
 ]
 
 const Payments_opcodes = {
     "Deploy": 2490013878,
     "DeployOk": 2952335191,
     "FactoryDeploy": 1829761339,
-    "Deposit": 2560869873,
     "DepositSuccess": 3667243021,
     "Withdraw": 1499400124,
 }
 
 const Payments_getters: ABIGetter[] = [
     {"name":"balance","methodId":104128,"arguments":[],"returnType":{"kind":"simple","type":"int","optional":false,"format":257}},
-    {"name":"lastPaymentInfo","methodId":116373,"arguments":[],"returnType":{"kind":"simple","type":"string","optional":false}},
     {"name":"owner","methodId":83229,"arguments":[],"returnType":{"kind":"simple","type":"address","optional":false}},
 ]
 
 export const Payments_getterMapping: { [key: string]: string } = {
     'balance': 'getBalance',
-    'lastPaymentInfo': 'getLastPaymentInfo',
     'owner': 'getOwner',
 }
 
 const Payments_receivers: ABIReceiver[] = [
-    {"receiver":"internal","message":{"kind":"empty"}},
     {"receiver":"internal","message":{"kind":"text"}},
     {"receiver":"internal","message":{"kind":"typed","type":"Withdraw"}},
 ]
@@ -1182,12 +1108,9 @@ export class Payments implements Contract {
         this.init = init;
     }
     
-    async send(provider: ContractProvider, via: Sender, args: { value: bigint, bounce?: boolean| null | undefined }, message: null | string | Withdraw) {
+    async send(provider: ContractProvider, via: Sender, args: { value: bigint, bounce?: boolean| null | undefined }, message: string | Withdraw) {
         
         let body: Cell | null = null;
-        if (message === null) {
-            body = new Cell();
-        }
         if (typeof message === 'string') {
             body = beginCell().storeUint(0, 32).storeStringTail(message).endCell();
         }
@@ -1204,13 +1127,6 @@ export class Payments implements Contract {
         const builder = new TupleBuilder();
         const source = (await provider.get('balance', builder.build())).stack;
         const result = source.readBigNumber();
-        return result;
-    }
-    
-    async getLastPaymentInfo(provider: ContractProvider) {
-        const builder = new TupleBuilder();
-        const source = (await provider.get('lastPaymentInfo', builder.build())).stack;
-        const result = source.readString();
         return result;
     }
     

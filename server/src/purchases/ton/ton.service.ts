@@ -18,8 +18,7 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 import { ETonPaymentType } from 'src/common/enums/ton-payments.enum';
 import { EBoosterUnlockCurrencyType } from 'src/common/enums/boosters.enum';
-import { Deposit, storeDeposit } from './contract/Payments_Payments';
-import { Address, toNano, beginCell, Cell, fromNano } from '@ton/core';
+import { toNano, beginCell } from '@ton/core';
 
 @Injectable()
 export class TonService {

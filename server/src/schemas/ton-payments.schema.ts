@@ -30,6 +30,9 @@ export class TonPayments {
   })
   is_confirmed: boolean;
 
+  @Prop({ type: String, default: null })
+  tx_hash: string | null;
+
   @Prop({ type: Date, default: Date.now, expires: 900 })
   expires_at: Date;
 }

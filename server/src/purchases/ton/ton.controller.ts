@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TonService } from './ton.service';
 import {
   PurchaseBoosterDto,
@@ -7,6 +7,7 @@ import {
 } from './dto/ton.dto';
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { Throttle } from '@nestjs/throttler';
+import { TonScheduleService } from './ton-schedule.service';
 
 @UseGuards(CustomThrottlerGuard)
 @Controller('ton')
@@ -49,5 +50,15 @@ export class TonController {
       user_id,
       premium.wallet_address,
     );
+  }
+}
+
+@Controller('ton-schedule')
+export class TonScheduleController {
+  constructor(private readonly tonScheduleService: TonScheduleService) {}
+
+  @Get('check-ton-payments')
+  async checkTonPayments() {
+    return await this.tonScheduleService.checkTonPayments();
   }
 }
