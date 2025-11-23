@@ -13,6 +13,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
+import TaskPage from "./pages/TaskPage";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -30,6 +31,7 @@ function AppContent() {
             <Route path="/" element={<MainPage />} />
             <Route path="/mine" element={<MinePage />} />
             <Route path="/rock" element={<RockPage />} />
+            <Route path="/task" element={<TaskPage />} />
             <Route
               path="/market"
               element={<MarketPage stones={user.balance_data.stone} />}
