@@ -24,6 +24,10 @@ type LeaderboardTab = "ranking" | "weekly";
 export const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("ranking");
   const [showLastWeekWinners, setShowLastWeekWinners] = useState(false);
+  const allHiltis = useSelector(
+    (state: RootState) => state.hilti.all_hiltis,
+    shallowEqual
+  );
   const currentUserId = useSelector(
     (state: RootState) => state.user._id,
     shallowEqual
@@ -213,7 +217,9 @@ export const LeaderboardPage = () => {
                           user.rank
                         )} flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0`}
                       >
-                        <span className="text-lg">{getRankIcon(user.rank)}</span>
+                        <span className="text-lg">
+                          {getRankIcon(user.rank)}
+                        </span>
                       </div>
 
                       {/* Avatar */}
@@ -278,13 +284,23 @@ export const LeaderboardPage = () => {
                       {/* Right side: Profit Per Hour (Small) */}
                       <div className="bg-gradient-to-br from-blue-950/60 to-blue-900/40 border border-blue-700/40 rounded-lg px-3 py-2 min-w-[110px]">
                         <div className="flex items-center gap-1.5 mb-1">
-                          <img src="/rock.svg" alt="Rock" className="w-3.5 h-3.5" />
+                          <img
+                            src="/rock.svg"
+                            alt="Rock"
+                            className="w-3.5 h-3.5"
+                          />
                           <span className="text-[10px] text-blue-300/70 font-medium">
                             Per Hour
                           </span>
                         </div>
                         <p className="text-sm font-bold text-blue-200">
-                          {formatInteger(user.profitPerHour)}
+                          {formatInteger(
+                            user.profitPerHour +
+                              (allHiltis.find(
+                                (hilti) =>
+                                  hilti._id === `LEVEL_${user.hiltiLevel}`
+                              )?.profit_per_hour || 0)
+                          )}
                         </p>
                       </div>
                     </div>
@@ -456,7 +472,9 @@ export const LeaderboardPage = () => {
                             user.rank
                           )} flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0`}
                         >
-                          <span className="text-base">{getRankIcon(user.rank)}</span>
+                          <span className="text-base">
+                            {getRankIcon(user.rank)}
+                          </span>
                         </div>
 
                         {/* Avatar */}
@@ -653,19 +671,15 @@ export const LeaderboardPage = () => {
                       <h3 className="font-bold text-white truncate mb-1">
                         {winner.username}
                       </h3>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{formatInteger(winner.inviteCount)} invites</span>
-                          </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{formatInteger(winner.inviteCount)} invites</span>
+                      </div>
                     </div>
 
                     {/* Prize */}
                     <div className="flex items-center gap-1.5 bg-amber-900/30 border border-amber-500/40 rounded-lg px-3 py-2">
-                      <img
-                        src="/stone.svg"
-                        alt="Stone"
-                        className="w-4 h-4"
-                      />
+                      <img src="/stone.svg" alt="Stone" className="w-4 h-4" />
                       <span className="text-sm font-bold text-amber-300">
                         {formatInteger(winner.prize)}
                       </span>
