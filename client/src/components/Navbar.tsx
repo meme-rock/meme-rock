@@ -34,11 +34,6 @@ export const Navbar = () => {
           // 1. Varsayılan boyut (Lucide ikonları için): w-5 h-5
           let iconSizeClasses = `w-5 h-5`;
 
-          // 2. Eğer ikon rock.svg ise, boyutu w-6 h-6 olarak özelleştirin
-          if (item.id === "boosters" && isSvgPath) {
-            iconSizeClasses = `w-6 h-6`; // Özel boyut burada!
-          }
-
           // Ortak sınıfları ekleyin
           const iconClasses = `${iconSizeClasses} mb-0.5 transition-transform duration-300 ${
             isActive ? "scale-110" : ""
