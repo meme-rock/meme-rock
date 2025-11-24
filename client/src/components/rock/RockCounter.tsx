@@ -66,7 +66,7 @@ export const RockCounter = () => {
                 <img
                   src="/rock.svg"
                   alt="Rock"
-                  className="relative w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]"
+                  className="relative w-16 h-16 object-contain"
                 />
               </motion.div>
 
@@ -76,7 +76,7 @@ export const RockCounter = () => {
                   <AnimatedNumber
                     value={displayRocks}
                     decimals={2}
-                    className={`text-white ${fontSizeClass} font-black tracking-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] whitespace-nowrap bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent`}
+                    className={`text-white ${fontSizeClass} font-black tracking-tight whitespace-nowrap bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent`}
                   />
                 </div>
                 <div className="text-purple-300/50 text-xs font-medium uppercase tracking-widest mt-1">
@@ -94,7 +94,7 @@ export const RockCounter = () => {
                 <img
                   src="/rock.svg"
                   alt="Rock"
-                  className="w-5 h-5 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
+                  className="w-5 h-5 object-contain"
                 />
                 <span className="text-cyan-400 font-bold text-sm">
                   +{formatNumber(totalProfitPerHour, 2)}

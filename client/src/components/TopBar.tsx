@@ -12,11 +12,7 @@ export const TopBar = ({ stones, dust }: TopBarProps) => {
       <div className="flex flex-row space-x-3">
         {/* 1. Dust Bakiyesi */}
         <div className="flex items-center space-x-2 bg-yellow-700/20 px-3 py-1.5 rounded-full">
-          <img
-            src="/dust.svg"
-            alt="Dust"
-            className="w-[28px] h-[28px] filter drop-shadow-sm"
-          />
+          <img src="/dust.svg" alt="Dust" className="w-[28px] h-[28px]" />
           <div className="text-yellow-300 font-bold text-lg min-w-[60px]">
             <AnimatedNumber value={dust} decimals={0} />
           </div>
@@ -26,7 +22,7 @@ export const TopBar = ({ stones, dust }: TopBarProps) => {
           <img
             src="/stone.svg"
             alt="Stone"
-            className="w-[28px] h-[28px] filter brightness-110 drop-shadow-sm"
+            className="w-[28px] h-[28px] filter brightness-110"
           />
           <div className="text-blue-300 font-bold text-lg min-w-[60px]">
             <AnimatedNumber value={stones} decimals={0} />

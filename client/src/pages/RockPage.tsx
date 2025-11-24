@@ -123,7 +123,7 @@ export const RockPage = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/20 to-cyan-500/0 group-hover:via-cyan-500/30 blur-xl transition-all duration-300" />
 
                 {/* Lottie animation */}
-                <div className="relative w-10 h-10 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]">
+                <div className="relative w-10 h-10">
                   <Lottie animationData={boosterAnimation} loop={true} />
                 </div>
 

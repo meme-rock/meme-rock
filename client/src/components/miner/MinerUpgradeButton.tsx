@@ -117,10 +117,10 @@ export const MinerUpgradeButton = memo(
                       <img
                         src="/stone.svg"
                         alt="Stone"
-                        className={`w-5 h-5 ${
+                        className={`w-5 h-5 flex items-center justify-center rounded-full ${
                           canUpgrade
-                            ? "drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]"
-                            : "drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]"
+                            ? "shadow-glow-cyan" // Yeni düşük maliyetli gölge sınıfı
+                            : "shadow-glow-white" // Yeni düşük maliyetli gölge sınıfı
                         }`}
                       />
                       <span
@@ -204,11 +204,7 @@ export const MinerUpgradeButton = memo(
                       Locked Level {selectedMinerLevel}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <img
-                        src="/stone.svg"
-                        alt="Stone"
-                        className="w-5 h-5 drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]"
-                      />
+                      <img src="/stone.svg" alt="Stone" className="w-5 h-5 " />
                       <span className="text-xs font-bold text-gray-300">
                         {formatInteger(requiredStone)} stone to upgrade
                       </span>

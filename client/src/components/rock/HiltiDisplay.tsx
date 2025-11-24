@@ -97,7 +97,7 @@ export const HiltiDisplay = ({
                 <img
                   src="/rock.svg"
                   alt="Rock"
-                  className="w-5 h-5 object-contain drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]"
+                  className="w-5 h-5 object-contain"
                 />
                 <span className="text-white font-bold text-sm">
                   +{formatInteger(totalIncome)}/h
@@ -136,7 +136,7 @@ export const HiltiDisplay = ({
               <img
                 src="/rock.svg"
                 alt="Rock"
-                className="w-4 h-4 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
+                className="w-4 h-4 object-contain"
               />
               <span className="text-white font-bold text-sm">
                 +{formatInteger(selectedHilti.profit_per_hour)}/h
@@ -165,7 +165,7 @@ export const HiltiDisplay = ({
               <img
                 src="/rock.svg"
                 alt="Rock"
-                className="w-4 h-4 object-contain drop-shadow-[0_0_3px_rgba(168,85,247,0.6)]"
+                className="w-4 h-4 object-contain"
               />
               <span className="text-white font-bold text-sm">
                 +{formatInteger(userProfitPerHour)}/h
