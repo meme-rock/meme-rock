@@ -6,6 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["naturally-tuner-alerts-documented.trycloudflare.com"],
+    allowedHosts: ["difficulties-ranch-fire-century.trycloudflare.com"],
   },
 });
