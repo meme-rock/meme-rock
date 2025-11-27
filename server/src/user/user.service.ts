@@ -23,6 +23,7 @@ import {
   MarketItem,
   MarketItemDocument,
 } from 'src/schemas/market.schema';
+import { TaskService } from 'src/task/task.service';
 
 @Injectable()
 export class UserService {
@@ -43,6 +44,7 @@ export class UserService {
     private minerService: MinerService,
     private botService: BotService,
     private helpersService: HelpersService,
+    private taskService: TaskService,
   ) {}
 
   /**
@@ -169,6 +171,10 @@ export class UserService {
       const mergedAchivements =
         this.userAchivementService.returnMergedAchivements(updatedUser!);
 
+      const mergedTasks = await this.taskService.returnMergedTasks(
+        updatedUser!,
+      );
+      console.log('mergedTasks for client:', mergedTasks);
       const minerData = await this.minerService.calculateMinerData(
         {
           miner: updatedUser.miner_data.miner as unknown as MinerDocument,
@@ -196,6 +202,7 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        tasks: mergedTasks,
         premium_market_item,
         message: 'User updated successfully',
       };
@@ -261,6 +268,10 @@ export class UserService {
       const mergedAchivements =
         this.userAchivementService.returnMergedAchivements(populatedUser);
 
+      const mergedTasks =
+        await this.taskService.returnMergedTasks(populatedUser);
+      console.log('mergedTasks for client:', mergedTasks);
+
       const minerData = await this.minerService.calculateMinerData(
         {
           miner: populatedUser.miner_data.miner as unknown as MinerDocument,
@@ -290,6 +301,7 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        tasks: mergedTasks,
         premium_market_item,
         message: 'User created successfully',
       };

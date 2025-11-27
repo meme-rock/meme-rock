@@ -14,6 +14,7 @@ import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { BotService } from 'src/bot/bot.service';
 import { UserAchivementService } from './user-achivement.service';
+import { TaskService } from 'src/task/task.service';
 
 @Controller('user')
 export class UserController {

@@ -118,6 +118,27 @@ class AchievementData {
   claimed_at: Date;
 }
 
+@Schema({ _id: false, timestamps: false })
+class TaskData {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Task' })
+  task_id: mongoose.Schema.Types.ObjectId;
+}
+
+@Schema({ _id: false, timestamps: false })
+class DailyTaskData {
+  @Prop({ type: Boolean, default: false })
+  join_tg_channel_rock: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  join_tg_channel_dd: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  ads_watched: boolean;
+
+  @Prop({ type: Number, default: 0, index: true })
+  daily_task_reset_flag: number;
+}
+
 @Schema({ timestamps: true, _id: false })
 export class User {
   @Prop({ type: String, required: true })
@@ -152,6 +173,12 @@ export class User {
 
   @Prop({ type: [AchievementData], default: [] })
   achievements: AchievementData[]; // Array of user's claimed achievements
+
+  @Prop({ type: [TaskData], default: [] })
+  tasks: TaskData[]; // Array of user's claimed tasks
+
+  @Prop({ type: DailyTaskData })
+  daily_task_data: DailyTaskData;
 
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;

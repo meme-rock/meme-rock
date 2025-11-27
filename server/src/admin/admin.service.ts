@@ -9,6 +9,8 @@ import { CreateBoosterDto } from './dto/boosters.dto';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
 import { MarketItem, MarketItemDocument } from 'src/schemas/market.schema';
 import { CreateMarketItemDto } from './dto/market.dto';
+import { Task, TaskDocument } from 'src/schemas/task.schema';
+import { CreateTaskDto } from './dto/tasks.dto';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +20,8 @@ export class AdminService {
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
     @InjectModel(MarketItem.name)
     private marketItemModel: Model<MarketItemDocument>,
+    @InjectModel(Task.name)
+    private taskModel: Model<TaskDocument>,
   ) {}
 
   //! HILTIS
@@ -199,6 +203,54 @@ export class AdminService {
       return {
         marketItem: updatedMarketItem,
         message: 'Market item updated successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  //! TASKS
+  async getTasks() {
+    try {
+      return this.taskModel.find();
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  async createTask(task: CreateTaskDto) {
+    try {
+      const createdTask = await this.taskModel.create(task);
+      return {
+        task: createdTask,
+        message: 'Task created successfully',
+      };
+    } catch (error) {
+      console.log('Error: ', error);
+      return {
+        error: error,
+      };
+    }
+  }
+
+  async updateTask(id: string, task: CreateTaskDto) {
+    try {
+      const updatedTask = await this.taskModel.findOneAndUpdate(
+        { _id: id },
+        task,
+        {
+          new: true,
+        },
+      );
+      return {
+        task: updatedTask,
+        message: 'Task updated successfully',
       };
     } catch (error) {
       console.log('Error: ', error);

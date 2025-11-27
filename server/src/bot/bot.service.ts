@@ -14,7 +14,11 @@ export class BotService {
     chat_id: string | number,
   ): Promise<boolean> {
     try {
-      const validChats: string[] = ['@testforbilal'];
+      const validChats: string[] = [
+        '@testforbilal',
+        '@thememerock',
+        '@memerock',
+      ];
       if (!validChats.includes(chat_id.toString())) {
         return false;
       }
