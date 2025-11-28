@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
+import { EUserTaskStatus } from 'src/common/enums/tasks.enum';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -120,20 +121,31 @@ class AchievementData {
 
 @Schema({ _id: false, timestamps: false })
 class TaskData {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Task' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true })
   task_id: mongoose.Schema.Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: EUserTaskStatus,
+    required: true,
+    default: EUserTaskStatus.PENDING,
+  })
+  status: EUserTaskStatus;
+
+  @Prop({ type: Date, default: null })
+  started_at: Date; // Fake Mod süresi için kritik
 }
 
 @Schema({ _id: false, timestamps: false })
 class DailyTaskData {
-  @Prop({ type: Boolean, default: false })
-  join_tg_channel_rock: boolean;
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  join_tg_channel_rock: EUserTaskStatus;
 
-  @Prop({ type: Boolean, default: false })
-  join_tg_channel_dd: boolean;
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  join_tg_channel_dd: EUserTaskStatus;
 
-  @Prop({ type: Boolean, default: false })
-  ads_watched: boolean;
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  ads_watched: EUserTaskStatus;
 
   @Prop({ type: Number, default: 0, index: true })
   daily_task_reset_flag: number;

@@ -3,6 +3,7 @@ import {
   EHiltiLevel,
   EMinerLevel,
   EMinerRewardType,
+  ETaskDailyMatch,
   EUserTaskStatus,
 } from "./enums";
 
@@ -107,6 +108,7 @@ export interface IUser {
   hilti_data: IHiltiData;
   boosters: IUserBooster[];
   achievements: IAchievement[];
+  tasks: ITask[];
   is_premium: boolean;
   is_auto_mining: boolean;
   invited_by: string | null;
@@ -117,20 +119,44 @@ export interface IUser {
   updatedAt: string;
 }
 
+export enum ETaskType {
+  COMMON = "COMMON",
+  DAILY = "DAILY",
+  REUSABLE = "REUSABLE",
+  PARTNER = "PARTNER",
+}
+
+export enum ETaskAPIType {
+  NONE = "NONE",
+  TELEGRAM_API = "TELEGRAM_API",
+  X_API = "X_API",
+}
+
+export enum ETaskIcon {
+  TELEGRAM = "TELEGRAM",
+  X = "X",
+  YOUTUBE = "YOUTUBE",
+  DISCORD = "DISCORD",
+  TIKTOK = "TIKTOK",
+  INSTAGRAM = "INSTAGRAM",
+  FACEBOOK = "FACEBOOK",
+}
+
 export interface ITask {
   _id: string;
+  task_type: ETaskType;
   title: string;
-  description: string;
-  task_url: string;
+  daily_task_match?: ETaskDailyMatch;
+  limit?: number;
+  link?: string;
+  icon?: ETaskIcon;
+  api_type: ETaskAPIType;
   reward: number;
-  api_type: string;
-  task_type: string;
-  telegram_channel_id?: string;
-  x_account_id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
   status: EUserTaskStatus;
+  remaining_seconds?: number;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IBoosterLevelData {

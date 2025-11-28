@@ -1,6 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { IUser } from "../../types";
-import { EHiltiLevel, EMinerLevel, EMinerRewardType } from "../../types/enums";
+import {
+  EHiltiLevel,
+  EMinerLevel,
+  EMinerRewardType,
+  EUserTaskStatus,
+} from "../../types/enums";
 
 type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
@@ -64,6 +69,7 @@ const initialState: UserState = {
   },
   boosters: [],
   achievements: [],
+  tasks: [],
   is_premium: false,
   is_auto_mining: false,
   invited_by: null,
@@ -124,9 +130,17 @@ export const userSlice = createSlice({
     },
     updateUserforCompleteTask: (
       state,
-      action: PayloadAction<{ stones: number }>
+      action: PayloadAction<{ stones: number; task_id: string }>
     ) => {
       state.balance_data.stone = action.payload.stones;
+      if (state.tasks) {
+        const taskIndex = state.tasks.findIndex(
+          (t) => t._id === action.payload.task_id
+        );
+        if (taskIndex !== -1) {
+          state.tasks[taskIndex].status = EUserTaskStatus.CLAIMED;
+        }
+      }
     },
     updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
       state.boosters = action.payload.boosters;
@@ -149,6 +163,13 @@ export const userSlice = createSlice({
     updateUserDust: (state, action: PayloadAction<number>) => {
       state.balance_data.dust = action.payload;
       console.log(`💰 Dust balance updated: ${action.payload}`);
+    },
+    updateUserBalance: (
+      state,
+      action: PayloadAction<{ stone: number; dust: number }>
+    ) => {
+      state.balance_data.stone = action.payload.stone;
+      state.balance_data.dust = action.payload.dust;
     },
     updateUserOnStoneToDustExchange: (
       state,
@@ -203,6 +224,7 @@ export const {
   updateUserFromBoosterAction,
   updateDisplayRocks,
   updateUserDust,
+  updateUserBalance,
   updateUserOnStoneToDustExchange,
   updateUserOnDustToStoneExchange,
   updateUserAchievements,

@@ -1,5 +1,9 @@
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ETaskType, ETaskAPIType, ETaskIcon } from 'src/schemas/task.schema';
+import {
+  ETaskType,
+  ETaskAPIType,
+  ETaskIcon,
+} from 'src/common/enums/tasks.enum';
 
 export class CreateTaskDto {
   @IsEnum(ETaskType)

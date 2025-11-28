@@ -17,7 +17,7 @@ export class BotService {
       const validChats: string[] = [
         '@testforbilal',
         '@thememerock',
-        '@memerock',
+        '@deepdapp',
       ];
       if (!validChats.includes(chat_id.toString())) {
         return false;

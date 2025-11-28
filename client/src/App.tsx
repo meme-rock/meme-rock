@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
-import TaskPage from "./pages/TaskPage";
+import { TaskPage } from "./pages/TaskPage";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);

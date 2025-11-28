@@ -13,6 +13,14 @@ import {
 import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
 import { BalanceData } from "./responses";
+import {
+  ETaskAPIType,
+  ETaskDailyMatch,
+  ETaskIcon,
+  ETaskType,
+  EUserTaskStatus,
+} from "../../../types/enums";
+import { setTasks } from "../../slices/taskSlice";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -30,6 +38,22 @@ export const userApi = createApi({
           stone_reward?: number;
           is_claimed: boolean;
           claimed_at?: string;
+        }>;
+        tasks: Array<{
+          _id: string;
+          task_type: ETaskType;
+          title: string;
+          daily_task_match?: ETaskDailyMatch;
+          limit?: number;
+          link?: string;
+          icon?: ETaskIcon;
+          api_type: ETaskAPIType;
+          reward: number;
+
+          createdAt: Date;
+          updatedAt: Date;
+          status: EUserTaskStatus;
+          remaining_seconds?: number;
         }>;
         premium_market_item?: {
           ton_price: number;
@@ -89,6 +113,9 @@ export const userApi = createApi({
             type: "achievements/setAllAchievements",
             payload: data.achievements || [],
           });
+
+          // Store tasks in Redux
+          dispatch(setTasks(data.tasks));
 
           // Store mine claim data if available
           if (data.mine_claim) {

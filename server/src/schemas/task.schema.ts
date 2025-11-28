@@ -1,30 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import {
+  ETaskAPIType,
+  ETaskIcon,
+  ETaskType,
+} from 'src/common/enums/tasks.enum';
 
 export type TaskDocument = HydratedDocument<Task>;
-
-export enum ETaskType {
-  COMMON = 'COMMON',
-  DAILY = 'DAILY',
-  REUSABLE = 'REUSABLE',
-  PARTNER = 'PARTNER',
-}
-
-export enum ETaskAPIType {
-  NONE = 'NONE',
-  TELEGRAM_API = 'TELEGRAM_API',
-  X_API = 'X_API',
-}
-
-export enum ETaskIcon {
-  TELEGRAM = 'TELEGRAM',
-  X = 'X',
-  YOUTUBE = 'YOUTUBE',
-  DISCORD = 'DISCORD',
-  TIKTOK = 'TIKTOK',
-  INSTAGRAM = 'INSTAGRAM',
-  FACEBOOK = 'FACEBOOK',
-}
 
 @Schema({ timestamps: true })
 export class Task {

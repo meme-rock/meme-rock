@@ -2,15 +2,18 @@ import { configureStore } from "@reduxjs/toolkit";
 import userReducer from "./slices/userSlice";
 import minerReducer from "./slices/minerSlice";
 import hiltiReducer from "./slices/hiltiSlice";
-import { userApi } from "./services/user/user-api";
 import boosterReducer from "./slices/boosterSlice";
 import achievementsReducer from "./slices/achievementsSlice";
+import taskReducer from "./slices/taskSlice";
+
+import { userApi } from "./services/user/user-api";
 import { boosterApi } from "./services/booster/booster-api";
 import { marketApi } from "./services/market/market-api";
 import { minerApi } from "./services/miner/miner-api";
 import { ranksApi } from "./services/ranks/ranks-api";
 import { starApi } from "./services/star/star-api";
 import { tonApi } from "./services/ton/ton-api";
+import { taskApi } from "./services/tasks/task-api";
 import { hiltiApi } from "./services/hilti/hilti-api";
 
 export const store = configureStore({
@@ -20,6 +23,7 @@ export const store = configureStore({
     hilti: hiltiReducer,
     booster: boosterReducer,
     achievements: achievementsReducer,
+    task: taskReducer,
     [userApi.reducerPath]: userApi.reducer,
     [boosterApi.reducerPath]: boosterApi.reducer,
     [marketApi.reducerPath]: marketApi.reducer,
@@ -28,6 +32,7 @@ export const store = configureStore({
     [ranksApi.reducerPath]: ranksApi.reducer,
     [starApi.reducerPath]: starApi.reducer,
     [tonApi.reducerPath]: tonApi.reducer,
+    [taskApi.reducerPath]: taskApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -38,7 +43,8 @@ export const store = configureStore({
       hiltiApi.middleware,
       ranksApi.middleware,
       starApi.middleware,
-      tonApi.middleware
+      tonApi.middleware,
+      taskApi.middleware
     ),
 });
 
