@@ -20,11 +20,16 @@ export const taskSlice = createSlice({
     },
     updateTaskStatus: (
       state,
-      action: PayloadAction<{ task_id: string; status: EUserTaskStatus }>
+      action: PayloadAction<{
+        task_id: string;
+        status: EUserTaskStatus;
+        remaining_seconds?: number;
+      }>
     ) => {
       const task = state.tasks.find((t) => t._id === action.payload.task_id);
       if (task) {
         task.status = action.payload.status;
+        task.remaining_seconds = action.payload.remaining_seconds || 0;
       }
     },
   },

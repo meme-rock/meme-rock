@@ -18,3 +18,11 @@ export interface ClaimDailyTaskResponse {
     status: EUserTaskStatus;
   };
 }
+
+export interface StartTaskResponse {
+  task: {
+    _id: string;
+    status: EUserTaskStatus;
+    remaining_seconds: number;
+  };
+}

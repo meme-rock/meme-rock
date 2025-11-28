@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle, ExternalLink, Tv, Loader2 } from "lucide-react";
-import WebApp from "@twa-dev/sdk";
+import { CheckCircle, Loader2, Clock } from "lucide-react";
 import { ETaskAPIType, ETaskIcon, ITask } from "../../types";
 import { formatInteger } from "../../utils/formatNumber";
 import { useSelector } from "react-redux";
@@ -14,27 +13,34 @@ import {
   BsInstagram,
   BsTelegram,
 } from "react-icons/bs";
-import { EUserTaskStatus } from "../../types/enums";
+import { EUserTaskStatus, ETaskType, ETaskDailyMatch } from "../../types/enums";
 
 interface TaskItemProps {
   task: ITask;
-  onClaim: (task: ITask) => void;
+  onAction: (task: ITask) => void;
+  onClick: (task: ITask) => void;
   isLoading: boolean;
 }
 
-export const TaskItem = ({ task, onClaim, isLoading }: TaskItemProps) => {
+export const TaskItem = ({
+  task,
+  onAction,
+  onClick,
+  isLoading,
+}: TaskItemProps) => {
   const user = useSelector((state: RootState) => state.user);
-
-  const handleOpenLink = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (task.link) {
-      WebApp.openLink(task.link);
+  const canClaimDailyAdTask = user.ad_data.ads_watched_today >= task.limit!;
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on button
+    if ((e.target as HTMLElement).closest("button")) {
+      return;
     }
+    onClick(task);
   };
 
-  const handleClaim = (e: React.MouseEvent) => {
+  const handleAction = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClaim(task);
+    onAction(task);
   };
 
   const getIcon = (icon?: ETaskIcon) => {
@@ -42,125 +48,150 @@ export const TaskItem = ({ task, onClaim, isLoading }: TaskItemProps) => {
       case ETaskIcon.TELEGRAM:
         return <BsTelegram className="w-6 h-6 fill-current text-blue-400" />;
       case ETaskIcon.X:
-        return <BsTwitterX className="w-6 h-6 fill-current" />;
+        return <BsTwitterX className="w-6 h-6 fill-current text-white" />;
       case ETaskIcon.YOUTUBE:
         return <BsYoutube className="w-6 h-6 fill-current text-red-500" />;
       case ETaskIcon.TIKTOK:
         return <BsTiktok className="w-6 h-6 fill-current text-gray-100" />;
       case ETaskIcon.DISCORD:
-        return <BsDiscord className="w-6 h-6 fill-current text-blue-500" />;
+        return <BsDiscord className="w-6 h-6 fill-current text-indigo-500" />;
       case ETaskIcon.FACEBOOK:
-        return <BsFacebook className="w-6 h-6 fill-current text-blue-500" />;
+        return <BsFacebook className="w-6 h-6 fill-current text-blue-600" />;
       case ETaskIcon.INSTAGRAM:
-        return <BsInstagram className="w-6 h-6 fill-current text-red-500" />;
+        return <BsInstagram className="w-6 h-6 fill-current text-pink-500" />;
       default:
-        return <Tv className="w-6 h-6 text-purple-500" />;
+        return <CheckCircle className="w-6 h-6 text-purple-500" />;
     }
   };
 
-  const renderActionButton = () => {
-    if (task.status === EUserTaskStatus.CLAIMED) {
+  const renderActionButton = (status: EUserTaskStatus) => {
+    // Task already claimed
+    if (status === EUserTaskStatus.CLAIMED) {
       return (
-        <button
-          disabled
-          className="px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 bg-green-900/20 text-green-500 border border-green-900/50"
-        >
-          <CheckCircle className="w-4 h-4" />
-          Done
-        </button>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+          <CheckCircle className="w-4 h-4 text-green-500" />
+          <span className="text-green-500 font-semibold text-xs">
+            Completed
+          </span>
+        </div>
       );
     }
 
-    if (task.status === EUserTaskStatus.READY_TO_CLAIM) {
+    // Task ready to claim
+    if (status === EUserTaskStatus.READY_TO_CLAIM) {
       return (
-        <button
-          onClick={handleClaim}
+        <motion.button
+          whileTap={{ scale: 0.95 }} // Tıklanınca %5 küçülme efekti
+          onClick={handleAction}
           disabled={isLoading}
-          className="px-4 py-2 rounded-lg font-bold text-xs bg-cyan-600 text-white hover:bg-cyan-500 transition-colors min-w-[80px] flex justify-center"
+          className="px-5 py-2.5 rounded-lg font-bold text-sm bg-green-500/40 border border-green-500/10 text-white hover:bg-green-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[90px] flex justify-center items-center"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Claim"}
-        </button>
+        </motion.button>
       );
     }
 
-    // API Task Pending -> Check Button
+    // API-based task or Daily Task that needs verification
     if (
-      task.api_type !== ETaskAPIType.NONE &&
+      (task.api_type !== ETaskAPIType.NONE ||
+        task.task_type === ETaskType.DAILY) &&
       task.status === EUserTaskStatus.PENDING
     ) {
+      const isAdTask = task.daily_task_match === ETaskDailyMatch.ADS_WATCHED;
+      const isDisabled = isLoading || (isAdTask && !canClaimDailyAdTask);
+
       return (
-        <button
-          onClick={handleClaim}
-          disabled={isLoading}
-          className="px-4 py-2 rounded-lg font-bold text-xs bg-gray-800 text-white hover:bg-gray-700 transition-colors min-w-[80px] flex justify-center"
+        <motion.button
+          whileTap={{ scale: 0.95 }} // Tıklama efekti
+          onClick={handleAction}
+          disabled={isDisabled}
+          className={`px-5 py-2.5 rounded-lg font-bold text-sm border transition-all min-w-[90px] flex justify-center items-center ${
+            isDisabled
+              ? "bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed"
+              : "bg-blue-500/40 border-blue-500/10 text-white hover:bg-blue-500/20"
+          }`}
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Check"}
-        </button>
+        </motion.button>
       );
     }
 
-    // None API Task Pending -> Start/Link Button
-    if (
-      task.api_type === ETaskAPIType.NONE &&
-      task.status === EUserTaskStatus.PENDING
-    ) {
-      return (
-        <button
-          onClick={handleOpenLink}
-          className="px-4 py-2 rounded-lg font-bold text-xs bg-gray-800 text-white hover:bg-gray-700 transition-colors min-w-[80px] flex items-center gap-2 justify-center"
-        >
-          Start
-          <ExternalLink className="w-3 h-3" />
-        </button>
-      );
-    }
-
+    // Fake mode task - no button, just clickable card
     return null;
   };
+
+  // Determine if card should be clickable
+  const isClickable = task.link;
+
+  // Determine opacity
+  const cardOpacity =
+    task.status === EUserTaskStatus.CLAIMED ? "opacity-60" : "";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      onClick={handleOpenLink}
-      className={`bg-gray-900/50 border border-gray-800 rounded-xl p-4 relative overflow-hidden group cursor-pointer transition-colors hover:bg-gray-800/50 ${
-        task.status === EUserTaskStatus.CLAIMED ? "opacity-50" : ""
+      onClick={handleCardClick}
+      className={`bg-gradient-to-br from-gray-900/80 to-gray-900/40 border border-gray-800/50 rounded-2xl p-4 relative overflow-hidden group transition-all ${cardOpacity} ${
+        isClickable ? "cursor-pointer hover:border-gray-700/50" : ""
       }`}
     >
-      <div className="flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+      <div className="flex items-start justify-between relative z-10 gap-3">
+        {/* Left: Icon & Info */}
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Icon */}
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shrink-0 border border-gray-700/50">
             {getIcon(task.icon)}
           </div>
-          <div>
-            <h3 className="font-bold text-white text-sm">{task.title}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-1">
+
+          {/* Task Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-white text-sm leading-tight mb-1.5 line-clamp-2">
+              {task.title}
+            </h3>
+
+            {/* Reward */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
                 <img src="/stone.svg" alt="Stone" className="w-4 h-4" />
                 <span className="text-cyan-400 font-bold text-xs">
                   +{formatInteger(task.reward)}
                 </span>
               </div>
+
+              {/* Ad Watch Progress */}
               {task.limit && (
-                <span className="text-gray-400 text-xs font-medium">
-                  ({user.ad_data.ads_watched_today}/{task.limit})
+                <span className="text-gray-400 text-xs font-medium bg-gray-800/50 px-2 py-1 rounded-lg">
+                  {user.ad_data.ads_watched_today}/{task.limit}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">{renderActionButton()}</div>
+        {/* Right: Action Button */}
+        <div className="flex items-center shrink-0">
+          {renderActionButton(task.status)}
+        </div>
       </div>
 
-      {/* Verifying Message */}
+      {/* Moderator Approval Message */}
       {task.api_type === ETaskAPIType.NONE &&
         task.status === EUserTaskStatus.VERIFYING &&
         (task.remaining_seconds || 0) > 0 && (
-          <div className="mt-3 text-xs text-yellow-500/80 bg-yellow-500/10 p-2 rounded-lg border border-yellow-500/20">
-            Awaiting moderator approval. Please check back in a few minutes and
-            ensure you have completed the task.
-          </div>
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-3 overflow-hidden"
+          >
+            <div className="flex items-start gap-2 text-xs bg-amber-500/10 text-amber-400 p-3 rounded-xl border border-amber-500/20">
+              <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">Awaiting moderator approval.</p>
+            </div>
+          </motion.div>
         )}
     </motion.div>
   );

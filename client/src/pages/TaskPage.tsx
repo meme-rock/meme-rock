@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
-import { ETaskType, ITask } from "../types";
+import { ETaskType, ITask, ETaskAPIType } from "../types";
 import {
   useVerifyDailyTaskMutation,
   useClaimDailyTaskMutation,
+  useStartTaskMutation,
 } from "../redux/services/tasks/task-api";
 import WebApp from "@twa-dev/sdk";
 import { TaskSection } from "../components/task/TaskSection";
@@ -16,34 +17,62 @@ export const TaskPage = () => {
 
   const [verifyDaily] = useVerifyDailyTaskMutation();
   const [claimDaily] = useClaimDailyTaskMutation();
-  /* const [claimCommon] = useClaimCommonTaskMutation();
-  const [claimReusable] = useClaimReusableTaskMutation();
-  const [claimPartner] = useClaimPartnerTaskMutation(); */
+  const [startTask] = useStartTaskMutation();
 
-  const handleClaim = async (task: ITask) => {
+  const handleTaskAction = async (task: ITask) => {
     setLoadingTaskId(task._id);
     try {
-      let response;
       const payload = { user_id: user._id, task_id: task._id };
 
-      switch (task.task_type) {
-        case ETaskType.DAILY:
-          switch (task.status) {
-            case EUserTaskStatus.PENDING:
-              response = await verifyDaily(payload).unwrap();
-              break;
-            case EUserTaskStatus.READY_TO_CLAIM:
-              response = await claimDaily(payload).unwrap();
-              break;
-            default:
-              break;
-          }
+      // Daily Task Logic
+      if (task.task_type === ETaskType.DAILY) {
+        if (task.status === EUserTaskStatus.PENDING) {
+          await verifyDaily(payload).unwrap();
+        } else if (task.status === EUserTaskStatus.READY_TO_CLAIM) {
+          await claimDaily(payload).unwrap();
+        }
+        return;
+      }
+
+      // API-based Task Logic (TELEGRAM_API, X_API, etc.)
+      if (task.api_type !== ETaskAPIType.NONE) {
+        if (task.status === EUserTaskStatus.PENDING) {
+          // TODO: Call verify API task endpoint
+          // await verifyApiTask(payload).unwrap();
+          console.log("Verify API task:", task._id);
+        } else if (task.status === EUserTaskStatus.READY_TO_CLAIM) {
+          await claimDaily(payload).unwrap();
+        }
+        return;
+      }
+
+      // Fake Mode Task Logic (NONE API type)
+      if (task.api_type === ETaskAPIType.NONE) {
+        if (task.status === EUserTaskStatus.READY_TO_CLAIM) {
+          await claimDaily(payload).unwrap();
+        }
+        // PENDING and VERIFYING states don't have action buttons for fake mode
+        return;
       }
     } catch (error: any) {
-      console.error("Failed to claim task:", error);
-      WebApp.showAlert(error?.data?.message || "Failed to claim task");
+      console.error("Task action failed:", error);
+      WebApp.showAlert(error?.data?.message || "An error occurred");
     } finally {
       setLoadingTaskId(null);
+    }
+  };
+
+  const handleTaskClick = async (task: ITask) => {
+    if (
+      task.api_type === ETaskAPIType.NONE &&
+      task.status === EUserTaskStatus.PENDING
+    ) {
+      const payload = { user_id: user._id, task_id: task._id };
+      await startTask(payload).unwrap();
+    }
+    // Only open link for NONE API type tasks that are PENDING or VERIFYING
+    if (task.link) {
+      WebApp.openLink(task.link);
     }
   };
 
@@ -59,25 +88,29 @@ export const TaskPage = () => {
         <TaskSection
           title="Daily Tasks"
           tasks={dailyTasks}
-          onClaim={handleClaim}
+          onAction={handleTaskAction}
+          onClick={handleTaskClick}
           loadingTaskId={loadingTaskId}
         />
         <TaskSection
           title="Partner Tasks"
           tasks={partnerTasks}
-          onClaim={handleClaim}
+          onAction={handleTaskAction}
+          onClick={handleTaskClick}
           loadingTaskId={loadingTaskId}
         />
         <TaskSection
           title="Common Tasks"
           tasks={commonTasks}
-          onClaim={handleClaim}
+          onAction={handleTaskAction}
+          onClick={handleTaskClick}
           loadingTaskId={loadingTaskId}
         />
         <TaskSection
           title="Reusable Tasks"
           tasks={reusableTasks}
-          onClaim={handleClaim}
+          onAction={handleTaskAction}
+          onClick={handleTaskClick}
           loadingTaskId={loadingTaskId}
         />
       </div>

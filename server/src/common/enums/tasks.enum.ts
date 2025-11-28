@@ -27,3 +27,9 @@ export enum EUserTaskStatus {
   READY_TO_CLAIM = 'READY', // Süre doldu veya API onayladı, claim butonu aktif
   CLAIMED = 'CLAIMED', // Ödül alındı
 }
+
+export enum EDailyTaskMatch {
+  JOIN_TG_CHANNEL_ROCK = 'join_tg_channel_rock',
+  JOIN_TG_CHANNEL_DD = 'join_tg_channel_dd',
+  ADS_WATCHED = 'ads_watched',
+}

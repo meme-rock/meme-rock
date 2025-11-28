@@ -1,6 +1,10 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { initDataHeader } from "../init-data-header";
-import { ClaimDailyTaskResponse, VerifyDailyTaskResponse } from "./responses";
+import {
+  ClaimDailyTaskResponse,
+  StartTaskResponse,
+  VerifyDailyTaskResponse,
+} from "./responses";
 import { updateUserBalance } from "../../slices/userSlice";
 import { updateTaskStatus } from "../../slices/taskSlice";
 
@@ -13,7 +17,7 @@ export const taskApi = createApi({
       { user_id: string; task_id: string }
     >({
       query: ({ user_id, task_id }: { user_id: string; task_id: string }) => ({
-        url: `/verify-daily-task/${user_id}`,
+        url: `/verify-daily/${user_id}`,
         method: "POST",
         body: { task_id },
       }),
@@ -39,7 +43,7 @@ export const taskApi = createApi({
       { user_id: string; task_id: string }
     >({
       query: ({ user_id, task_id }: { user_id: string; task_id: string }) => ({
-        url: `/claim-daily-task/${user_id}`,
+        url: `/claim/${user_id}`,
         method: "POST",
         body: { task_id },
       }),
@@ -61,8 +65,38 @@ export const taskApi = createApi({
         }
       },
     }),
+    startTask: builder.mutation<
+      StartTaskResponse,
+      { user_id: string; task_id: string }
+    >({
+      query: ({ user_id, task_id }: { user_id: string; task_id: string }) => ({
+        url: `/start/${user_id}`,
+        method: "POST",
+        body: { task_id },
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Start data received:", data);
+
+          // update task status
+          dispatch(
+            updateTaskStatus({
+              task_id: data.task._id,
+              status: data.task.status,
+              remaining_seconds: data.task.remaining_seconds,
+            })
+          );
+        } catch (error) {
+          console.error("Error starting:", error);
+        }
+      },
+    }),
   }),
 });
 
-export const { useVerifyDailyTaskMutation, useClaimDailyTaskMutation } =
-  taskApi;
+export const {
+  useVerifyDailyTaskMutation,
+  useClaimDailyTaskMutation,
+  useStartTaskMutation,
+} = taskApi;
