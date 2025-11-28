@@ -79,9 +79,6 @@ export const RockCounter = () => {
                     className={`text-white ${fontSizeClass} font-black tracking-tight whitespace-nowrap bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent`}
                   />
                 </div>
-                <div className="text-purple-300/50 text-xs font-medium uppercase tracking-widest mt-1">
-                  ROCKS
-                </div>
               </div>
             </div>
 
