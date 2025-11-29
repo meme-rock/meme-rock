@@ -35,9 +35,8 @@ export interface IAirdropData {
 }
 
 export interface IAdData {
-  ads_watched: number;
-  last_ad_watched: Date;
-  ads_watched_today: number;
+  ads_watched_total: number;
+  ads_watched_daily: number;
 }
 
 export interface IMinerDetail {

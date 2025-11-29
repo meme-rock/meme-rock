@@ -93,7 +93,7 @@ export class UserAchivementService {
           // ŞART 2: Gerekli şartı (davet/reklam) sağlıyor olmalı
           ...(isInvite
             ? { invite_count: { $gte: requiredCount } } //
-            : { 'ad_data.ads_watched': { $gte: requiredCount } }), //
+            : { 'ad_data.ads_watched_total': { $gte: requiredCount } }), //
         },
         {
           // GÜNCELLEME 1: Ödülü ver
@@ -132,7 +132,7 @@ export class UserAchivementService {
 
       const user = await this.userModel
         .findById(user_id)
-        .select('invite_count ad_data.ads_watched achievements')
+        .select('invite_count ad_data.ads_watched_total achievements')
         .lean()
         .exec();
 
@@ -148,7 +148,9 @@ export class UserAchivementService {
       }
 
       // Hata Nedeni 3: Başarım şartı sağlanmamış
-      const userCount = isInvite ? user.invite_count : user.ad_data.ads_watched; //
+      const userCount = isInvite
+        ? user.invite_count
+        : user.ad_data.ads_watched_total; //
       if (userCount < requiredCount) {
         throw new BadRequestException('ACHIEVEMENT_NOT_COMPLETED');
       }

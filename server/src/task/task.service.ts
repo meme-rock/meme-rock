@@ -392,7 +392,7 @@ export class TaskService {
         break;
 
       case EDailyTaskMatch.ADS_WATCHED:
-        const adCount = user.ad_data?.ads_watched_today ?? 0;
+        const adCount = user.ad_data?.ads_watched_daily ?? 0;
         if (adCount < task.limit) {
           throw new BadRequestException(
             `You need to watch ${task.limit} ads. Current: ${adCount}`,

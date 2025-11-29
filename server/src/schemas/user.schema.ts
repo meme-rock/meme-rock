@@ -7,13 +7,10 @@ export type UserDocument = HydratedDocument<User>;
 @Schema({ _id: false, timestamps: false })
 class AdData {
   @Prop({ type: Number, default: 0 })
-  ads_watched: number;
-
-  @Prop({ type: Date })
-  last_ad_watched: Date;
+  ads_watched_total: number;
 
   @Prop({ type: Number, default: 0 })
-  ads_watched_today: number;
+  ads_watched_daily: number;
 }
 // Airdrop için ayrı bir alt şema
 @Schema({ _id: false, timestamps: false })

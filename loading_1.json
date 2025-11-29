@@ -25,8 +25,8 @@
       "profit_per_hour": 0
     },
     "ad_data": {
-      "ads_watched": 0,
-      "ads_watched_today": 0
+      "ads_watched_total": 0,
+      "ads_watched_daily": 0
     },
     "miner_data": {
       "miner": {

@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Loader2, Tv, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, Play, CheckCircle, AlertCircle } from "lucide-react";
 import { useAdExtra } from "../../../ad/hooks/useAdExtra";
 import { useAdsgram } from "../../../ad/hooks/useAdsgram";
 import { useState, useEffect } from "react";
-import { useUpdateUserDustAfterAdRewardMutation } from "../../../redux/services/user/user-api";
+import { useUpdateAfterAdRewardMutation } from "../../../redux/services/ad/ad-api";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 
@@ -13,8 +13,7 @@ export const AdRewardSection = () => {
   const user = useSelector((state: RootState) => state.user);
   const { showAd, message, lastAttemptStatus } = useAdExtra();
   const adsgram = useAdsgram(ADSGRAM_BLOCK_ID);
-  const [updateUserDustAfterAdReward] =
-    useUpdateUserDustAfterAdRewardMutation();
+  const [updateUserAfterAdReward] = useUpdateAfterAdRewardMutation();
   const [adExtraWatching, setAdExtraWatching] = useState(false);
   const [adsgramWatching, setAdsgramWatching] = useState(false);
 
@@ -27,10 +26,9 @@ export const AdRewardSection = () => {
     if (lastAttemptStatus && message === "Ready" && adExtraWatching) {
       console.log("✅ AdExtra completed successfully");
 
-      // Wait 1 second, then fetch updated balance
       setTimeout(() => {
         console.log("⏳ Fetching updated dust balance...");
-        updateUserDustAfterAdReward({ user_id: user._id });
+        updateUserAfterAdReward({ user_id: user._id });
       }, 1000);
 
       setAdExtraWatching(false);
@@ -40,7 +38,7 @@ export const AdRewardSection = () => {
     message,
     adExtraWatching,
     user._id,
-    updateUserDustAfterAdReward,
+    updateUserAfterAdReward,
   ]);
 
   // Watch for successful Adsgram ad completion
@@ -48,10 +46,9 @@ export const AdRewardSection = () => {
     if (adsgram.lastAttemptStatus === "success" && adsgramWatching) {
       console.log("✅ Adsgram completed successfully");
 
-      // Wait 1 second, then fetch updated balance
       setTimeout(() => {
         console.log("⏳ Fetching updated dust balance...");
-        updateUserDustAfterAdReward({ user_id: user._id });
+        updateUserAfterAdReward({ user_id: user._id });
       }, 1000);
 
       setAdsgramWatching(false);
@@ -60,7 +57,7 @@ export const AdRewardSection = () => {
     adsgram.lastAttemptStatus,
     adsgramWatching,
     user._id,
-    updateUserDustAfterAdReward,
+    updateUserAfterAdReward,
   ]);
 
   // AdExtra button handler
@@ -86,152 +83,119 @@ export const AdRewardSection = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-xl p-5">
+    <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
       {/* Header */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <Tv className="w-5 h-5 text-purple-400" />
-        <h3 className="text-lg font-bold text-white">Watch Ads</h3>
+      <div className="mb-4">
+        <h3 className="text-base font-bold text-white mb-2">Watch Ads</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 text-xs">Reward per ad:</span>
+          <div className="flex items-center gap-1.5 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+            <img src="/dust.svg" alt="Dust" className="w-4 h-4" />
+            <span className="text-cyan-400 font-bold text-sm">
+              +{dustReward}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="text-gray-400 text-sm">Reward per ad:</span>
-        <img src="/dust.svg" alt="Dust" className="w-5 h-5" />
-        <span className="text-purple-400 font-bold">{dustReward} Dust</span>
-      </div>
-
-      {/* Ad Network Buttons */}
+      {/* Ad Buttons */}
       <div className="space-y-3">
-        {/* AdExtra Button */}
-        <div className="space-y-2">
+        {/* AdExtra */}
+        <div>
           <motion.button
             onClick={handleWatchAdExtra}
             disabled={isLoading}
-            whileHover={!isLoading ? { scale: 1.02 } : {}}
-            whileTap={!isLoading ? { scale: 0.98 } : {}}
-            className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+            whileHover={!isLoading ? { scale: 1.01 } : {}}
+            whileTap={!isLoading ? { scale: 0.99 } : {}}
+            className={`w-full py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
               isLoading
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-blue-500/30"
+                ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-500 text-white"
             }`}
           >
             {isLoading ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                  <Loader2 className="w-5 h-5" />
-                </motion.div>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Loading...
               </>
             ) : (
               <>
-                <Tv className="w-5 h-5" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 AdExtra
               </>
             )}
           </motion.button>
 
-          {/* AdExtra Status Message */}
+          {/* Status */}
           {message && message !== "Loading..." && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-2"
-            >
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
               {lastAttemptStatus ? (
                 <>
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-green-400 font-medium">
-                    {message}
-                  </span>
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400">{message}</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm text-yellow-400 font-medium">
-                    {message}
-                  </span>
+                  <AlertCircle className="w-3 h-3 text-yellow-400" />
+                  <span className="text-yellow-400">{message}</span>
                 </>
               )}
-            </motion.div>
+            </div>
           )}
         </div>
 
-        {/* Adsgram Button */}
-        <div className="space-y-2">
+        {/* Adsgram */}
+        <div>
           <motion.button
             onClick={handleWatchAdsgram}
             disabled={!adsgram.isReady || isAdsgramLoading}
             whileHover={
-              adsgram.isReady && !isAdsgramLoading ? { scale: 1.02 } : {}
+              adsgram.isReady && !isAdsgramLoading ? { scale: 1.01 } : {}
             }
             whileTap={
-              adsgram.isReady && !isAdsgramLoading ? { scale: 0.98 } : {}
+              adsgram.isReady && !isAdsgramLoading ? { scale: 0.99 } : {}
             }
-            className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`w-full py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
               !adsgram.isReady || isAdsgramLoading
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                : "bg-orange-600 hover:bg-orange-500 text-white"
             }`}
           >
             {isAdsgramLoading ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                  <Loader2 className="w-5 h-5" />
-                </motion.div>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Loading...
               </>
             ) : (
               <>
-                <Tv className="w-5 h-5" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 Adsgram
               </>
             )}
           </motion.button>
 
-          {/* Adsgram Status Message */}
+          {/* Status */}
           {!isAdsgramLoading && adsgram.lastAttemptStatus !== "idle" && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-2"
-            >
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
               {adsgram.lastAttemptStatus === "success" ? (
                 <>
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-green-400 font-medium">
-                    Completed!
-                  </span>
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400">Completed</span>
                 </>
               ) : adsgram.lastAttemptStatus === "no-ads" ? (
                 <>
-                  <AlertCircle className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm text-yellow-400 font-medium">
-                    No ads available
-                  </span>
+                  <AlertCircle className="w-3 h-3 text-yellow-400" />
+                  <span className="text-yellow-400">No ads</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-4 h-4 text-red-400" />
-                  <span className="text-sm text-red-400 font-medium">
-                    Try again
-                  </span>
+                  <AlertCircle className="w-3 h-3 text-red-400" />
+                  <span className="text-red-400">Try again</span>
                 </>
               )}
-            </motion.div>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Info Text */}
-      <div className="mt-4 pt-4 border-t border-purple-500/20">
-        <p className="text-xs text-center text-gray-400">
-          Choose any available ad network to earn Dust
-        </p>
       </div>
     </div>
   );

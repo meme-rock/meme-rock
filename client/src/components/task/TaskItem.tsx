@@ -29,7 +29,7 @@ export const TaskItem = ({
   isLoading,
 }: TaskItemProps) => {
   const user = useSelector((state: RootState) => state.user);
-  const canClaimDailyAdTask = user.ad_data.ads_watched_today >= task.limit!;
+  const canClaimDailyAdTask = user.ad_data.ads_watched_daily >= task.limit!;
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger if clicking on button
     if ((e.target as HTMLElement).closest("button")) {
@@ -165,7 +165,7 @@ export const TaskItem = ({
               {/* Ad Watch Progress */}
               {task.limit && (
                 <span className="text-gray-400 text-xs font-medium bg-gray-800/50 px-2 py-1 rounded-lg">
-                  {user.ad_data.ads_watched_today}/{task.limit}
+                  {user.ad_data.ads_watched_daily}/{task.limit}
                 </span>
               )}
             </div>

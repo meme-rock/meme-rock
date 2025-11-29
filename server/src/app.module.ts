@@ -21,6 +21,7 @@ import { StarModule } from './purchases/star/star.module';
 import { DailyModule } from './daily/daily.module';
 import { HiltiModule } from './hilti/hilti.module';
 import { TaskModule } from './task/task.module';
+import { AdModule } from './ad/ad.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -79,6 +80,7 @@ if (!mongoUri) {
     TonModule,
     DailyModule,
     TaskModule,
+    AdModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

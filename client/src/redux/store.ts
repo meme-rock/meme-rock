@@ -15,6 +15,7 @@ import { starApi } from "./services/star/star-api";
 import { tonApi } from "./services/ton/ton-api";
 import { taskApi } from "./services/tasks/task-api";
 import { hiltiApi } from "./services/hilti/hilti-api";
+import { adApi } from "./services/ad/ad-api";
 
 export const store = configureStore({
   reducer: {
@@ -33,6 +34,7 @@ export const store = configureStore({
     [starApi.reducerPath]: starApi.reducer,
     [tonApi.reducerPath]: tonApi.reducer,
     [taskApi.reducerPath]: taskApi.reducer,
+    [adApi.reducerPath]: adApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -44,7 +46,8 @@ export const store = configureStore({
       ranksApi.middleware,
       starApi.middleware,
       tonApi.middleware,
-      taskApi.middleware
+      taskApi.middleware,
+      adApi.middleware
     ),
 });
 

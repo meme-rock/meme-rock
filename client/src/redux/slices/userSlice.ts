@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { IUser } from "../../types";
+import { IAdData, IUser } from "../../types";
 import {
   EHiltiLevel,
   EMinerLevel,
@@ -45,9 +45,8 @@ const initialState: UserState = {
     profit_per_hour: 0,
   },
   ad_data: {
-    ads_watched: 0,
-    ads_watched_today: 0,
-    last_ad_watched: new Date(),
+    ads_watched_total: 0,
+    ads_watched_daily: 0,
   },
   miner_data: {
     miner: {
@@ -185,6 +184,9 @@ export const userSlice = createSlice({
       state.balance_data.dust = action.payload.dust;
       state.balance_data.stone = action.payload.stones;
     },
+    updateUserAdData: (state, action: PayloadAction<IAdData>) => {
+      state.ad_data = action.payload;
+    },
     updateUserAchievements: (
       state,
       action: PayloadAction<
@@ -225,6 +227,7 @@ export const {
   updateDisplayRocks,
   updateUserDust,
   updateUserBalance,
+  updateUserAdData,
   updateUserOnStoneToDustExchange,
   updateUserOnDustToStoneExchange,
   updateUserAchievements,

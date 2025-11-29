@@ -48,25 +48,6 @@ export class UserController {
       achievement_id,
     );
   }
-  /**
-   * Webhook endpoint for ad providers
-   * Example: GET http://localhost:8080/user/ad-reward?userid=123456789&token=meme_rock_ad_secret_2024
-   * URL for Adsgram: http://localhost:8080/user/ad-reward?userid=[userId]&token=meme_rock_ad_secret_2024
-   */
-  @Get('ad-reward')
-  @SkipThrottle()
-  async adRewardWebhook(
-    @Query('userid') userid: string,
-    @Query('token') token: string,
-    @Query('provider') provider: string,
-  ) {
-    return await this.userService.adRewardWebhook(userid, token, provider);
-  }
-
-  @Get('get-balance-after-ad-reward/:user_id')
-  async getBalanceAfterAdReward(@Param('user_id') user_id: string) {
-    return await this.userService.getBalanceAfterAdReward(user_id);
-  }
 
   @Post('stone-to-dust-exchange/:user_id')
   @UseGuards(CustomThrottlerGuard)
