@@ -62,6 +62,7 @@ export class TaskService {
 
         return {
           ...task,
+
           status,
           remaining_seconds: remainingSeconds,
         };
@@ -140,7 +141,9 @@ export class TaskService {
       if (currentStatus !== EUserTaskStatus.READY_TO_CLAIM) {
         throw new BadRequestException('Task not ready to claim');
       }
-
+      console.log('Miner Level ::', user.miner_data.miner);
+      const minerLevel = Number(user.miner_data.miner.split('_')[1]);
+      const reward = task.reward * minerLevel;
       // Ödülü ver ve durumu güncelle
       const updatedUser = await this.userModel
         .findByIdAndUpdate(
@@ -152,7 +155,7 @@ export class TaskService {
             },
             $inc: {
               'daily_task_data.daily_task_reset_flag': 1,
-              'balance_data.stone': task.reward,
+              'balance_data.stone': reward,
             },
           },
           { new: true },

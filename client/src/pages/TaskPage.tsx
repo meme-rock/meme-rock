@@ -13,6 +13,11 @@ import { EUserTaskStatus } from "../types/enums";
 
 export const TaskPage = () => {
   const user = useSelector((state: RootState) => state.user);
+  const current_miner = useSelector(
+    (state: RootState) => state.miner.current_miner
+  );
+  const minerLevel = parseInt(current_miner._id.split("_")[1]);
+
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
 
   const [verifyDaily] = useVerifyDailyTaskMutation();
@@ -77,7 +82,12 @@ export const TaskPage = () => {
   };
 
   const tasks = useSelector((state: RootState) => state.task.tasks);
-  const dailyTasks = tasks.filter((t) => t.task_type === ETaskType.DAILY);
+  const dailyTasks = tasks
+    .filter((t) => t.task_type === ETaskType.DAILY)
+    .map((task) => ({
+      ...task, // Mevcut task verilerini kopyala
+      reward: task.reward * minerLevel, // Reward'ı level ile çarp
+    }));
   const commonTasks = tasks.filter((t) => t.task_type === ETaskType.COMMON);
   const partnerTasks = tasks.filter((t) => t.task_type === ETaskType.PARTNER);
   const reusableTasks = tasks.filter((t) => t.task_type === ETaskType.REUSABLE);

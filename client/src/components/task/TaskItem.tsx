@@ -29,6 +29,7 @@ export const TaskItem = ({
   isLoading,
 }: TaskItemProps) => {
   const user = useSelector((state: RootState) => state.user);
+
   const canClaimDailyAdTask = user.ad_data.ads_watched_daily >= task.limit!;
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger if clicking on button
