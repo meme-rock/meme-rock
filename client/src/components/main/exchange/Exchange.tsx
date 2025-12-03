@@ -89,9 +89,7 @@ export const StoneTodustExchange = () => {
         {/* Header - Replaced Toggle */}
         <div className="flex justify-center mb-5">
           <div className="flex items-center gap-2 bg-gradient-to-r from-amber-900/40 to-orange-900/40 px-4 py-2 rounded-lg border border-amber-500/20">
-            <span className="text-amber-200 font-bold">
-              Dust → Stone Exchange
-            </span>
+            <span className="text-amber-200 font-bold">Dust → Stone</span>
           </div>
         </div>
 

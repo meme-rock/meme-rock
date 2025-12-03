@@ -100,7 +100,7 @@ class PaymentData {
 
 @Schema({ _id: false, timestamps: false })
 class DailyRewardData {
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 1 })
   day: number;
 
   @Prop({ type: Date, default: Date.now() })

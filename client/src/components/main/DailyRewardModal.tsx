@@ -1,23 +1,22 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, Check, Gift, Crown, Clock } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
 import { useCountdown } from "../../hooks/useCountdown";
+import {
+  getNextResetTime,
+  isClaimedToday,
+  isStreakBroken,
+} from "../../utils/timeUtils";
+import { useClaimDailyRewardMutation } from "../../redux/services/daily-reward/daily-reward-api";
+import WebApp from "@twa-dev/sdk";
 
 interface DailyRewardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentDay: number;
+  currentDay: number; // Kullanıcının şu anki günü (örn: 3)
   onClaimReward: (day: number) => void;
-}
-
-interface RewardDay {
-  day: number;
-  stoneReward: number;
-  dustCost: number;
-  isClaimed: boolean;
-  isAvailable: boolean;
 }
 
 export const DailyRewardModal = ({
@@ -26,123 +25,93 @@ export const DailyRewardModal = ({
   currentDay,
   onClaimReward,
 }: DailyRewardModalProps) => {
-  const [selectedDay, setSelectedDay] = useState(currentDay);
+  const [claimDailyReward] = useClaimDailyRewardMutation();
+  // Modal açıldığında kullanıcının mevcut gününü seçili yap
+  // const [selectedDay, setSelectedDay] = useState(currentDay);
 
-  // Get user data from Redux
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     setSelectedDay(currentDay);
+  //   }
+  // }, [isOpen, currentDay]);
+
+  // Redux Selectors
   const isPremium = useSelector(
     (state: RootState) => state.user.is_premium,
     shallowEqual
   );
+
   const userDust = useSelector(
     (state: RootState) => state.user.balance_data.dust,
     shallowEqual
   );
-  const currentMinerLevel = useSelector(
-    (state: RootState) => state.miner.current_miner._id,
+
+  const user_id = useSelector(
+    (state: RootState) => state.user._id,
     shallowEqual
   );
 
-  const minerLevel = useMemo(
-    () => parseInt(currentMinerLevel.split("_")[1]),
-    [currentMinerLevel]
+  const current_miner = useSelector(
+    (state: RootState) => state.miner.current_miner
+  );
+  const minerLevel = parseInt(current_miner._id.split("_")[1]);
+
+  const dailyRewardData = useSelector(
+    (state: RootState) => state.user.daily_reward_data,
+    shallowEqual
   );
 
-  // Calculate next reset time (Next Midnight UTC)
-  const nextResetTime = useMemo(() => {
-    const now = new Date();
-    const nextMidnight = new Date(now);
-    nextMidnight.setUTCHours(24, 0, 0, 0);
-    return nextMidnight.toISOString();
-  }, []);
+  // Redux'tan günlük ödül listesini çekiyoruz
+  const dailyRewardsList = useSelector(
+    (state: RootState) => state.dailyReward.dailyReward,
+    shallowEqual
+  );
 
+  // Sayaç Mantığı (08:00 AM UTC)
+  const nextResetTime = useMemo(() => getNextResetTime(), []);
   const { formattedTime } = useCountdown(nextResetTime);
 
-  const rewardDays: RewardDay[] = useMemo(
-    () => [
-      {
-        day: 1,
-        stoneReward: 5 * minerLevel,
-        dustCost: 50,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 2,
-        stoneReward: 10 * minerLevel,
-        dustCost: 55,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 3,
-        stoneReward: 15 * minerLevel,
-        dustCost: 60,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 4,
-        stoneReward: 20 * minerLevel,
-        dustCost: 65,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 5,
-        stoneReward: 25 * minerLevel,
-        dustCost: 70,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 6,
-        stoneReward: 30 * minerLevel,
-        dustCost: 75,
-        isClaimed: true,
-        isAvailable: true,
-      },
-      {
-        day: 7,
-        stoneReward: 35 * minerLevel,
-        dustCost: 80,
-        isClaimed: false,
-        isAvailable: true,
-      },
-      {
-        day: 8,
-        stoneReward: 40 * minerLevel,
-        dustCost: 85,
-        isClaimed: false,
-        isAvailable: false,
-      },
-      {
-        day: 9,
-        stoneReward: 45 * minerLevel,
-        dustCost: 90,
-        isClaimed: false,
-        isAvailable: false,
-      },
-      {
-        day: 10,
-        stoneReward: 50 * minerLevel,
-        dustCost: 100,
-        isClaimed: false,
-        isAvailable: false,
-      },
-    ],
-    [minerLevel]
+  // Bugünün ödülü alınmış mı?
+  const isTodayClaimed = isClaimedToday(dailyRewardData.last_claim_date);
+
+  // Streak bozulmuş mu?
+  const isBroken = isStreakBroken(dailyRewardData.last_claim_date);
+
+  // Görüntülenecek gün:
+  // 1. Eğer bugün ödül alındıysa -> Bir sonraki günü göster (currentDay + 1)
+  // 2. Eğer streak bozulduysa (ve bugün alınmadıysa) -> 1. günü göster
+  // 3. Normal durum -> currentDay
+  let effectiveDay = currentDay;
+
+  if (isTodayClaimed) {
+    effectiveDay = currentDay + 1;
+  } else if (isBroken) {
+    effectiveDay = 1;
+  }
+
+  // Seçili gün artık her zaman effectiveDay
+  const selectedDay = effectiveDay;
+
+  // Seçili günün verisini bul
+  const selectedRewardData = dailyRewardsList.find(
+    (r) => r.day === selectedDay
   );
 
-  const currentSelectedReward = rewardDays[selectedDay - 1];
-  const hasEnoughDust = userDust >= currentSelectedReward?.dustCost;
+  // Seçili günün durumu
+  const isSelectedDayAvailable = selectedDay === effectiveDay;
 
-  const handleClaimReward = () => {
-    if (
-      currentSelectedReward?.isAvailable &&
-      !currentSelectedReward?.isClaimed
-    ) {
+  // Bakiye kontrolü (Sadece Premium değilse kontrol et)
+  const dustCost = selectedRewardData?.dust_price || 0;
+  const hasEnoughDust = userDust >= dustCost;
+
+  const handleClaimReward = async () => {
+    // Sadece mevcut gün alınabilir ve kilitli/alınmış olmamalı
+    if (isSelectedDayAvailable && !isTodayClaimed) {
       onClaimReward(selectedDay);
-      onClose();
+      const response = await claimDailyReward({ user_id }).unwrap();
+      if (!response) {
+        WebApp.showAlert("Failed to claim daily reward");
+      }
     }
   };
 
@@ -186,12 +155,16 @@ export const DailyRewardModal = ({
               <div className="mb-6">
                 <div className="flex justify-between text-xs font-medium mb-2">
                   <span className="text-slate-400">Your Progress</span>
-                  <span className="text-amber-400">{currentDay}/10 Days</span>
+                  <span className="text-amber-400">
+                    {effectiveDay > 10 ? 10 : effectiveDay}/10 Days
+                  </span>
                 </div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${(currentDay / 10) * 100}%` }}
+                    animate={{
+                      width: `${(Math.min(effectiveDay, 10) / 10) * 100}%`,
+                    }}
                     className="h-full bg-amber-500 rounded-full"
                   />
                 </div>
@@ -199,23 +172,23 @@ export const DailyRewardModal = ({
 
               {/* Grid */}
               <div className="grid grid-cols-5 gap-3 mb-8">
-                {rewardDays.map((day) => {
-                  const isClaimed = day.isClaimed;
-                  const isAvailable = day.isAvailable;
-                  const isSelected = selectedDay === day.day;
-                  const isCurrent = day.day === currentDay;
+                {dailyRewardsList.map((reward) => {
+                  const dayNum = reward.day;
+                  const isClaimed = dayNum < effectiveDay;
+                  const isAvailable = dayNum === effectiveDay;
+                  const isLocked = dayNum > effectiveDay;
+                  const isSelected = selectedDay === dayNum;
 
                   return (
                     <button
-                      key={day.day}
-                      onClick={() => isAvailable && setSelectedDay(day.day)}
-                      disabled={!isAvailable}
+                      key={dayNum}
+                      // onClick={() => setSelectedDay(dayNum)} // Navigation disabled
                       className={`relative aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
                         isSelected
                           ? "ring-2 ring-amber-500 bg-amber-500/10"
                           : "bg-slate-800/50"
-                      } ${!isAvailable && "opacity-50 cursor-not-allowed"} ${
-                        isCurrent && !isClaimed ? "bg-amber-500/20" : ""
+                      } ${isLocked ? "opacity-50" : "opacity-100"} ${
+                        isAvailable ? "bg-amber-500/20" : ""
                       }`}
                     >
                       <span
@@ -223,28 +196,28 @@ export const DailyRewardModal = ({
                           isSelected ? "text-amber-400" : "text-slate-500"
                         }`}
                       >
-                        Day {day.day}
+                        Day {dayNum}
                       </span>
 
-                      {/* Always show reward amount */}
+                      {/* Reward Amount */}
                       <div className="flex flex-col items-center">
                         <img
                           src="/stone.svg"
                           alt="Stone"
                           className={`w-5 h-5 ${
-                            !isAvailable || isClaimed ? "opacity-50" : ""
+                            isLocked || isClaimed ? "opacity-50" : ""
                           }`}
                         />
                         <span
                           className={`text-[10px] font-bold ${
                             isClaimed
                               ? "text-green-500"
-                              : !isAvailable
+                              : isLocked
                               ? "text-slate-500"
                               : "text-white"
                           }`}
                         >
-                          {day.stoneReward}
+                          {reward.reward * minerLevel}
                         </span>
                       </div>
 
@@ -254,7 +227,7 @@ export const DailyRewardModal = ({
                           <Check className="w-3 h-3 text-green-500" />
                         </div>
                       )}
-                      {!isAvailable && !isClaimed && (
+                      {isLocked && (
                         <div className="absolute top-1 right-1">
                           <Lock className="w-3 h-3 text-slate-600" />
                         </div>
@@ -273,13 +246,14 @@ export const DailyRewardModal = ({
                   <div className="flex items-center justify-center gap-2">
                     <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
                     <span className="text-3xl font-black text-white">
-                      {currentSelectedReward?.stoneReward}
+                      {selectedRewardData?.reward! * minerLevel || 0}
                     </span>
                   </div>
                 </div>
 
-                {currentSelectedReward?.isAvailable &&
-                !currentSelectedReward?.isClaimed ? (
+                {/* Buton Durumları */}
+                {isSelectedDayAvailable && !isTodayClaimed ? (
+                  // DURUM 1: Güncel Gün (Claim Edilebilir)
                   <div className="space-y-3">
                     <button
                       onClick={handleClaimReward}
@@ -304,7 +278,7 @@ export const DailyRewardModal = ({
                               alt="Dust"
                               className="w-4 h-4"
                             />
-                            <span>{currentSelectedReward?.dustCost}</span>
+                            <span>{dustCost}</span>
                           </div>
                         </>
                       )}
@@ -312,8 +286,7 @@ export const DailyRewardModal = ({
 
                     {!isPremium && !hasEnoughDust && (
                       <p className="text-red-400 text-xs">
-                        Insufficient Dust (
-                        {currentSelectedReward?.dustCost - userDust} needed)
+                        Insufficient Dust ({dustCost - userDust} needed)
                       </p>
                     )}
 
@@ -324,29 +297,21 @@ export const DailyRewardModal = ({
                       </div>
                     )}
                   </div>
-                ) : currentSelectedReward?.isClaimed ? (
-                  <div className="py-3.5 rounded-xl bg-green-500/10 text-green-500 font-bold flex items-center justify-center gap-2">
-                    <Check className="w-5 h-5" />
-                    Claimed
-                  </div>
-                ) : (
-                  <div className="py-3.5 rounded-xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2">
-                    <Lock className="w-5 h-5" />
-                    Locked
-                  </div>
-                )}
+                ) : null}
               </div>
 
-              {/* Reset Timer Footer */}
-              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-slate-500">
-                <Clock className="w-4 h-4" />
-                <span className="text-xs font-medium">
-                  Next reward in:{" "}
-                  <span className="text-slate-300 font-mono">
-                    {formattedTime}
+              {/* Reset Timer Footer - Sadece bugün alındıysa göster */}
+              {isTodayClaimed && (
+                <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-slate-500">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-xs font-medium">
+                    Next reward in:{" "}
+                    <span className="text-slate-300 font-mono">
+                      {formattedTime}
+                    </span>
                   </span>
-                </span>
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

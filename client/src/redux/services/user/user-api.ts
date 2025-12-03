@@ -12,70 +12,16 @@ import {
 } from "../../slices/userSlice";
 import { setMinerData } from "../../slices/minerSlice";
 import { setHiltiData } from "../../slices/hiltiSlice";
-import { BalanceData } from "./responses";
-import {
-  ETaskAPIType,
-  ETaskDailyMatch,
-  ETaskIcon,
-  ETaskType,
-  EUserTaskStatus,
-} from "../../../types/enums";
+import { setDailyRewards } from "../../slices/dailyRewardSlice";
+import { BalanceData, LoadingResponse } from "./responses";
+
 import { setTasks } from "../../slices/taskSlice";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/user`),
   endpoints: (builder) => ({
-    loading: builder.mutation<
-      {
-        user: IUser;
-        hiltis: IHiltiDetail[];
-        miners: IMinerDetail[];
-        achievements: Array<{
-          id: string;
-          title: string;
-          description: string;
-          stone_reward?: number;
-          is_claimed: boolean;
-          claimed_at?: string;
-        }>;
-        tasks: Array<{
-          _id: string;
-          task_type: ETaskType;
-          title: string;
-          daily_task_match?: ETaskDailyMatch;
-          limit?: number;
-          link?: string;
-          icon?: ETaskIcon;
-          api_type: ETaskAPIType;
-          reward: number;
-
-          createdAt: Date;
-          updatedAt: Date;
-          status: EUserTaskStatus;
-          remaining_seconds?: number;
-        }>;
-        premium_market_item?: {
-          ton_price: number;
-          stars_price: number;
-        };
-        mine_claim?: {
-          success: boolean;
-          claimed_reward: number;
-          reward_type: string;
-          periods_claimed: number;
-          last_mine?: string;
-          next_mine: string;
-          mining_cooldown_ms: number;
-          message: string;
-          new_stone_balance?: number;
-          new_dust_balance?: number;
-          new_last_mine?: string;
-        } | null;
-        message: string;
-      },
-      { user: Partial<IUser> }
-    >({
+    loading: builder.mutation<LoadingResponse, { user: Partial<IUser> }>({
       query: (body: { user: Partial<IUser> }) => ({
         url: `/loading/${body.user._id}`,
         method: "POST",
@@ -113,6 +59,9 @@ export const userApi = createApi({
             type: "achievements/setAllAchievements",
             payload: data.achievements || [],
           });
+
+          // Store daily rewards in Redux
+          dispatch(setDailyRewards(data.daily_reward || []));
 
           // Store tasks in Redux
           dispatch(setTasks(data.tasks));

@@ -22,6 +22,7 @@ import { DailyModule } from './daily/daily.module';
 import { HiltiModule } from './hilti/hilti.module';
 import { TaskModule } from './task/task.module';
 import { AdModule } from './ad/ad.module';
+import { DailyRewardModule } from './daily-reward/daily-reward.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -81,6 +82,7 @@ if (!mongoUri) {
     DailyModule,
     TaskModule,
     AdModule,
+    DailyRewardModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

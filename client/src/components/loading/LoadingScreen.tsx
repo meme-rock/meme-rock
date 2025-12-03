@@ -111,26 +111,29 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
   }, [loadingMutation, onComplete]);
 
   return (
-    <div className="fixed inset-0 bg-[#1a1b1e] flex flex-col items-center justify-center z-50 overflow-hidden font-sans">
+    <div className="fixed inset-0 bg-gradient-to-b from-[#1e293b] to-[#0f172a] flex flex-col items-center justify-center z-50 overflow-hidden font-sans">
+      {/* Background texture overlay */}
+      <div className="absolute inset-0 opacity-20 bg-[url('/dust.svg')] bg-repeat opacity-5 pointer-events-none mix-blend-overlay"></div>
+
       {/* Main content */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="relative z-10 flex flex-col items-center px-8 w-full max-w-xs"
       >
-        {/* Main rock logo */}
-        <div className="relative w-40 h-40 mb-10">
+        {/* Main rock logo with floating effect */}
+        <div className="relative w-48 h-48 mb-12">
           <motion.img
             src="/rock.svg"
             alt="Rock"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
             animate={{
-              y: [0, -15, 0],
-              rotate: [0, 5, -5, 0],
+              y: [0, -10, 0],
+              rotate: [0, 2, -2, 0],
             }}
             transition={{
-              duration: 2.5,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
             }}
@@ -138,28 +141,28 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
         </div>
 
         {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white mb-2 tracking-tighter uppercase">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-black text-slate-200 mb-2 tracking-tighter uppercase drop-shadow-lg">
             Meme Rock
           </h1>
-          <p className="text-yellow-400 text-sm font-bold tracking-widest uppercase">
+          <p className="text-blue-400 text-sm font-bold tracking-[0.2em] uppercase">
             Let's Rock The Chain
           </p>
         </div>
 
         {/* Progress bar */}
         <div className="w-full mb-4">
-          <div className="h-4 bg-gray-800 rounded-xl overflow-hidden border-2 border-gray-700">
+          <div className="h-3 bg-slate-800/50 rounded-full overflow-hidden border border-slate-700/50 backdrop-blur-sm shadow-inner">
             <motion.div
-              className="h-full bg-yellow-400 rounded-r-xl"
+              className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
               initial={{ width: "0%" }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.2 }}
             />
           </div>
-          <div className="flex justify-between mt-2 text-xs font-bold text-gray-500 uppercase">
+          <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
             <span>Loading...</span>
-            <span className="text-yellow-400">{Math.round(progress)}%</span>
+            <span className="text-blue-400">{Math.round(progress)}%</span>
           </div>
         </div>
 
@@ -172,7 +175,7 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-gray-400 text-xs font-bold uppercase tracking-wide"
+                className="text-slate-400 text-xs font-bold uppercase tracking-wide"
               >
                 Preparing...
               </motion.p>
@@ -183,7 +186,7 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-green-400 text-xs font-black uppercase tracking-wide flex items-center gap-2"
+                className="text-emerald-400 text-xs font-black uppercase tracking-wide flex items-center gap-2"
               >
                 <span>Ready!</span>
               </motion.p>
@@ -196,7 +199,7 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
                 exit={{ opacity: 0 }}
                 className="text-red-400 text-xs font-bold uppercase tracking-wide"
               >
-                Retrying connection...
+                Connection interrupted...
               </motion.p>
             )}
           </AnimatePresence>
@@ -204,7 +207,7 @@ export const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
       </motion.div>
 
       {/* Simple Footer */}
-      <div className="absolute bottom-8 text-gray-700 text-[10px] font-bold uppercase tracking-widest">
+      <div className="absolute bottom-8 text-slate-600 text-[10px] font-bold uppercase tracking-widest opacity-50">
         Powered by Deep DApp
       </div>
     </div>

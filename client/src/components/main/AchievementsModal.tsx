@@ -32,7 +32,7 @@ export const AchievementsModal = ({
   );
 
   const adsWatched = useSelector(
-    (state: RootState) => state.user.ad_data.ads_watched,
+    (state: RootState) => state.user.ad_data.ads_watched_total,
     shallowEqual
   );
 

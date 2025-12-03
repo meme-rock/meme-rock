@@ -6,6 +6,7 @@ import {
   EMinerRewardType,
   EUserTaskStatus,
 } from "../../types/enums";
+import { DailyRewardData } from "../services/daily-reward/responses";
 
 type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
@@ -73,7 +74,10 @@ const initialState: UserState = {
   is_auto_mining: false,
   invited_by: null,
   invite_count: 0,
-  created_at: "",
+  daily_reward_data: {
+    day: 1,
+    last_claim_date: "",
+  },
   last_online: "",
   createdAt: "",
   updatedAt: "",
@@ -81,7 +85,34 @@ const initialState: UserState = {
   displayRocks: 0,
   lastCounterUpdate: Date.now(),
 };
+// İki objeyi güvenli bir şekilde birleştirir (Deep Merge)
+function deepMerge<T>(target: T, source: Partial<T>): T {
+  const result = { ...target }; // Hedefin kopyasını al
 
+  for (const key in source) {
+    const sourceValue = source[key];
+    const targetValue = result[key];
+
+    // Eğer gelen değer bir obje ise (ve null/array değilse), içini de birleştir
+    if (
+      sourceValue &&
+      typeof sourceValue === "object" &&
+      !Array.isArray(sourceValue) &&
+      targetValue &&
+      typeof targetValue === "object" &&
+      !Array.isArray(targetValue)
+    ) {
+      // @ts-ignore: TypeScript bazen jenerik tiplerde deep merge'e kızabilir, güvenle yoksayabilirsin
+      result[key] = deepMerge(targetValue, sourceValue);
+    }
+    // Değer undefined değilse güncelle (null gelebilir, null geçerli bir değerdir ama undefined değildir)
+    else if (sourceValue !== undefined) {
+      // @ts-ignore
+      result[key] = sourceValue;
+    }
+  }
+  return result;
+}
 export const userSlice = createSlice({
   name: "user",
   initialState,
@@ -91,15 +122,19 @@ export const userSlice = createSlice({
     },
     loadingUser: (state, action: PayloadAction<IUser>) => {
       console.log("loadingUser action.payload: ", action.payload);
-      console.log("loadingUser state before: ", state);
 
-      // Initialize displayRocks from backend data
-      const newState = {
-        ...action.payload,
-        displayRocks: action.payload.airdrop_data.rock_coins,
+      // Deep merge ile güvenli birleştirme yapıyoruz
+      const mergedState = deepMerge(state, action.payload);
+
+      // Sadece özel hesaplamaları sona ekle
+      return {
+        ...mergedState,
+        displayRocks:
+          action.payload.airdrop_data?.rock_coins ??
+          state.airdrop_data.rock_coins ??
+          0,
         lastCounterUpdate: Date.now(),
       };
-      return newState;
     },
     updateUserStones: (
       state,
@@ -140,6 +175,12 @@ export const userSlice = createSlice({
           state.tasks[taskIndex].status = EUserTaskStatus.CLAIMED;
         }
       }
+    },
+    updateUserDailyRewardData: (
+      state,
+      action: PayloadAction<DailyRewardData>
+    ) => {
+      state.daily_reward_data = action.payload;
     },
     updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
       state.boosters = action.payload.boosters;
@@ -233,6 +274,7 @@ export const {
   updateUserAchievements,
   setPremiumMarketItem,
   setIsPremium,
+  updateUserDailyRewardData,
 } = userSlice.actions;
 
 export default userSlice.reducer;

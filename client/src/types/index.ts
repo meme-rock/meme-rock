@@ -90,6 +90,11 @@ export interface IUserBooster {
   current_level: number;
 }
 
+export interface IDailyRewardData {
+  day: number;
+  last_claim_date: string;
+}
+
 export interface IAchievement {
   achievement_id: string;
   claimed_at?: string;
@@ -106,13 +111,14 @@ export interface IUser {
   miner_data: IMinerData;
   hilti_data: IHiltiData;
   boosters: IUserBooster[];
+  daily_reward_data: IDailyRewardData;
   achievements: IAchievement[];
   tasks: ITask[];
   is_premium: boolean;
   is_auto_mining: boolean;
   invited_by: string | null;
   invite_count: number;
-  created_at: string;
+
   last_online: string;
   createdAt: string;
   updatedAt: string;

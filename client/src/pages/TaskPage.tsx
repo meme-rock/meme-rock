@@ -10,6 +10,10 @@ import {
 import WebApp from "@twa-dev/sdk";
 import { TaskSection } from "../components/task/TaskSection";
 import { EUserTaskStatus } from "../types/enums";
+import { useCountdown } from "../hooks/useCountdown";
+import { getNextResetTime } from "../utils/timeUtils";
+import { Clock } from "lucide-react";
+import { useMemo } from "react";
 
 export const TaskPage = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -92,6 +96,9 @@ export const TaskPage = () => {
   const partnerTasks = tasks.filter((t) => t.task_type === ETaskType.PARTNER);
   const reusableTasks = tasks.filter((t) => t.task_type === ETaskType.REUSABLE);
 
+  const nextResetTime = useMemo(() => getNextResetTime(), []);
+  const { formattedTime } = useCountdown(nextResetTime);
+
   return (
     <div className="min-h-screen bg-black pb-24 pt-4 px-4">
       <div className="max-w-md mx-auto">
@@ -101,6 +108,14 @@ export const TaskPage = () => {
           onAction={handleTaskAction}
           onClick={handleTaskClick}
           loadingTaskId={loadingTaskId}
+          headerRight={
+            <div className="flex items-center gap-1.5 bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-800">
+              <Clock className="w-3.5 h-3.5 text-gray-400" />
+              <span className="text-xs font-mono font-medium text-gray-300">
+                {formattedTime}
+              </span>
+            </div>
+          }
         />
         <TaskSection
           title="Partner Tasks"

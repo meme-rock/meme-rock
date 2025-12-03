@@ -50,7 +50,7 @@ export const MainPage = () => {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [showAdRewardModal, setShowAdRewardModal] = useState(false);
-  const currentRewardDay = 7;
+  const currentRewardDay = user.daily_reward_data.day;
 
   const handleClaimReward = (day: number) => {
     console.log(`Claiming reward for day ${day}`);

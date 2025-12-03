@@ -24,6 +24,7 @@ import {
   MarketItemDocument,
 } from 'src/schemas/market.schema';
 import { TaskService } from 'src/task/task.service';
+import { DAILY_REWARD } from 'src/common/config';
 
 @Injectable()
 export class UserService {
@@ -204,6 +205,7 @@ export class UserService {
         achievements: mergedAchivements,
         tasks: mergedTasks,
         premium_market_item,
+        daily_reward: DAILY_REWARD,
         message: 'User updated successfully',
       };
     } catch (error) {
@@ -301,6 +303,7 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        daily_reward: DAILY_REWARD,
         tasks: mergedTasks,
         premium_market_item,
         message: 'User created successfully',
