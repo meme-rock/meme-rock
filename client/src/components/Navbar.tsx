@@ -1,4 +1,11 @@
-import { Home, User, ShoppingCart, Pickaxe, Trophy } from "lucide-react";
+import {
+  Home,
+  User,
+  ShoppingCart,
+  Pickaxe,
+  Trophy,
+  ListTodo,
+} from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export const Navbar = () => {
@@ -10,8 +17,8 @@ export const Navbar = () => {
     { id: "mine", label: "Mine", icon: Pickaxe, path: "/mine" },
     // rock.svg ikonunu diğerlerinden ayırabilmek için benzersiz bir id kullanacağız
     { id: "rock", label: "$ROCK", icon: "/jackhammer.svg", path: "/rock" },
-    { id: "dust", label: "Dust", icon: "/dust.svg", path: "/dust" },
     { id: "leaderboard", label: "Ranks", icon: Trophy, path: "/leaderboard" },
+    { id: "task", label: "Task", icon: ListTodo, path: "/task" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
   ];
@@ -26,11 +33,6 @@ export const Navbar = () => {
 
           // 1. Varsayılan boyut (Lucide ikonları için): w-5 h-5
           let iconSizeClasses = `w-5 h-5`;
-
-          // 2. Eğer ikon rock.svg ise, boyutu w-6 h-6 olarak özelleştirin
-          if (item.id === "boosters" && isSvgPath) {
-            iconSizeClasses = `w-6 h-6`; // Özel boyut burada!
-          }
 
           // Ortak sınıfları ekleyin
           const iconClasses = `${iconSizeClasses} mb-0.5 transition-transform duration-300 ${

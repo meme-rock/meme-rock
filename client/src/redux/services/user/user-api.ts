@@ -3,48 +3,25 @@ import { initDataHeader } from "../init-data-header";
 import type { IUser, IHiltiDetail, IMinerDetail } from "../../../types";
 import {
   loadingUser,
+  setPremiumMarketItem,
+  setIsPremium,
   updateUserDust,
   updateUserOnDustToStoneExchange,
   updateUserOnStoneToDustExchange,
   updateUserStones,
 } from "../../slices/userSlice";
 import { setMinerData } from "../../slices/minerSlice";
-import { setHiltiData, upgradeHilti } from "../../slices/hiltiSlice";
+import { setHiltiData } from "../../slices/hiltiSlice";
+import { setDailyRewards } from "../../slices/dailyRewardSlice";
+import { BalanceData, LoadingResponse } from "./responses";
+
+import { setTasks } from "../../slices/taskSlice";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/user`),
   endpoints: (builder) => ({
-    loading: builder.mutation<
-      {
-        user: IUser;
-        hiltis: IHiltiDetail[];
-        miners: IMinerDetail[];
-        achievements: Array<{
-          id: string;
-          title: string;
-          description: string;
-          stone_reward?: number;
-          is_claimed: boolean;
-          claimed_at?: string;
-        }>;
-        mine_claim?: {
-          success: boolean;
-          claimed_reward: number;
-          reward_type: string;
-          periods_claimed: number;
-          last_mine?: string;
-          next_mine: string;
-          mining_cooldown_ms: number;
-          message: string;
-          new_stone_balance?: number;
-          new_dust_balance?: number;
-          new_last_mine?: string;
-        } | null;
-        message: string;
-      },
-      { user: Partial<IUser> }
-    >({
+    loading: builder.mutation<LoadingResponse, { user: Partial<IUser> }>({
       query: (body: { user: Partial<IUser> }) => ({
         url: `/loading/${body.user._id}`,
         method: "POST",
@@ -83,12 +60,23 @@ export const userApi = createApi({
             payload: data.achievements || [],
           });
 
+          // Store daily rewards in Redux
+          dispatch(setDailyRewards(data.daily_reward || []));
+
+          // Store tasks in Redux
+          dispatch(setTasks(data.tasks));
+
           // Store mine claim data if available
           if (data.mine_claim) {
             dispatch({
               type: "mineClaim/setMineClaimData",
               payload: data.mine_claim,
             });
+          }
+
+          // Store premium market item if available
+          if (data.premium_market_item) {
+            dispatch(setPremiumMarketItem(data.premium_market_item));
           }
         } catch (error) {
           console.error("Error loading user data:", error);
@@ -215,52 +203,38 @@ export const userApi = createApi({
         }
       },
     }),
-
-    upgradeHilti: builder.mutation<
-      {
-        success: boolean;
-        data: {
-          new_hilti_level: string;
-          new_stone_balance: number;
-          new_profit_per_hour: number;
-          hilti: IHiltiDetail;
-        };
-      },
-      { user_id: string }
-    >({
-      query: ({ user_id }) => ({
-        url: `/upgrade-hilti/${user_id}`,
-        method: "POST",
+    getBalanceData: builder.mutation<BalanceData, { user_id: string }>({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/get-balance-data/${user_id}`,
+        method: "GET",
       }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled, getState }) {
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
         try {
           const { data } = await queryFulfilled;
-          console.log("Hilti upgraded successfully:", data);
-
-          // Update Redux with new hilti
+          console.log("Balance data received:", data);
           dispatch(
-            upgradeHilti({
-              new_hilti: data.data.hilti,
+            updateUserStones({
+              stones: data.stone,
             })
           );
-
-          // Update user state
-          const state = getState() as any;
-          const updatedUser = {
-            ...state.user,
-            balance_data: {
-              ...state.user.balance_data,
-              stone: data.data.new_stone_balance,
-            },
-            airdrop_data: {
-              ...state.user.airdrop_data,
-              profit_per_hour: data.data.new_profit_per_hour,
-            },
-          };
-
-          dispatch(loadingUser(updatedUser));
         } catch (error) {
-          console.error("Error upgrading hilti:", error);
+          console.log("❌ getBalanceData error: ", error);
+          throw error;
+        }
+      },
+    }),
+    isPremium: builder.mutation<boolean, { user_id: string }>({
+      query: ({ user_id }: { user_id: string }) => ({
+        url: `/is-premium/${user_id}`,
+        method: "GET",
+      }),
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log("Is premium data received:", data);
+          dispatch(setIsPremium(data));
+        } catch (error) {
+          console.log("❌ isPremium error: ", error);
           throw error;
         }
       },
@@ -274,5 +248,6 @@ export const {
   useStoneToDustExchangeMutation,
   useDustToStoneExchangeMutation,
   useClaimAchievementMutation,
-  useUpgradeHiltiMutation,
+  useGetBalanceDataMutation,
+  useIsPremiumMutation,
 } = userApi;

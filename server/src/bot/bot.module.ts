@@ -1,6 +1,6 @@
 // bot.module.ts (DÜZELTİLMİŞ VE WEBHOOK UYUMLU VERSİYON)
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config'; // ConfigService eklendi
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegrafModule } from 'nestjs-telegraf';
@@ -10,7 +10,9 @@ import { BotController } from './bot.controller';
 import { BroadcastService } from './jobs/broadcast.service';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { HelpersModule } from 'src/helpers/helpers.module';
-
+import { BoosterModule } from 'src/booster/booster.module';
+import { MarketModule } from 'src/market/market.module';
+import { StarModule } from 'src/purchases/star/star.module';
 @Module({
   imports: [
     // ⚠️ ÖNEMLİ: ConfigService kullanmak için forRootAsync kullanıyoruz.
@@ -50,6 +52,9 @@ import { HelpersModule } from 'src/helpers/helpers.module';
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     HelpersModule,
+    forwardRef(() => BoosterModule),
+    forwardRef(() => MarketModule),
+    forwardRef(() => StarModule),
   ],
   providers: [BotController, BotService, BroadcastService],
   exports: [BotService],

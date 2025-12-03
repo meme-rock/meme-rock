@@ -14,7 +14,11 @@ export class BotService {
     chat_id: string | number,
   ): Promise<boolean> {
     try {
-      const validChats: string[] = ['@testforbilal'];
+      const validChats: string[] = [
+        '@testforbilal',
+        '@thememerock',
+        '@deepdapp',
+      ];
       if (!validChats.includes(chat_id.toString())) {
         return false;
       }
@@ -100,7 +104,6 @@ export class BotService {
         parse_mode: 'MarkdownV2',
       });
 
-      this.logger.log(`Notification sent to user ${user_id}: ${message}`);
       return { success: true, message: 'Notification sent successfully' };
     } catch (error) {
       const errorMessage =

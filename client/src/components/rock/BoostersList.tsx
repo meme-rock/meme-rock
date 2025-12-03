@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Rocket, ChevronDown, ChevronUp } from "lucide-react";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface BoostersListProps {
   currentLevel: number;
@@ -82,7 +83,7 @@ export const BoostersList = ({ currentLevel }: BoostersListProps) => {
                   <div className="flex items-center gap-1">
                     <img src="/rock.svg" alt="Rock" className="w-4 h-4" />
                     <span className="text-cyan-400 font-semibold">
-                      {booster.unlockPrice.toLocaleString()}
+                      {formatInteger(booster.unlockPrice)}
                     </span>
                   </div>
                 </div>

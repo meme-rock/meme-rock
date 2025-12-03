@@ -1,18 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
+import { EUserTaskStatus } from 'src/common/enums/tasks.enum';
 
 export type UserDocument = HydratedDocument<User>;
 
 @Schema({ _id: false, timestamps: false })
 class AdData {
   @Prop({ type: Number, default: 0 })
-  ads_watched: number;
-
-  @Prop({ type: Date })
-  last_ad_watched: Date;
+  ads_watched_total: number;
 
   @Prop({ type: Number, default: 0 })
-  ads_watched_today: number;
+  ads_watched_daily: number;
 }
 // Airdrop için ayrı bir alt şema
 @Schema({ _id: false, timestamps: false })
@@ -102,7 +100,7 @@ class PaymentData {
 
 @Schema({ _id: false, timestamps: false })
 class DailyRewardData {
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 1 })
   day: number;
 
   @Prop({ type: Date, default: Date.now() })
@@ -116,6 +114,38 @@ class AchievementData {
 
   @Prop({ type: Date })
   claimed_at: Date;
+}
+
+@Schema({ _id: false, timestamps: false })
+class TaskData {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true })
+  task_id: mongoose.Schema.Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: EUserTaskStatus,
+    required: true,
+    default: EUserTaskStatus.PENDING,
+  })
+  status: EUserTaskStatus;
+
+  @Prop({ type: Date, default: null })
+  started_at: Date; // Fake Mod süresi için kritik
+}
+
+@Schema({ _id: false, timestamps: false })
+class DailyTaskData {
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  join_tg_channel_rock: EUserTaskStatus;
+
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  join_tg_channel_dd: EUserTaskStatus;
+
+  @Prop({ type: String, enum: EUserTaskStatus, required: true })
+  ads_watched: EUserTaskStatus;
+
+  @Prop({ type: Number, default: 0, index: true })
+  daily_task_reset_flag: number;
 }
 
 @Schema({ timestamps: true, _id: false })
@@ -153,6 +183,12 @@ export class User {
   @Prop({ type: [AchievementData], default: [] })
   achievements: AchievementData[]; // Array of user's claimed achievements
 
+  @Prop({ type: [TaskData], default: [] })
+  tasks: TaskData[]; // Array of user's claimed tasks
+
+  @Prop({ type: DailyTaskData })
+  daily_task_data: DailyTaskData;
+
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
 
@@ -164,6 +200,9 @@ export class User {
 
   @Prop({ type: Number, default: 0 })
   invite_count: number;
+
+  @Prop({ type: Number, default: 0, index: true })
+  weekly_invite_count: number;
 
   @Prop({ type: Date, default: Date.now() })
   created_at: Date;

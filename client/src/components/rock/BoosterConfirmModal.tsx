@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, Unlock, TrendingUp, AlertCircle } from "lucide-react";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface BoosterConfirmModalProps {
   isOpen: boolean;
@@ -200,7 +201,7 @@ export const BoosterConfirmModal = ({
                                     : "text-red-400"
                                 }`}
                               >
-                                {cost.amount.toLocaleString()}
+                                {formatInteger(cost.amount)}
                               </div>
                               <div className="text-xs text-gray-400 capitalize">
                                 {cost.currency}
@@ -220,8 +221,8 @@ export const BoosterConfirmModal = ({
                                 }`}
                               >
                                 {cost.currency === "stone"
-                                  ? userBalance.stone.toLocaleString()
-                                  : userBalance.dust.toLocaleString()}
+                                  ? formatInteger(userBalance.stone)
+                                  : formatInteger(userBalance.dust)}
                               </div>
                             </div>
                           )}
@@ -257,14 +258,14 @@ export const BoosterConfirmModal = ({
                             className="w-4 h-4"
                           />
                           <span>
-                            {requirements.stone.toLocaleString()} Stone
+                            {formatInteger(requirements.stone)} Stone
                           </span>
                         </div>
                       )}
                       {requirements.dust && (
                         <div className="flex items-center gap-2 text-gray-300">
                           <img src="/dust.svg" alt="Dust" className="w-4 h-4" />
-                          <span>{requirements.dust.toLocaleString()} Dust</span>
+                          <span>{formatInteger(requirements.dust)} Dust</span>
                         </div>
                       )}
                       {requirements.invite && (

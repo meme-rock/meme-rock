@@ -1,0 +1,126 @@
+Başarılı Ödeme geldi: <ref *1> Context {
+    update: {
+      update_id: 579313191,
+      message: {
+        message_id: 1548,
+        from: [Object],
+        chat: [Object],
+        date: 1763382372,
+        successful_payment: [Object]
+      }
+    },
+    telegram: Telegram {
+      token: '7799456503:AAEuNtxkd5bfD7wqHrSxsdejqnoR6RiuQS8',
+      response: ServerResponse {
+        _events: [Object: null prototype],
+        _eventsCount: 1,
+        _maxListeners: undefined,
+        outputData: [],
+        outputSize: 0,
+        writable: true,
+        destroyed: false,
+        _last: false,
+        chunkedEncoding: false,
+        shouldKeepAlive: true,
+        maxRequestsOnConnectionReached: false,
+        _defaultKeepAlive: true,
+        useChunkedEncodingByDefault: true,
+        sendDate: true,
+        _removedConnection: false,
+        _removedContLen: false,
+        _removedTE: false,
+        strictContentLength: false,
+        _contentLength: null,
+        _hasBody: true,
+        _trailer: '',
+        finished: false,
+        _headerSent: false,
+        _closed: false,
+        _header: null,
+        _keepAliveTimeout: 5000,
+        _onPendingData: [Function: bound updateOutgoingData],
+        req: [IncomingMessage],
+        _sent100: false,
+        _expect_continue: false,
+        _maxRequestsPerSocket: 0,
+        locals: [Object: null prototype] {},
+        [Symbol(shapeMode)]: false,
+        [Symbol(kCapture)]: false,
+        [Symbol(kBytesWritten)]: 0,
+        [Symbol(kNeedDrain)]: false,
+        [Symbol(corked)]: 0,
+        [Symbol(kChunkedBuffer)]: [],
+        [Symbol(kChunkedLength)]: 0,
+        [Symbol(kSocket)]: [Socket],
+        [Symbol(kOutHeaders)]: [Object: null prototype],
+        [Symbol(errored)]: null,
+        [Symbol(kHighWaterMark)]: 65536,
+        [Symbol(kRejectNonStandardBodyWrites)]: false,
+        [Symbol(kUniqueHeaders)]: null
+      },
+      options: {
+        apiRoot: 'https://api.telegram.org',
+        apiMode: 'bot',
+        webhookReply: true,
+        agent: [Agent],
+        attachmentAgent: undefined,
+        testEnv: false
+      }
+    },
+    botInfo: {
+      id: 7799456503,
+      is_bot: true,
+      first_name: 'testforbilal',
+      username: 'testforbilal_bot',
+      can_join_groups: true,
+      can_read_all_group_messages: false,
+      supports_inline_queries: false,
+      can_connect_to_business: false,
+      has_main_web_app: false
+    },
+    state: {},
+    scene: SceneContextScene {
+      ctx: [Circular *1],
+      scenes: Map(0) {},
+      leaving: false,
+      options: { defaultSession: {} }
+    }
+  }
+  type: BOOSTER
+  message: {
+    message_id: 1548,
+    from: {
+      id: 5075071123,
+      is_bot: false,
+      first_name: 'zayvenio',
+      username: 'zayvenio',
+      language_code: 'tr',
+      is_premium: true
+    },
+    chat: {
+      id: 5075071123,
+      first_name: 'zayvenio',
+      username: 'zayvenio',
+      type: 'private'
+    },
+    date: 1763382372,
+    successful_payment: {
+      currency: 'XTR',
+      total_amount: 1,
+      invoice_payload: '{"payment_type":"BOOSTER","user_id":"5075071123","stars_price":1,"booster_title":"DOGE"}',
+      telegram_payment_charge_id: 'stxBpUn7XhcJoJ9mUbUID6xLLRhbCD98LIXiniLowq7T9NoDQL-H_j0mRqAIqR-yzB2umgJsFvxRHrS7gjCZVKvE5EI5HTPdxlkETnaNs7oenRn8O_0o39KtzOlciOHZwS6',
+      provider_payment_charge_id: '5075071123_496'
+    }
+  }
+  paymentInfo: {
+    currency: 'XTR',
+    total_amount: 1,
+    invoice_payload: '{"payment_type":"BOOSTER","user_id":"5075071123","stars_price":1,"booster_title":"DOGE"}',
+    telegram_payment_charge_id: 'stxBpUn7XhcJoJ9mUbUID6xLLRhbCD98LIXiniLowq7T9NoDQL-H_j0mRqAIqR-yzB2umgJsFvxRHrS7gjCZVKvE5EI5HTPdxlkETnaNs7oenRn8O_0o39KtzOlciOHZwS6',
+    provider_payment_charge_id: '5075071123_496'
+  }
+  payload: {"payment_type":"BOOSTER","user_id":"5075071123","stars_price":1,"booster_title":"DOGE"}
+  amount: 1
+  userId: 5075071123
+  Başarılı Ödeme! Kullanıcı: 5075071123, Payload: {"payment_type":"BOOSTER","user_id":"5075071123","stars_price":1,"booster_title":"DOGE"}, Miktar: 1
+  

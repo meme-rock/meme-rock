@@ -3,6 +3,9 @@ import { AdminService } from './admin.service';
 import { CreateMinerDto } from './dto/miners.dto';
 import { CreateHiltiDto } from './dto/hiltis.dto';
 import { CreateBoosterDto } from './dto/boosters.dto';
+import { AdminRanksService } from './admin.ranks.service';
+import { CreateMarketItemDto } from './dto/market.dto';
+import { CreateTaskDto } from './dto/tasks.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -56,6 +59,52 @@ export class AdminController {
     @Param('id') id: string,
     @Body() booster: CreateBoosterDto,
   ) {
+    console.log('update-booster working...');
     return this.adminService.updateBooster(id, booster);
+  }
+
+  //! MARKET
+  @Get('get-market-items')
+  async getMarket() {
+    return this.adminService.getMarket();
+  }
+
+  @Post('create-market-item')
+  async createMarketItem(@Body() marketItem: CreateMarketItemDto) {
+    return this.adminService.createMarketItem(marketItem);
+  }
+
+  @Put('update-market-item/:id')
+  async updateMarketItem(
+    @Param('id') id: string,
+    @Body() marketItem: CreateMarketItemDto,
+  ) {
+    return this.adminService.updateMarketItem(id, marketItem);
+  }
+
+  //! TASKS
+  @Get('get-tasks')
+  async getTasks() {
+    return this.adminService.getTasks();
+  }
+
+  @Post('create-task')
+  async createTask(@Body() task: CreateTaskDto) {
+    return this.adminService.createTask(task);
+  }
+
+  @Put('update-task/:id')
+  async updateTask(@Param('id') id: string, @Body() task: CreateTaskDto) {
+    return this.adminService.updateTask(id, task);
+  }
+}
+
+@Controller('admin/schedules')
+export class AdminRanksController {
+  constructor(private readonly adminRanksService: AdminRanksService) {}
+
+  @Post('handle-weekly-invites')
+  async handleWeeklyInvites() {
+    return this.adminRanksService.handleWeeklyInvitesLeaderboardRewards();
   }
 }

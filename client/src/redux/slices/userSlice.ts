@@ -1,11 +1,22 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { IUser } from "../../types";
-import { EHiltiLevel, EMinerLevel, EMinerRewardType } from "../../types/enums";
+import { IAdData, IUser } from "../../types";
+import {
+  EHiltiLevel,
+  EMinerLevel,
+  EMinerRewardType,
+  EUserTaskStatus,
+} from "../../types/enums";
+import { DailyRewardData } from "../services/daily-reward/responses";
 
 type UserState = IUser & {
   // Real-time counter state (persists across page navigation)
   displayRocks: number;
   lastCounterUpdate: number;
+  // Premium market item pricing
+  premium_market_item?: {
+    ton_price: number;
+    stars_price: number;
+  };
 };
 
 const initialState: UserState = {
@@ -35,9 +46,8 @@ const initialState: UserState = {
     profit_per_hour: 0,
   },
   ad_data: {
-    ads_watched: 0,
-    ads_watched_today: 0,
-    last_ad_watched: new Date(),
+    ads_watched_total: 0,
+    ads_watched_daily: 0,
   },
   miner_data: {
     miner: {
@@ -59,11 +69,15 @@ const initialState: UserState = {
   },
   boosters: [],
   achievements: [],
+  tasks: [],
   is_premium: false,
   is_auto_mining: false,
   invited_by: null,
   invite_count: 0,
-  created_at: "",
+  daily_reward_data: {
+    day: 1,
+    last_claim_date: "",
+  },
   last_online: "",
   createdAt: "",
   updatedAt: "",
@@ -71,7 +85,34 @@ const initialState: UserState = {
   displayRocks: 0,
   lastCounterUpdate: Date.now(),
 };
+// İki objeyi güvenli bir şekilde birleştirir (Deep Merge)
+function deepMerge<T>(target: T, source: Partial<T>): T {
+  const result = { ...target }; // Hedefin kopyasını al
 
+  for (const key in source) {
+    const sourceValue = source[key];
+    const targetValue = result[key];
+
+    // Eğer gelen değer bir obje ise (ve null/array değilse), içini de birleştir
+    if (
+      sourceValue &&
+      typeof sourceValue === "object" &&
+      !Array.isArray(sourceValue) &&
+      targetValue &&
+      typeof targetValue === "object" &&
+      !Array.isArray(targetValue)
+    ) {
+      // @ts-ignore: TypeScript bazen jenerik tiplerde deep merge'e kızabilir, güvenle yoksayabilirsin
+      result[key] = deepMerge(targetValue, sourceValue);
+    }
+    // Değer undefined değilse güncelle (null gelebilir, null geçerli bir değerdir ama undefined değildir)
+    else if (sourceValue !== undefined) {
+      // @ts-ignore
+      result[key] = sourceValue;
+    }
+  }
+  return result;
+}
 export const userSlice = createSlice({
   name: "user",
   initialState,
@@ -81,15 +122,19 @@ export const userSlice = createSlice({
     },
     loadingUser: (state, action: PayloadAction<IUser>) => {
       console.log("loadingUser action.payload: ", action.payload);
-      console.log("loadingUser state before: ", state);
 
-      // Initialize displayRocks from backend data
-      const newState = {
-        ...action.payload,
-        displayRocks: action.payload.airdrop_data.rock_coins,
+      // Deep merge ile güvenli birleştirme yapıyoruz
+      const mergedState = deepMerge(state, action.payload);
+
+      // Sadece özel hesaplamaları sona ekle
+      return {
+        ...mergedState,
+        displayRocks:
+          action.payload.airdrop_data?.rock_coins ??
+          state.airdrop_data.rock_coins ??
+          0,
         lastCounterUpdate: Date.now(),
       };
-      return newState;
     },
     updateUserStones: (
       state,
@@ -119,9 +164,23 @@ export const userSlice = createSlice({
     },
     updateUserforCompleteTask: (
       state,
-      action: PayloadAction<{ stones: number }>
+      action: PayloadAction<{ stones: number; task_id: string }>
     ) => {
       state.balance_data.stone = action.payload.stones;
+      if (state.tasks) {
+        const taskIndex = state.tasks.findIndex(
+          (t) => t._id === action.payload.task_id
+        );
+        if (taskIndex !== -1) {
+          state.tasks[taskIndex].status = EUserTaskStatus.CLAIMED;
+        }
+      }
+    },
+    updateUserDailyRewardData: (
+      state,
+      action: PayloadAction<DailyRewardData>
+    ) => {
+      state.daily_reward_data = action.payload;
     },
     updateUserBoosters: (state, action: PayloadAction<{ boosters: any[] }>) => {
       state.boosters = action.payload.boosters;
@@ -145,6 +204,13 @@ export const userSlice = createSlice({
       state.balance_data.dust = action.payload;
       console.log(`💰 Dust balance updated: ${action.payload}`);
     },
+    updateUserBalance: (
+      state,
+      action: PayloadAction<{ stone: number; dust: number }>
+    ) => {
+      state.balance_data.stone = action.payload.stone;
+      state.balance_data.dust = action.payload.dust;
+    },
     updateUserOnStoneToDustExchange: (
       state,
       action: PayloadAction<{ dust: number; stones: number }>
@@ -158,6 +224,9 @@ export const userSlice = createSlice({
     ) => {
       state.balance_data.dust = action.payload.dust;
       state.balance_data.stone = action.payload.stones;
+    },
+    updateUserAdData: (state, action: PayloadAction<IAdData>) => {
+      state.ad_data = action.payload;
     },
     updateUserAchievements: (
       state,
@@ -173,6 +242,18 @@ export const userSlice = createSlice({
         achievement_id: achievement.id,
       }));
     },
+    setPremiumMarketItem: (
+      state,
+      action: PayloadAction<{
+        ton_price: number;
+        stars_price: number;
+      }>
+    ) => {
+      state.premium_market_item = action.payload;
+    },
+    setIsPremium: (state, action: PayloadAction<boolean>) => {
+      state.is_premium = action.payload;
+    },
   },
 });
 
@@ -186,9 +267,14 @@ export const {
   updateUserFromBoosterAction,
   updateDisplayRocks,
   updateUserDust,
+  updateUserBalance,
+  updateUserAdData,
   updateUserOnStoneToDustExchange,
   updateUserOnDustToStoneExchange,
   updateUserAchievements,
+  setPremiumMarketItem,
+  setIsPremium,
+  updateUserDailyRewardData,
 } = userSlice.actions;
 
 export default userSlice.reducer;

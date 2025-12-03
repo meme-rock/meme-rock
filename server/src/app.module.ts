@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { TonModule } from './ton/ton.module';
+import { TonModule } from './purchases/ton/ton.module';
 import { AdminModule } from './admin/admin.module';
 import { BotModule } from './bot/bot.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -15,6 +15,14 @@ import { ThrottleTestController } from './common/controllers/throttle-test.contr
 import { MarketModule } from './market/market.module';
 import { HelpersModule } from './helpers/helpers.module';
 import { MinerModule } from './miner/miner.module';
+import { RanksModule } from './ranks/ranks.module';
+import { BoosterModule } from './booster/booster.module';
+import { StarModule } from './purchases/star/star.module';
+import { DailyModule } from './daily/daily.module';
+import { HiltiModule } from './hilti/hilti.module';
+import { TaskModule } from './task/task.module';
+import { AdModule } from './ad/ad.module';
+import { DailyRewardModule } from './daily-reward/daily-reward.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -61,11 +69,20 @@ if (!mongoUri) {
     MongooseModule.forRoot(mongoUri),
     UserModule,
     MinerModule,
+    HiltiModule,
     TonModule,
     AdminModule,
     BotModule,
     MarketModule,
     HelpersModule,
+    RanksModule,
+    BoosterModule,
+    StarModule,
+    TonModule,
+    DailyModule,
+    TaskModule,
+    AdModule,
+    DailyRewardModule,
   ],
   controllers: [AppController, ThrottleTestController],
   providers: [AppService],

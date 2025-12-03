@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LoadingScreen } from "./components/loading/LoadingScreen";
 import { TopBar } from "./components/TopBar";
 import { Navbar } from "./components/Navbar";
 import { MainPage } from "./pages/MainPage";
 import { RockPage } from "./pages/RockPage";
-import { DustPage } from "./pages/DustPage";
 import { MarketPage } from "./pages/MarketPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -14,6 +13,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
+import { TaskPage } from "./pages/TaskPage";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -31,7 +31,7 @@ function AppContent() {
             <Route path="/" element={<MainPage />} />
             <Route path="/mine" element={<MinePage />} />
             <Route path="/rock" element={<RockPage />} />
-            <Route path="/dust" element={<DustPage />} />
+            <Route path="/task" element={<TaskPage />} />
             <Route
               path="/market"
               element={<MarketPage stones={user.balance_data.stone} />}
@@ -56,12 +56,6 @@ function App() {
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };
-
-  // Telegram Web App initialization
-  useEffect(() => {
-    // Telegram Web App SDK initialization would go here
-    console.log("Meme Rock Telegram Mini App initialized");
-  }, []);
 
   if (isLoading) {
     return <LoadingScreen onComplete={handleLoadingComplete} />;

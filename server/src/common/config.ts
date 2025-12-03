@@ -104,53 +104,53 @@ export const STONE_MARKET_TON: TonMarketItem[] = [
 export const DAILY_REWARD: DailyRewardItem[] = [
   {
     day: 1,
-    reward: 5,
-    dust_price: 50,
+    reward: 10,
+    dust_price: 500,
   },
   {
     day: 2,
-    reward: 10,
-    dust_price: 55,
+    reward: 20,
+    dust_price: 550,
   },
   {
     day: 3,
-    reward: 15,
-    dust_price: 60,
+    reward: 40,
+    dust_price: 600,
   },
   {
     day: 4,
-    reward: 20,
-    dust_price: 65,
+    reward: 80,
+    dust_price: 650,
   },
   {
     day: 5,
-    reward: 25,
-    dust_price: 70,
+    reward: 120,
+    dust_price: 700,
   },
   {
     day: 6,
-    reward: 30,
-    dust_price: 75,
+    reward: 150,
+    dust_price: 750,
   },
   {
     day: 7,
-    reward: 35,
-    dust_price: 80,
+    reward: 200,
+    dust_price: 800,
   },
   {
     day: 8,
-    reward: 40,
-    dust_price: 85,
+    reward: 250,
+    dust_price: 850,
   },
   {
     day: 9,
-    reward: 45,
-    dust_price: 90,
+    reward: 350,
+    dust_price: 900,
   },
   {
     day: 10,
-    reward: 50,
-    dust_price: 100,
+    reward: 500,
+    dust_price: 1000,
   },
 ];
 

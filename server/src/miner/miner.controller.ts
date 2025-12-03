@@ -18,6 +18,7 @@ export class MinerController {
   @UseGuards(CustomThrottlerGuard)
   @Throttle({ strict: { limit: 1, ttl: 2000 } }) // Kritik işlem - sıkı throttling
   async upgradeMiner(@Param('user_id') user_id: string) {
+    console.log('Upgrading miner:', user_id);
     return await this.minerService.upgrade(user_id);
   }
 }

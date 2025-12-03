@@ -1,7 +1,9 @@
 import {
+  EBoosterUnlockCurrencyType,
   EHiltiLevel,
   EMinerLevel,
   EMinerRewardType,
+  ETaskDailyMatch,
   EUserTaskStatus,
 } from "./enums";
 
@@ -33,9 +35,8 @@ export interface IAirdropData {
 }
 
 export interface IAdData {
-  ads_watched: number;
-  last_ad_watched: Date;
-  ads_watched_today: number;
+  ads_watched_total: number;
+  ads_watched_daily: number;
 }
 
 export interface IMinerDetail {
@@ -89,6 +90,11 @@ export interface IUserBooster {
   current_level: number;
 }
 
+export interface IDailyRewardData {
+  day: number;
+  last_claim_date: string;
+}
+
 export interface IAchievement {
   achievement_id: string;
   claimed_at?: string;
@@ -105,31 +111,57 @@ export interface IUser {
   miner_data: IMinerData;
   hilti_data: IHiltiData;
   boosters: IUserBooster[];
+  daily_reward_data: IDailyRewardData;
   achievements: IAchievement[];
+  tasks: ITask[];
   is_premium: boolean;
   is_auto_mining: boolean;
   invited_by: string | null;
   invite_count: number;
-  created_at: string;
+
   last_online: string;
   createdAt: string;
   updatedAt: string;
 }
 
+export enum ETaskType {
+  COMMON = "COMMON",
+  DAILY = "DAILY",
+  REUSABLE = "REUSABLE",
+  PARTNER = "PARTNER",
+}
+
+export enum ETaskAPIType {
+  NONE = "NONE",
+  TELEGRAM_API = "TELEGRAM_API",
+  X_API = "X_API",
+}
+
+export enum ETaskIcon {
+  TELEGRAM = "TELEGRAM",
+  X = "X",
+  YOUTUBE = "YOUTUBE",
+  DISCORD = "DISCORD",
+  TIKTOK = "TIKTOK",
+  INSTAGRAM = "INSTAGRAM",
+  FACEBOOK = "FACEBOOK",
+}
+
 export interface ITask {
   _id: string;
+  task_type: ETaskType;
   title: string;
-  description: string;
-  task_url: string;
+  daily_task_match?: ETaskDailyMatch;
+  limit?: number;
+  link?: string;
+  icon?: ETaskIcon;
+  api_type: ETaskAPIType;
   reward: number;
-  api_type: string;
-  task_type: string;
-  telegram_channel_id?: string;
-  x_account_id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
   status: EUserTaskStatus;
+  remaining_seconds?: number;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IBoosterLevelData {
@@ -144,11 +176,10 @@ export interface IBooster {
   title: string;
   required_hilti_level: EHiltiLevel | string;
   max_level: number;
-  unlock_requirements: {
-    stone?: number;
-    dust?: number;
-    invite?: number;
-  };
+  unlock_options: {
+    type: EBoosterUnlockCurrencyType;
+    amount: number;
+  }[];
   level_data: IBoosterLevelData[];
   image_url: string;
   is_unlocked: boolean;

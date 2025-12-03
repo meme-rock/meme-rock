@@ -6,6 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["buttons-bolt-matt-mon.trycloudflare.com"],
+    allowedHosts: ["bangkok-whatever-copy-eagle.trycloudflare.com"],
   },
 });

@@ -24,6 +24,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Model } from 'mongoose';
 import { HelpersService } from 'src/helpers/helpers.service';
+import { EPaymentType } from 'src/common/enums/star-payload.enum';
+import { BoosterService } from 'src/booster/booster.service';
+import { MarketService } from 'src/market/market.service';
+import { StarService } from 'src/purchases/star/star.service';
 
 @Update()
 export class BotController implements OnModuleInit {
@@ -33,6 +37,9 @@ export class BotController implements OnModuleInit {
     private readonly botService: BotService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly helpersService: HelpersService,
+    private readonly boosterService: BoosterService,
+    private readonly marketService: MarketService,
+    private readonly starService: StarService,
   ) {}
 
   onModuleInit() {
@@ -53,15 +60,23 @@ export class BotController implements OnModuleInit {
       const paymentInfo = message.successful_payment;
       const currency = paymentInfo.currency;
       const amount = paymentInfo.total_amount;
-      if (currency !== 'XTR') {
+      if (currency !== 'XTR' || !paymentInfo) {
         await this.botService.refundStarsPayment(
           ctx,
-          'Your payment refunded, you have to pay with Telegram stars',
+          'Your payment refunded, wrong currency or unsuccessful payment',
         );
       }
-      const payload = paymentInfo.invoice_payload; // Link oluştururken verdiğiniz benzersiz veri
 
-      const user_id = message.from?.id;
+      const payload = paymentInfo.invoice_payload; // Link oluştururken verdiğiniz benzersiz veri
+      const type = JSON.parse(payload).payment_type;
+      console.log('type:', type);
+      const user_id = message.from?.id?.toString();
+      if (!user_id) {
+        return await this.botService.refundStarsPayment(
+          ctx,
+          'Your payment refunded, User not found',
+        );
+      }
       console.log('message:', message);
       console.log('paymentInfo:', paymentInfo);
       console.log('payload:', payload);
@@ -70,54 +85,56 @@ export class BotController implements OnModuleInit {
       console.log(
         `Başarılı Ödeme! Kullanıcı: ${user_id}, Payload: ${payload}, Miktar: ${amount}`,
       );
+      switch (type) {
+        case EPaymentType.BOOSTER:
+          const booster_id = JSON.parse(payload).booster_id;
+          await this.boosterService.unlockBoosterForStars(user_id, booster_id);
+          break;
+        case EPaymentType.STONE:
+          const stone_amount = JSON.parse(payload).stars_price;
+          const stone_result = await this.marketService.handleStarsPayment(
+            user_id,
+            stone_amount,
+          );
+          if (!stone_result) {
+            return await this.botService.refundStarsPayment(
+              ctx,
+              'Your payment refunded, Something went wrong',
+            );
+          }
 
-      const market_details = STONE_MARKET_STAR.find(
-        (item: StarMarketItem) =>
-          item.stars_price.toString() === amount.toString(),
-      );
-      if (!market_details) {
-        return await this.botService.refundStarsPayment(
-          ctx,
-          'Your payment refunded, Something went wrong',
-        );
+          break;
+        case EPaymentType.PREMIUM:
+          const premium_amount = JSON.parse(payload).stars_price;
+          console.log('premium payment received');
+          const premium_result = await this.starService.givePremiumToUser(
+            user_id,
+            premium_amount,
+          );
+          console.log('premium_result:', premium_result);
+          if (!premium_result) {
+            return await this.botService.refundStarsPayment(
+              ctx,
+              'Your payment refunded, Something went wrong',
+            );
+          }
+          break;
+        default:
+          return await this.botService.refundStarsPayment(
+            ctx,
+            'Your payment refunded, wrong payment type',
+          );
       }
-      //* Ödeme Başarılıysa
-      const updatedUser = await this.userModel.findByIdAndUpdate(
-        user_id,
-        {
-          $inc: {
-            'game_data.stones': market_details.total_stones,
-          },
-        },
-        { new: true },
-      );
-      if (!updatedUser) {
-        return await this.botService.refundStarsPayment(
-          ctx,
-          'Your payment refunded, User not found',
-        );
-      }
-      await ctx.reply(
-        [
-          // NOT: statik "!" karakterlerini Telegram için kaçırıyoruz: \!
-          '✅ *Payment Successful\\!*',
-          '',
-          // Dinamik değerleri inline code içine koyup yalnızca inline içindeki kaçışı yapıyoruz
-          `*Deposit:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(amount))} TON\``,
-          `*Stones:* \`${this.helpersService.escapeInlineCodeForMarkdownV2(String(market_details.total_stones))}\``,
-          '',
-          '🎉 Your balance has been *successfully updated\\!*',
-          '_Please refresh the app to see the latest changes\\._',
-        ].join('\n'),
-      );
-      // 1. **Payload'ı kullanarak** veritabanınızda ilgili siparişi "Ödendi" olarak işaretleyin.
-      // 2. Kullanıcının hizmetini (premium erişim, ürün vb.) aktif hale getirin.
-      // 3. Kullanıcıya bir onay mesajı gönderin.
+
       await this.botService.refundStarsPayment(ctx, 'Test Refund Successful');
       return;
       // Örneğin: await this.telegramService.activateUserService(userId, payload);
     } catch (error) {
       console.log('Başarılı Ödeme hatası:', error);
+      return await this.botService.refundStarsPayment(
+        ctx,
+        'Your payment refunded, Something went wrong',
+      );
     }
   }
 

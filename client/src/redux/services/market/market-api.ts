@@ -19,27 +19,6 @@ export const marketApi = createApi({
         }
       },
     }),
-    starsToStones: builder.mutation({
-      query: ({
-        user_id,
-        stars_price,
-      }: {
-        user_id: string;
-        stars_price: number;
-      }) => ({
-        url: `/purchase-stones-with-stars/${user_id}`,
-        method: "POST",
-        body: { stars_price },
-      }),
-      async onQueryStarted(_arg, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          return data;
-        } catch (error) {
-          console.log("❌ starsToStones error: ", error);
-        }
-      },
-    }),
     tonToStones: builder.mutation({
       query: ({
         user_id,
@@ -66,8 +45,5 @@ export const marketApi = createApi({
   }),
 });
 
-export const {
-  useLoadStonesMarketDataQuery,
-  useStarsToStonesMutation,
-  useTonToStonesMutation,
-} = marketApi;
+export const { useLoadStonesMarketDataQuery, useTonToStonesMutation } =
+  marketApi;

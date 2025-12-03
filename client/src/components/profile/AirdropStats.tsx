@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Coins, TrendingUp, Calendar } from "lucide-react";
+import { formatNumber } from "../../utils/formatNumber";
 
 interface AirdropStatsProps {
   totalEarned: number;
@@ -44,7 +45,7 @@ export const AirdropStats = ({
             transition={{ delay: 0.3, type: "spring" }}
             className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400"
           >
-            {totalEarned.toLocaleString()}
+            {formatNumber(totalEarned, 2)}
           </motion.div>
           <p className="text-xs text-gray-400 mt-2">$ROCK Tokens</p>
         </div>
@@ -59,7 +60,7 @@ export const AirdropStats = ({
             <span className="text-xs text-gray-400">Today</span>
           </div>
           <p className="text-xl font-bold text-white">
-            +{dailyEarnings.toLocaleString()}
+            +{formatNumber(dailyEarnings, 2)}
           </p>
         </div>
 

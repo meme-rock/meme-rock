@@ -13,10 +13,18 @@ import { EMinerLevel, EMinerRewardType } from 'src/common/enums/miners.enum';
 import { EHiltiLevel } from 'src/common/enums/hiltis.enum';
 import { Hilti, HiltiDocument } from 'src/schemas/hilti.schema';
 import { Booster, BoosterDocument } from 'src/schemas/booster.schema';
-import { ACHIEVEMENTS_CONFIG } from 'src/common/achievements.config';
-import { ACHIVEMENTS } from 'src/common/config';
+
 import { UserAchivementService } from './user-achivement.service';
 import { MinerService } from 'src/miner/miner.service';
+import { BotService } from 'src/bot/bot.service';
+import { HelpersService } from 'src/helpers/helpers.service';
+import {
+  EMarketItemType,
+  MarketItem,
+  MarketItemDocument,
+} from 'src/schemas/market.schema';
+import { TaskService } from 'src/task/task.service';
+import { DAILY_REWARD } from 'src/common/config';
 
 @Injectable()
 export class UserService {
@@ -25,16 +33,19 @@ export class UserService {
   // private readonly MINING_COOLDOWN_MS = 15 * 1000;
 
   // Offline toplanabilecek maksimum periyot sayıları
-  private readonly MAX_CLAIMS_STANDARD = 2; // 2 periyot (örn. 2 saat)
-  private readonly MAX_CLAIMS_AUTO_MINING = 6; // 6 periyot (örn. 6 saat)
-  private readonly MAX_CLAIMS_PREMIUM = 24; // 24 periyot (örn. 24 saat)
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Miner.name) private minerModel: Model<MinerDocument>,
     @InjectModel(Hilti.name) private hiltiModel: Model<HiltiDocument>,
     @InjectModel(Booster.name) private boosterModel: Model<BoosterDocument>,
+    @InjectModel(MarketItem.name)
+    private marketItemModel: Model<MarketItemDocument>,
+
     private userAchivementService: UserAchivementService,
     private minerService: MinerService,
+    private botService: BotService,
+    private helpersService: HelpersService,
+    private taskService: TaskService,
   ) {}
 
   /**
@@ -50,112 +61,74 @@ export class UserService {
     profitPerHour: number,
     hiltiRockIncome: number,
   ): number {
-    const now = Date.now();
-    const lastOnlineTime = new Date(lastOnline).getTime();
+    const elapsedMilliseconds = Date.now() - new Date(lastOnline).getTime();
 
-    // Calculate elapsed minutes with millisecond precision
-    const elapsedMilliseconds = now - lastOnlineTime;
+    // 1. Saatlik kârı kuruş cinsinden tam sayıya çevir
+    const totalProfitPerHourInCents = Math.round(
+      (profitPerHour + hiltiRockIncome) * 100,
+    );
 
-    // Total profit per hour and convert to per minute
-    const totalProfitPerHour = profitPerHour + hiltiRockIncome;
-    // (Saatlik Kâr / 3,600,000 milisaniye)
-    const profitPerMillisecond = totalProfitPerHour / (1000 * 60 * 60);
+    const MS_PER_HOUR = 1000 * 60 * 60;
 
-    // 3. Toplam kazancı hesapla
-    // (Geçen Milisaniye * Milisaniye Başına Kâr)
-    const pendingRocks = elapsedMilliseconds * profitPerMillisecond;
+    // 2. Toplam kuruş kazancını hesapla
+    const pendingCents =
+      (totalProfitPerHourInCents / MS_PER_HOUR) * elapsedMilliseconds;
 
-    // 4. Kazancı tam sayıya yuvarla
-    return Math.floor(pendingRocks);
+    // 3. En yakın tam kuruşa yuvarla (Örn: 133.54 -> 134)
+    // Bu, veritabanına eklenecek tam sayı değeridir.
+    return Math.round(pendingCents);
   }
 
   async loading(_id: string, user: CreateUserDto, initData: string) {
     try {
-      console.log('Loading service called for user:', _id);
-      const [hiltis, miners, level1Miner, level1Hilti, existingUser] =
-        await Promise.all([
-          // Hiltis
-          this.hiltiModel.find().lean().exec(),
-          // Miners
-          this.minerModel.find().lean().exec(),
-          // Level 1 Miner
-          this.minerModel.findById(EMinerLevel.LEVEL_1).lean().exec(),
-          // Level 1 Hilti
-          this.hiltiModel.findById(EHiltiLevel.LEVEL_1).lean().exec(),
-          // Existing User
-          this.userModel
-            .findById(_id)
-            .populate('miner_data.miner')
-            .populate('hilti_data.hilti')
-            .exec(),
-        ]);
-      console.log('hiltis', hiltis);
-      console.log('level1Miner', level1Miner);
-      console.log('level1Hilti', level1Hilti);
+      const [
+        premium_market_item,
+        hiltis,
+        miners,
+        level1Miner,
+        level1Hilti,
+        existingUser,
+      ] = await Promise.all([
+        // Premium market item
+        this.marketItemModel
+          .findOne(
+            { type: EMarketItemType.PREMIUM },
+            { stars_price: 1, ton_price: 1, _id: 0 },
+          )
+          .lean()
+          .exec(),
+        // Hiltis
+        this.hiltiModel.find().lean().exec(),
+        // Miners
+        this.minerModel.find().lean().exec(),
+        // Level 1 Miner
+        this.minerModel.findById(EMinerLevel.LEVEL_1).lean().exec(),
+        // Level 1 Hilti
+        this.hiltiModel.findById(EHiltiLevel.LEVEL_1).lean().exec(),
+        // Existing User
+        this.userModel
+          .findById(_id)
+          .populate('miner_data.miner')
+          .populate('hilti_data.hilti')
+          .exec(),
+      ]);
+      console.log('premium_market_item', premium_market_item);
       if (!level1Miner || !level1Hilti) {
         throw new Error('LEVEL_1 miner or hilti not found in database');
       }
 
       //? Create new user if not exists
       if (!existingUser) {
-        // Create new user
-        const newUser = await this.userModel.create({
-          _id,
-          telegram_data: user.telegram_data,
-          balance_data: {},
-          payment_data: {},
-          airdrop_data: {},
-          ad_data: {},
-          miner_data: {
-            miner: level1Miner._id,
-            last_mine: new Date(),
-          },
-          hilti_data: {
-            hilti: level1Hilti._id,
-          },
-          boosters: [],
-          is_premium: false,
-          invited_by: null,
-          invite_count: 0,
-          created_at: new Date(),
-          last_online: new Date(),
-        });
-
-        // Populate and return new user
-        const populatedUser = await this.userModel
-          .findById(_id)
-          .populate('miner_data.miner')
-          .populate('hilti_data.hilti')
-          .exec();
-
-        if (!populatedUser) {
-          throw new Error('Failed to create new user');
-        }
-
-        const mergedAchivements =
-          this.userAchivementService.returnMergedAchivements(populatedUser);
-
-        const nextMineTime = new Date(
-          newUser.miner_data.last_mine.getTime() + this.MINING_COOLDOWN_MS,
-        );
-        console.log('New user created:', _id);
-        return {
-          user: populatedUser,
+        const newUser = await this.saveNewUser(
+          user,
+          initData,
           hiltis,
           miners,
-          achievements: mergedAchivements,
-          mine_claim: {
-            success: true,
-            claimed_reward: 0,
-            reward_type: level1Miner.reward_type,
-            periods_claimed: 0,
-            last_mine: newUser.miner_data.last_mine,
-            next_mine: nextMineTime,
-            mining_cooldown_ms: this.MINING_COOLDOWN_MS,
-            message: 'NEW_USER',
-          },
-          message: 'User created successfully',
-        };
+          level1Miner,
+          level1Hilti,
+          premium_market_item as MarketItemDocument,
+        );
+        return newUser;
       }
       //? New user creation end
 
@@ -199,6 +172,10 @@ export class UserService {
       const mergedAchivements =
         this.userAchivementService.returnMergedAchivements(updatedUser!);
 
+      const mergedTasks = await this.taskService.returnMergedTasks(
+        updatedUser!,
+      );
+      console.log('mergedTasks for client:', mergedTasks);
       const minerData = await this.minerService.calculateMinerData(
         {
           miner: updatedUser.miner_data.miner as unknown as MinerDocument,
@@ -212,6 +189,10 @@ export class UserService {
       return {
         user: {
           ...updatedUser.toObject(),
+          airdrop_data: {
+            ...updatedUser.toObject().airdrop_data,
+            rock_coins: updatedUser.airdrop_data.rock_coins / 100,
+          },
           miner_data: {
             ...updatedUser.toObject().miner_data,
             max_periods: minerData.max_periods,
@@ -222,6 +203,9 @@ export class UserService {
         hiltis,
         miners,
         achievements: mergedAchivements,
+        tasks: mergedTasks,
+        premium_market_item,
+        daily_reward: DAILY_REWARD,
         message: 'User updated successfully',
       };
     } catch (error) {
@@ -230,6 +214,164 @@ export class UserService {
     }
   }
 
+  async saveNewUser(
+    user: CreateUserDto,
+    initData: string,
+    hiltis: Hilti[],
+    miners: Miner[],
+    level1Miner: Miner,
+    level1Hilti: Hilti,
+    premium_market_item: MarketItemDocument,
+  ) {
+    try {
+      const parsedData = new URLSearchParams(initData);
+      const user_ = JSON.parse(parsedData.get('user') || '{}');
+      const telegram_id = user_.id.toString();
+      const inviter_id = parsedData.get('start_param')?.toString() || null;
+
+      console.log('telegram_id', telegram_id);
+      console.log('inviter_id', inviter_id);
+      console.log('user_', user);
+      console.log('parsedData', parsedData);
+
+      const newUser = await this.userModel.create({
+        _id: telegram_id,
+        telegram_data: user.telegram_data,
+        balance_data: {},
+        payment_data: {},
+        airdrop_data: {},
+        ad_data: {},
+        miner_data: {
+          miner: level1Miner._id,
+          last_mine: new Date(),
+        },
+        hilti_data: {
+          hilti: level1Hilti._id,
+        },
+        boosters: [],
+        is_premium: false,
+        invited_by: inviter_id || null,
+        invite_count: 0,
+        created_at: new Date(),
+        last_online: new Date(),
+      });
+
+      // Populate and return new user
+      const populatedUser = await this.userModel
+        .findById(telegram_id)
+        .populate('miner_data.miner')
+        .populate('hilti_data.hilti')
+        .exec();
+
+      if (!populatedUser) {
+        throw new Error('Failed to create new user');
+      }
+
+      const mergedAchivements =
+        this.userAchivementService.returnMergedAchivements(populatedUser);
+
+      const mergedTasks =
+        await this.taskService.returnMergedTasks(populatedUser);
+      console.log('mergedTasks for client:', mergedTasks);
+
+      const minerData = await this.minerService.calculateMinerData(
+        {
+          miner: populatedUser.miner_data.miner as unknown as MinerDocument,
+          last_mine: populatedUser.miner_data.last_mine,
+        },
+        populatedUser.is_premium,
+        populatedUser.is_auto_mining,
+      );
+      if (inviter_id && inviter_id !== telegram_id) {
+        await this.handleInviter(
+          inviter_id,
+          telegram_id,
+          user.telegram_data.username || user.telegram_data.first_name,
+        );
+      }
+      console.log('New user created:', telegram_id);
+      return {
+        user: {
+          ...populatedUser.toObject(),
+          miner_data: {
+            ...populatedUser.toObject().miner_data,
+            max_periods: minerData.max_periods,
+            claimable_periods: minerData.claimable_periods,
+            next_mine: minerData.next_mine,
+          },
+        },
+        hiltis,
+        miners,
+        achievements: mergedAchivements,
+        daily_reward: DAILY_REWARD,
+        tasks: mergedTasks,
+        premium_market_item,
+        message: 'User created successfully',
+      };
+    } catch (error) {
+      console.error('Error in saveNewUser service:', error);
+      throw error;
+    }
+  }
+  async handleInviter(
+    inviter_id: string,
+    new_user_telegram_id: string, // New parameter
+    new_user_username: string, // New parameter
+  ): Promise<void> {
+    try {
+      // 1. Atomically increment the invite_count and get the updated user
+      const inviter = await this.userModel.findByIdAndUpdate(
+        inviter_id,
+        {
+          $inc: { invite_count: 1, weekly_invite_count: 1 },
+        },
+        { new: true, projection: { invite_count: 1, weekly_invite_count: 1 } }, // 'new: true' returns the document *after* the update
+      );
+
+      console.log('inviter', inviter);
+      // If inviter doesn't exist (e.g., deleted account), stop.
+      if (!inviter) {
+        return;
+      }
+
+      // 2. Get the new total invite count
+      const totalInvites = inviter.invite_count;
+      const weeklyInvites = inviter.weekly_invite_count;
+      // 3. Escape the new user's name for MarkdownV2
+      // This prevents errors if the name has characters like '.', '(', '!', etc.
+      // (Assuming 'escapeTextForMarkdownV2' is in your HelpersService)
+      const escapedFirstName =
+        this.helpersService.safeMarkdown(new_user_username);
+
+      // 4. Create the MarkdownV2 message
+      // Note: We must escape special characters like '!', '.', '(', ')'
+      const message = [
+        this.helpersService.safeMarkdown('✨ New Invite!'),
+        '',
+        this.helpersService.safeMarkdown(
+          'A new user just joined using your invite link 🤝',
+        ),
+        '',
+        `👤 *User:* [@${escapedFirstName}](tg://user?id=${new_user_telegram_id})`,
+        `📈 *Total Invites:* \`${totalInvites}\``,
+        `📈 *Weekly Invites:* \`${weeklyInvites}\``,
+        '',
+        this.helpersService.safeMarkdown('Thanks for growing our community 🌱'),
+      ].join('\n');
+
+      // 5. Send the notification
+      await this.botService.sendNotificationToUser(
+        Number(inviter_id),
+        message, // Send the new formatted message
+      );
+    } catch (error) {
+      // IMPORTANT: We only log the error.
+      // We do NOT 'throw error' here.
+      // If sending the notification fails (e.g., bot blocked),
+      // it should NOT stop the new user from logging in.
+      console.error('Error in handleInviter service:', error);
+    }
+  }
   async getBoosters() {
     try {
       const boosters = await this.boosterModel.find();
@@ -239,86 +381,18 @@ export class UserService {
       throw error;
     }
   }
-
-  /**
-   * Webhook endpoint for ad providers (Adsgram/AdExtra)
-   * Called by ad provider's server when user completes an ad
-   * @param user_id - User's Telegram ID
-   * @param token - Security token to verify request authenticity
-   * @returns Success status
-   */
-  async adRewardWebhook(user_id: string, token: string, provider: string) {
-    try {
-      // Validate inputs
-      if (!user_id) {
-        throw new Error('user_id is required');
-      }
-
-      if (!token) {
-        throw new Error('token is required');
-      }
-
-      // Verify token (use env variable in production)
-      const WEBHOOK_TOKEN =
-        process.env.AD_WEBHOOK_TOKEN || 'meme_rock_ad_secret_2024';
-
-      if (token !== WEBHOOK_TOKEN) {
-        console.error(`❌ Invalid token attempt for user ${user_id}`);
-        throw new Error('Invalid token');
-      }
-      console.log(
-        'Ad reward webhook received for user:',
-        user_id,
-        'provider:',
-        provider,
-      );
-      const DUST_REWARD = 5;
-
-      // Atomic update to prevent race conditions
-      const updatedUser = await this.userModel
-        .findByIdAndUpdate(
-          user_id,
-          {
-            $inc: { 'balance_data.dust': DUST_REWARD },
-          },
-          { new: true },
-        )
-        .select('_id balance_data.dust')
-        .lean()
-        .exec();
-
-      if (!updatedUser) {
-        console.error(`❌ User not found: ${user_id}`);
-        throw new Error('User not found');
-      }
-
-      console.log(
-        `✅ Ad reward webhook: User ${user_id} received ${DUST_REWARD} dust (new balance: ${updatedUser.balance_data.dust})`,
-      );
-
-      return {
-        success: true,
-        message: 'Reward processed successfully',
-      };
-    } catch (error) {
-      console.error('❌ Ad reward webhook error:', error);
-      throw error;
-    }
-  }
-
-  async getBalanceAfterAdReward(user_id: string) {
+  async isPremium(user_id: string): Promise<boolean> {
     try {
       const user = await this.userModel
-        .findById(user_id)
-        .select('balance_data.dust')
+        .findOne({ _id: user_id, is_premium: true })
         .lean()
         .exec();
       if (!user) {
-        throw new Error('User not found');
+        return false;
       }
-      return user.balance_data.dust;
+      return true;
     } catch (error) {
-      console.error('Error in getBalanceAfterAdReward service:', error);
+      console.error('Error in isPremium service:', error);
       throw error;
     }
   }
@@ -639,6 +713,20 @@ export class UserService {
   //! User Invite
   async handleInvite(initData: string) {
     try {
+    } catch (error) {}
+  }
+
+  async getBalanceData(user_id: string) {
+    try {
+      const user = await this.userModel
+        .findById(user_id)
+        .select('balance_data')
+        .lean()
+        .exec();
+      if (!user) {
+        throw new NotFoundException('USER_NOT_FOUND');
+      }
+      return user.balance_data;
     } catch (error) {}
   }
 }

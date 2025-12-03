@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Lock, ArrowUp, CheckCircle } from "lucide-react";
 import { IHiltiDetail } from "../../types";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface HiltiUpgradeButtonProps {
   selectedHilti: IHiltiDetail;
@@ -62,14 +63,6 @@ export const HiltiUpgradeButton = ({
             <ArrowUp className="w-5 h-5" />
             Upgrade to Level {selectedHiltiLevel + 1}
           </h3>
-          {canUpgrade && isCurrentLevel && (
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
-            >
-              <CheckCircle className="w-6 h-6 text-green-400" />
-            </motion.div>
-          )}
         </div>
 
         {/* Requirements List */}
@@ -97,15 +90,15 @@ export const HiltiUpgradeButton = ({
                   {hasEnoughStone ? (
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   ) : (
-                    <img
-                      src="/stone.svg"
-                      alt="Stone"
-                      className={`w-6 h-6 ${
-                        hasEnoughStone
-                          ? "drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]"
-                          : "drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]"
-                      }`}
-                    />
+                    <div
+                      className={`w-6 h-6 flex items-center justify-center rounded-full shadow-glow-white`}
+                    >
+                      <img
+                        src="/stone.svg"
+                        alt="Stone"
+                        className="w-full h-full"
+                      />
+                    </div>
                   )}
                 </div>
                 <div>
@@ -122,11 +115,11 @@ export const HiltiUpgradeButton = ({
                         hasEnoughStone ? "text-green-400" : "text-red-400"
                       }`}
                     >
-                      {userStoneBalance.toLocaleString()}
+                      {formatInteger(userStoneBalance)}
                     </span>
                     <span className="text-gray-500">/</span>
                     <span className="text-cyan-400">
-                      {requiredStone.toLocaleString()}
+                      {formatInteger(requiredStone)}
                     </span>
                   </p>
                 </div>
@@ -188,15 +181,7 @@ export const HiltiUpgradeButton = ({
                   {hasEnoughProfitPerHour ? (
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   ) : (
-                    <img
-                      src="/rock.svg"
-                      alt="Rock"
-                      className={`w-6 h-6 ${
-                        hasEnoughProfitPerHour
-                          ? "drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]"
-                          : "drop-shadow-[0_0_4px_rgba(168,85,247,0.5)]"
-                      }`}
-                    />
+                    <img src="/rock.svg" alt="Rock" className="w-full h-full" />
                   )}
                 </div>
                 <div>
@@ -215,11 +200,11 @@ export const HiltiUpgradeButton = ({
                           : "text-red-400"
                       }`}
                     >
-                      {userProfitPerHour.toLocaleString()}
+                      {formatInteger(userProfitPerHour)}
                     </span>
                     <span className="text-gray-500">/</span>
                     <span className="text-purple-400">
-                      {requiredProfitPerHour.toLocaleString()}
+                      {formatInteger(requiredProfitPerHour)}
                     </span>
                   </p>
                 </div>
@@ -279,13 +264,12 @@ export const HiltiUpgradeButton = ({
         <motion.button
           onClick={onUpgrade}
           disabled={isUpgrading || !canUpgrade}
-          whileHover={canUpgrade && !isUpgrading ? { scale: 1.02 } : {}}
           whileTap={canUpgrade && !isUpgrading ? { scale: 0.98 } : {}}
           className={`w-full px-6 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 relative overflow-hidden ${
             isUpgrading
               ? "bg-gray-800 text-gray-500 border-2 border-gray-700 cursor-not-allowed"
               : canUpgrade
-              ? "bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white border-2 border-cyan-400 shadow-lg shadow-cyan-500/50"
+              ? "bg-gradient-to-r bg-cyan-700 hover:cursor-pointer hover:bg-cyan-600 text-white border-2 border-cyan-400 shadow-lg shadow-cyan-500/50"
               : "bg-gray-800 text-gray-500 border-2 border-gray-700 cursor-not-allowed"
           }`}
         >
