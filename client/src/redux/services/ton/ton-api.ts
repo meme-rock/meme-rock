@@ -4,7 +4,7 @@ import { TransactionResponse } from "./responses";
 
 export const tonApi = createApi({
   reducerPath: "tonApi",
-  baseQuery: initDataHeader(`${import.meta.env.VITE_API_URL}/ton`),
+  baseQuery: initDataHeader(`${import.meta.env.VITE_TON_URL}/ton`),
   endpoints: (builder) => ({
     purchaseStonesWithTon: builder.mutation<
       TransactionResponse,
