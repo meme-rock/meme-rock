@@ -39,7 +39,7 @@ export const ProfileCard = ({
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl blur opacity-40 group-hover:opacity-60 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl blur opacity-40" />
               <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-950 flex items-center justify-center">
                 {telegramData?.photo_url ? (
                   <img
@@ -65,13 +65,9 @@ export const ProfileCard = ({
                 {telegramData?.username || "Explorer"}
               </h2>
               <div className="flex items-center gap-2 mt-1">
-                {isPremium ? (
+                {isPremium && (
                   <span className="text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/20 px-2 py-0.5 rounded tracking-wide uppercase">
-                    Premium User
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold text-slate-500 bg-slate-800/50 border border-slate-700/50 px-2 py-0.5 rounded tracking-wide uppercase">
-                    Free Plan
+                    Premium
                   </span>
                 )}
               </div>
