@@ -28,62 +28,65 @@ export const RockCounter = () => {
   }, [user.airdrop_data?.profit_per_hour, hilti_data.current_hilti]);
 
   return (
-    <div className="relative w-full px-2">
-      {/* Main Container */}
+    <div className="relative w-full px-4 mt-4 mb-6 z-10">
+      {/* 1. Arkadaki Sabit Işık (Ambient Glow) 
+          Animasyonsuz, sadece derinlik katar. */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-24 bg-cyan-500/20 blur-[60px] rounded-full pointer-events-none" />
 
-      {/* Main Card */}
-      <div className="relative bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-2 border-blue-500/30 rounded-3xl overflow-hidden">
-        {/* Top gradient bar */}
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500" />
-
-        {/* Content */}
-        <div className="px-6 py-8">
-          {/* Rock Display */}
-          <div className="flex items-center justify-center gap-4 mb-4">
+      {/* 2. Ana Kart (Glass Effect) */}
+      <div className="relative bg-slate-900/60 backdrop-blur-md border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+        <div className="flex flex-col items-center justify-center py-6 px-4 relative">
+          {/* Label: Total Balance */}
+          <span className="text-[12px] uppercase tracking-[0.2em] text-blue-500 font-bold mb-1">
+            AIRDROP
+          </span>
+          <div className="flex items-center justify-center gap-3 relative z-10">
             {/* Rock Icon */}
-            <div className="relative flex-shrink-0">
+            <div className="relative">
+              {/* İkon Arkası Hafif Parlama */}
+              <div className="absolute inset-0 bg-white/10 blur-xl rounded-full" />
               <img
                 src="/rock.svg"
                 alt="Rock"
-                className="relative w-16 h-16 object-contain"
+                className="relative w-14 h-14 object-contain drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]"
               />
             </div>
 
-            {/* Number Display */}
-            <div className="flex flex-col items-center">
-              <div className="h-14 flex items-center justify-center">
-                <AnimatedNumber
-                  value={displayRocks}
-                  decimals={2}
-                  className={`text-white ${fontSizeClass} font-black tracking-tight whitespace-nowrap bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent`}
-                />
-              </div>
+            {/* Sayı Değeri */}
+            <div className="h-16 flex items-center">
+              <AnimatedNumber
+                value={displayRocks}
+                decimals={2}
+                className={`text-white ${fontSizeClass} font-black tracking-tighter whitespace-nowrap drop-shadow-md`}
+              />
             </div>
           </div>
 
-          {/* Profit Per Hour section */}
+          {/* PROFIT KAPSÜLÜ (Alt Kısım) */}
+          <div className="mt-3">
+            <div className="flex items-center gap-3 bg-slate-950/40 border border-white/5 rounded-full pl-1.5 pr-4 py-1.5 shadow-inner">
+              {/* Yeşil İkon Kutucuğu */}
+              <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <img src="/rock.svg" alt="rock" className="w-6 h-6" />
+              </div>
 
-          <div className="flex items-center justify-center gap-2 pt-4 border-t border-blue-500/10">
-            <span className="text-xs text-slate-400">Profit/Hour:</span>
-
-            <div className="flex items-center gap-1">
-              <img
-                src="/rock.svg"
-                alt="Rock"
-                className="w-5 h-5 object-contain"
-              />
-              <span className="text-cyan-400 font-bold text-sm">
-                +{formatNumber(totalProfitPerHour, 2)}
-              </span>
+              {/* Profit Text */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                  Profit/h
+                </span>
+                <div className="w-[1px] h-3 bg-white/10" /> {/* Ayraç */}
+                <span className="text-blue-400 font-bold text-sm font-mono tracking-wide">
+                  +{formatNumber(totalProfitPerHour, 2)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Corner decorations */}
-        <div className="absolute top-3 left-3 w-3 h-3 border-l-2 border-t-2 border-blue-400/40 rounded-tl-lg" />
-        <div className="absolute top-3 right-3 w-3 h-3 border-r-2 border-t-2 border-blue-400/40 rounded-tr-lg" />
-        <div className="absolute bottom-3 left-3 w-3 h-3 border-l-2 border-b-2 border-blue-400/40 rounded-bl-lg" />
-        <div className="absolute bottom-3 right-3 w-3 h-3 border-r-2 border-b-2 border-blue-400/40 rounded-br-lg" />
+        {/* Dekoratif Köşe Detayları (Sadece Görsel) */}
+        <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-cyan-900/10 to-transparent rounded-tr-full pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-blue-900/10 to-transparent rounded-tl-full pointer-events-none" />
       </div>
     </div>
   );
