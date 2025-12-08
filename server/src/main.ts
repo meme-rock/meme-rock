@@ -6,19 +6,18 @@ import { Telegraf } from 'telegraf';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // Trust proxy ayarı (IP adreslerini doğru almak için)
+  // Trust proxy ayarı
   app.getHttpAdapter().getInstance().set('trust proxy', true);
 
-  // CORS ayarlarını etkinleştir
+  // CORS ayarları
   app.enableCors({
-    origin: true, // Tüm origin'lere izin ver (development için)
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-telegram-init-data'],
   });
 
-  // Validation pipe ekle
+  // Validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,16 +25,28 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  const isWorker = process.env.APP_MODE === 'WORKER';
 
-  // Telegram Bot Webhook Setup
-  const bot = app.get<Telegraf>(getBotToken());
+  if (isWorker) {
+    console.log('🔧 WORKER MODE: Starting payment scheduler...');
+    // Worker sadece cron job'ları çalıştırır, HTTP dinlemez
+    await app.listen(process.env.PORT ?? 8081);
+    console.log('✅ Worker initialized - Scheduler is running');
+    console.log(`✅ Worker running on port ${process.env.PORT ?? 8081}`);
+  } else {
+    console.log('🚀 API MODE: Starting game server...');
 
-  // Express app'i al
-  app.use(
-    bot.webhookCallback(`/api/updates/${process.env.TELEGRAM_WEBHOOK_SECRET}`),
-  );
+    // Telegram Bot Webhook Setup
+    const bot = app.get<Telegraf>(getBotToken());
+    app.use(
+      bot.webhookCallback(
+        `/api/updates/${process.env.TELEGRAM_WEBHOOK_SECRET}`,
+      ),
+    );
 
-  await app.listen(process.env.PORT ?? 8080);
-  console.log(`Server running on port ${process.env.PORT ?? 8080}`);
+    await app.listen(process.env.PORT ?? 8080);
+    console.log(`✅ Server running on port ${process.env.PORT ?? 8080}`);
+  }
 }
+
 bootstrap();

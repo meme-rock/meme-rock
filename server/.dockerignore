@@ -1,0 +1,21 @@
+# Git dosyaları
+.git
+.gitignore
+
+# Bağımlılıklar (Bunları container içinde 'npm install' ile sıfırdan kuracağız)
+node_modules
+
+# Build dosyaları
+dist
+
+# Docker dosyaları
+Dockerfile
+.dockerignore
+
+# Environment dosyaları (Bunları docker-compose ile vereceğiz, içine gömmeyelim)
+.env
+.env.*
+
+# Loglar ve gereksizler
+npm-debug.log
+yarn-error.log

@@ -26,16 +26,6 @@ export const DailyRewardModal = ({
   onClaimReward,
 }: DailyRewardModalProps) => {
   const [claimDailyReward] = useClaimDailyRewardMutation();
-  // Modal açıldığında kullanıcının mevcut gününü seçili yap
-  // const [selectedDay, setSelectedDay] = useState(currentDay);
-
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     setSelectedDay(currentDay);
-  //   }
-  // }, [isOpen, currentDay]);
-
-  // Redux Selectors
   const isPremium = useSelector(
     (state: RootState) => state.user.is_premium,
     shallowEqual
@@ -81,12 +71,18 @@ export const DailyRewardModal = ({
   // 1. Eğer bugün ödül alındıysa -> Bir sonraki günü göster (currentDay + 1)
   // 2. Eğer streak bozulduysa (ve bugün alınmadıysa) -> 1. günü göster
   // 3. Normal durum -> currentDay
-  let effectiveDay = currentDay;
+  // Görüntülenecek gün:
+  // 1. Eğer hiç claim yoksa -> 1
+  // 2. Eğer streak bozulduysa -> 1
+  // 3. Aksi halde -> currentDay + 1 (10'dan sonra 1'e döner)
+  let effectiveDay = 1;
+  const hasClaimedBefore = !!dailyRewardData.last_claim_date;
 
-  if (isTodayClaimed) {
-    effectiveDay = currentDay + 1;
-  } else if (isBroken) {
+  if (!hasClaimedBefore || isBroken) {
     effectiveDay = 1;
+  } else {
+    effectiveDay = currentDay + 1;
+    if (effectiveDay > 10) effectiveDay = 1;
   }
 
   // Seçili gün artık her zaman effectiveDay
@@ -285,13 +281,21 @@ export const DailyRewardModal = ({
                     </button>
 
                     {!isPremium && !hasEnoughDust && (
-                      <p className="text-red-400 text-xs">
-                        Insufficient Dust ({dustCost - userDust} needed)
-                      </p>
+                      <div className="flex flex-col mt-1">
+                        {/* Hata Mesajı */}
+                        <p className="text-red-400 text-[12px]">
+                          Insufficient Dust ({dustCost - userDust} needed)
+                        </p>
+
+                        {/* Bilgilendirme Mesajı (Tıklanmaz, sadece yazı) */}
+                        <p className="text-yellow-500/80 text-[12px] mt-0.5">
+                          Watch Ads to earn Dust
+                        </p>
+                      </div>
                     )}
 
                     {!isPremium && (
-                      <div className="flex items-center justify-center gap-2 text-xs text-purple-400">
+                      <div className="flex items-center justify-center gap-2 text-[12px] text-purple-400">
                         <Crown className="w-3 h-3" />
                         <span>Premium members claim for free</span>
                       </div>

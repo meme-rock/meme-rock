@@ -1,7 +1,7 @@
-// bot.module.ts (DÜZELTİLMİŞ VE WEBHOOK UYUMLU VERSİYON)
+// bot.module.ts
 
 import { Module, forwardRef } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config'; // ConfigService eklendi
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { session } from 'telegraf';
@@ -13,50 +13,63 @@ import { HelpersModule } from 'src/helpers/helpers.module';
 import { BoosterModule } from 'src/booster/booster.module';
 import { MarketModule } from 'src/market/market.module';
 import { StarModule } from 'src/purchases/star/star.module';
+
+// Ortam değişkeni kontrolü
+const isWorker = process.env.APP_MODE === 'WORKER';
+
 @Module({
   imports: [
-    // ⚠️ ÖNEMLİ: ConfigService kullanmak için forRootAsync kullanıyoruz.
+    // 1. Telegraf Config (Burası standart kalıyor, sadece webhook ayarı dinamik)
     TelegrafModule.forRootAsync({
-      imports: [ConfigModule], // ConfigService'i kullanabilmek için ConfigModule'ü import et
+      imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Ortam değişkenlerinden gerekli değerleri çekin
         const token = configService.get<string>('TELEGRAM_BOT_TOKEN');
         const secret = configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
         const domain = configService.get<string>('TELEGRAM_WEBHOOK_DOMAIN');
-
-        // Güvenlik için, hookPath'i rastgele SECRET ile oluşturuyoruz
         const hookPath = `/api/updates/${secret}`;
 
-        // Eğer token veya domain yoksa hata fırlat (önlem)
         if (!token || !domain || !secret) {
-          throw new Error(
-            'TELEGRAM_BOT_TOKEN, DOMAIN veya SECRET ortam değişkenleri eksik!',
-          );
+          throw new Error('TELEGRAM Environment variables missing!');
         }
+
+        // Worker ise webhook kurma (passive mode)
+        const launchOptions = isWorker
+          ? false
+          : {
+              webhook: {
+                hookPath,
+                domain,
+                secretToken: secret,
+              },
+            };
 
         return {
           middlewares: [session()],
           token: token,
-          polling: false, // 🛑 Polling'i kapat
-          launchOptions: {
-            webhook: {
-              hookPath: hookPath, // NestJS'in dinleyeceği iç yol
-              domain: domain, // Telegram'a bildirilecek dış domain (HTTPS olmalı)
-              // Telegram'ın isteği yalnızca doğru gizli yoldan kabul etmesini sağla
-              secretToken: secret,
-            },
-          },
+          polling: false,
+          launchOptions: launchOptions,
         };
       },
-      inject: [ConfigService],
     }),
+
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     HelpersModule,
-    forwardRef(() => BoosterModule),
-    forwardRef(() => MarketModule),
-    forwardRef(() => StarModule),
+
+    ...(isWorker
+      ? []
+      : [
+          forwardRef(() => BoosterModule),
+          forwardRef(() => MarketModule),
+          forwardRef(() => StarModule),
+        ]),
   ],
-  providers: [BotController, BotService, BroadcastService],
+  providers: [
+    BotService,
+    BroadcastService,
+    // Eğer Worker ise yükleme, API ise yükle:
+    ...(isWorker ? [] : [BotController]),
+  ],
   exports: [BotService],
 })
 export class BotModule {}
