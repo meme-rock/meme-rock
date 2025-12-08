@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  # 1. API Servisi (Oyunun kendisi)
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: meme-rock-api
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./server/.env.local
+    environment:
+      - APP_MODE=API
+      - PORT=8080
+      - MONGODB_URI=mongodb://host.docker.internal:27017/meme-rock
+      - REDIS_HOST=host.docker.internal
+
+  # 2. Worker Servisi (Sadece Ödeme Kontrolü)
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: meme-rock-worker
+    restart: always
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./server/.env.local
+    environment:
+      - APP_MODE=WORKER
+      - PORT=8081
+      - MONGODB_URI=mongodb://host.docker.internal:27017/meme-rock
+      - REDIS_HOST=host.docker.internal

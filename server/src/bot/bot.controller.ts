@@ -49,7 +49,7 @@ export class BotController implements OnModuleInit {
 
   @On('pre_checkout_query')
   async onPreCheckout(@Ctx() ctx: Context) {
-    await ctx.answerPreCheckoutQuery(true); // ✅ doğru
+    await ctx.answerPreCheckoutQuery(true);
   }
 
   @On('successful_payment')
@@ -141,7 +141,7 @@ export class BotController implements OnModuleInit {
   @Start()
   async startCommand(@Ctx() ctx: Context) {
     ctx.reply(
-      `🎉 **Welcome to ROCK!**\n\n🎮 Press **Play** to dive into an ROCK Airdrop 🚀!\n\n📖 Tap Whitepaper to discover how it all works.`,
+      `**Welcome to ROCK!**\n\n🎮 Press **Play** to dive into an ROCK Airdrop 🚀!\n\n📖 Tap Whitepaper to discover how it all works.`,
       {
         parse_mode: 'Markdown',
         reply_markup: {

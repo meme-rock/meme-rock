@@ -1,14 +1,26 @@
 import { useState, useEffect } from "react";
 
-// Milisaniyeyi "00:00:00" formatına çevirir
+// Milisaniyeyi formatlar
+// Örnek: 1 günden fazlaysa -> "3D 05:20:10"
+// 1 günden azsa -> "05:20:10"
 const formatTime = (milliseconds: number) => {
+  if (milliseconds <= 0) return "00:00:00";
+
   const totalSeconds = Math.floor(milliseconds / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
+
+  const days = Math.floor(totalSeconds / (3600 * 24));
+  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
   const pad = (num: number) => num.toString().padStart(2, "0");
 
+  // Eğer 1 gün veya daha fazlası varsa "xD HH:MM:SS" formatı
+  if (days > 0) {
+    return `${days}D ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  // 24 saatten azsa standart "HH:MM:SS" formatı
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
@@ -19,40 +31,39 @@ const formatTime = (milliseconds: number) => {
 export const useCountdown = (targetDateISO: string | Date) => {
   const targetTime = new Date(targetDateISO).getTime();
 
-  const [remainingMs, setRemainingMs] = useState(
-    targetTime - new Date().getTime()
-  );
+  // İlk renderda hemen hesapla
+  const calculateRemaining = () => {
+    const now = new Date().getTime();
+    const diff = targetTime - now;
+    return diff > 0 ? diff : 0;
+  };
+
+  const [remainingMs, setRemainingMs] = useState(calculateRemaining());
 
   useEffect(() => {
-    // targetDateISO değiştiğinde remainingMs'i yeniden hesapla
-    const newRemainingMs = targetTime - new Date().getTime();
-    setRemainingMs(newRemainingMs);
+    // targetDateISO değiştiğinde anında güncelle
+    setRemainingMs(calculateRemaining());
 
-    // Hedef tarih zaten geçmişse veya geçersizse sayacı başlatma
-    if (newRemainingMs <= 0) {
-      setRemainingMs(0);
-      return;
-    }
+    // Eğer süre zaten dolmuşsa interval başlatma
+    if (calculateRemaining() <= 0) return;
 
     const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const newRemainingMs = targetTime - now;
+      const newRemaining = calculateRemaining();
 
-      if (newRemainingMs <= 0) {
+      if (newRemaining <= 0) {
         clearInterval(interval);
         setRemainingMs(0);
       } else {
-        setRemainingMs(newRemainingMs);
+        setRemainingMs(newRemaining);
       }
-    }, 1000); // Her saniye güncelle
+    }, 1000);
 
-    // Component unmount olduğunda interval'ı temizle
     return () => clearInterval(interval);
-  }, [targetDateISO, targetTime]); // targetDateISO değiştiğinde sayacı yeniden başlat
+  }, [targetDateISO, targetTime]);
 
   return {
     isReady: remainingMs <= 0,
-    formattedTime: formatTime(remainingMs), // "00:01:15"
-    remainingMs: remainingMs, // 75000
+    formattedTime: formatTime(remainingMs),
+    remainingMs: remainingMs,
   };
 };

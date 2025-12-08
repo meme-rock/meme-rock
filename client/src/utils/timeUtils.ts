@@ -17,6 +17,35 @@ export const getNextResetTime = (): string => {
   return resetTime.toISOString();
 };
 
+export const getNextWeeklyResetTime = (): string => {
+  const now = new Date();
+  const resetTime = new Date(now);
+
+  // 1. Saati 08:00:00 UTC'ye sabitle
+  resetTime.setUTCHours(8, 0, 0, 0);
+
+  // 2. Bugünün haftanın kaçıncı günü olduğunu al (0: Pazar, 1: Pazartesi, ... 6: Cumartesi)
+  const currentDay = resetTime.getUTCDay();
+
+  // Hedef gün Pazartesi (1)
+  const targetDay = 1;
+  // 3. Bir sonraki Pazartesiye kaç gün kaldığını hesapla
+  // Formül: (HedefGün + 7 - ŞuAnkiGün) % 7
+  let daysUntilNextMonday = (targetDay + 7 - currentDay) % 7;
+
+  // 4. Özel Durum Kontrolü:
+  // Eğer daysUntilNextMonday 0 ise, bugün Pazartesi demektir.
+  // Ancak saat 08:00'i geçtiysek, bugünü değil "gelecek haftaki" Pazartesiyi seçmeliyiz.
+  if (daysUntilNextMonday === 0 && now.getTime() >= resetTime.getTime()) {
+    daysUntilNextMonday = 7;
+  }
+
+  // 5. Gerekli gün sayısını ekle
+  resetTime.setUTCDate(resetTime.getUTCDate() + daysUntilNextMonday);
+
+  return resetTime.toISOString();
+};
+
 /**
  * Checks if the reward has already been claimed today (after 08:00 UTC).
  * @param lastClaimDate ISO string of the last claim date.

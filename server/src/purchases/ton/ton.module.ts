@@ -24,7 +24,7 @@ import { HelpersModule } from 'src/helpers/helpers.module';
     ]),
     HelpersModule,
   ],
-  controllers: [TonController, TonScheduleController],
+  controllers: [TonScheduleController, TonController],
   providers: [TonService, TonScheduleService],
 })
 export class TonModule {}

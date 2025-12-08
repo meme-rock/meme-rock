@@ -14,6 +14,7 @@ import { RootState } from "./redux/store";
 import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
 import { TaskPage } from "./pages/TaskPage";
+import { LeaderBoardPage2 } from "./pages/LeaderBoardPage2";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -37,6 +38,7 @@ function AppContent() {
               element={<MarketPage stones={user.balance_data.stone} />}
             />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/leaderboard-2" element={<LeaderBoardPage2 />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </main>

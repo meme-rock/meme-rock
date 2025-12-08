@@ -32,21 +32,30 @@ export const PaymentButtons = ({
     return null;
   }
 
+  // Herhangi bir işlem varsa butonları disable etmek için genel kontrol
+  const isAnyActionInProgress = isStarLoading || isTonLoading || isProcessing;
+
   return (
     <div className="flex items-center gap-2">
       {/* STAR Payment Button */}
       {starOption && (
         <button
           onClick={onStarClick}
-          disabled={isStarLoading || isProcessing}
+          // Herhangi bir işlem varsa tıklamayı engelle
+          disabled={isAnyActionInProgress}
           className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 relative overflow-hidden group ${
-            isStarLoading || isProcessing
+            // Butonun sönükleşmesi için genel durumu (isAnyActionInProgress) kullanabiliriz
+            // VEYA sadece kendi loading durumunda sönükleşsin isterseniz burayı isStarLoading yapabilirsiniz.
+            // Genelde işlem varken diğer butonun da sönükleşmesi (disabled hissi) daha iyi bir UX sağlar.
+            isAnyActionInProgress
               ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-yellow-600 to-amber-600"
               : "bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-95"
           }`}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-          {isStarLoading || isProcessing ? (
+
+          {/* DÜZELTME BURADA: Görsel olarak dots göstermek için SADECE isStarLoading'e bakıyoruz */}
+          {isStarLoading ? (
             <div className="relative z-10 flex items-center gap-2">
               {/* Pulsing Star Icon */}
               <div className="relative">
@@ -74,7 +83,7 @@ export const PaymentButtons = ({
         </button>
       )}
 
-      {/* OR Separator - only show if both options exist */}
+      {/* OR Separator */}
       {tonOption && starOption && (
         <span className="text-gray-400 font-bold text-sm px-1">OR</span>
       )}
@@ -83,15 +92,18 @@ export const PaymentButtons = ({
       {tonOption && (
         <button
           onClick={onTonClick}
-          disabled={isTonLoading || isProcessing}
+          // Herhangi bir işlem varsa tıklamayı engelle
+          disabled={isAnyActionInProgress}
           className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 relative overflow-hidden group ${
-            isTonLoading || isProcessing
+            isAnyActionInProgress
               ? "opacity-50 cursor-not-allowed bg-gradient-to-r from-blue-600 to-blue-700"
               : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-95"
           }`}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-          {isTonLoading || isProcessing ? (
+
+          {/* DÜZELTME BURADA: Görsel olarak dots göstermek için SADECE isTonLoading'e bakıyoruz */}
+          {isTonLoading ? (
             <div className="relative z-10 flex items-center gap-2">
               {/* Pulsing TON Icon */}
               <div className="relative">
@@ -121,4 +133,3 @@ export const PaymentButtons = ({
     </div>
   );
 };
-

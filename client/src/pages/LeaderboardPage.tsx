@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import {
@@ -18,6 +18,8 @@ import {
   useGetWeeklyInvitesLeaderboardQuery,
 } from "../redux/services/ranks/ranks-api";
 import { formatNumber, formatInteger } from "../utils/formatNumber";
+import { getNextWeeklyResetTime } from "../utils/timeUtils";
+import { useCountdown } from "../hooks/useCountdown";
 
 type LeaderboardTab = "ranking" | "weekly";
 
@@ -55,23 +57,8 @@ export const LeaderboardPage = () => {
   });
 
   // Calculate time until weekly reset (every Monday 08:00 UTC)
-  const getTimeUntilReset = () => {
-    const now = new Date();
-    const nextMonday = new Date(now);
-    nextMonday.setUTCDate(
-      now.getUTCDate() + ((7 - now.getUTCDay() + 1) % 7 || 7)
-    );
-    nextMonday.setUTCHours(8, 0, 0, 0);
-
-    const diff = nextMonday.getTime() - now.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  };
+  const nextResetTime = useMemo(() => getNextWeeklyResetTime(), []);
+  const { formattedTime } = useCountdown(nextResetTime);
 
   const getRankColor = (rank: number) => {
     switch (rank) {
@@ -355,7 +342,7 @@ export const LeaderboardPage = () => {
                         Competition Resets In
                       </p>
                       <p className="text-2xl font-black bg-gradient-to-r from-purple-200 via-pink-200 to-purple-300 bg-clip-text text-transparent">
-                        {getTimeUntilReset()}
+                        {formattedTime}
                       </p>
                     </div>
                   </div>
