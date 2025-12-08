@@ -13,7 +13,7 @@ export const LeaderBoardPage2 = () => {
   return (
     <div className="relative min-h-screen bg-[#0a0a0f] pb-6">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-border">
+      <div className="top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-border">
         <div className="px-4 py-4">
           <TabSelector activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
