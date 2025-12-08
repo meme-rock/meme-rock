@@ -47,7 +47,7 @@ export const CardWeekly = ({ user }: WeeklyUserCardProps) => {
   const prize = getPrize(user.rank);
   return (
     <div
-      className={`bg-[#12121a] border border-border rounded-xl p-3 transition-all duration-200 hover:border-[#10b981]/30 ${
+      className={`bg-[#12121a] border border-border rounded-xl p-3 transition-all duration-200 ${
         user.rank <= 3 ? "border-[#10b981]/20" : ""
       }`}
     >
@@ -87,10 +87,10 @@ export const CardWeekly = ({ user }: WeeklyUserCardProps) => {
         {/* Prize Badge */}
         {prize && (
           <div className="flex-shrink-0 flex flex-col items-end">
-            <span className="text-sm font-bold text-[#a855f7]">
+            <span className="text-sm font-bold text-white">
               {formatInteger(prize)}
             </span>
-            <span className="text-[10px] text-[#252530]-[#f5f5f5]">STONE</span>
+            <img src="/stone.svg" alt="stone" className="w-8 h-8" />
           </div>
         )}
       </div>

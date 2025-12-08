@@ -55,9 +55,9 @@ export const CardGeneral = ({ user }: GeneralUserCardProps) => {
   return (
     <div
       key={user._id}
-      className={`bg-slate-900/80 backdrop-blur-md border rounded-xl p-3 transition-all duration-200 hover:border-purple-500/30 ${
+      className={`bg-slate-900/80 backdrop-blur-md border rounded-xl p-3 transition-all duration-200  ${
         isCurrentUser
-          ? "border-purple-500/50 bg-purple-500/5"
+          ? "border-green-500/50 bg-green-500/5"
           : "border-slate-800"
       }`}
     >
