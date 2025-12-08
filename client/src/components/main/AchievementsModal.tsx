@@ -1,9 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trophy, Award, ChevronRight } from "lucide-react";
+import {
+  X,
+  Trophy,
+  Award,
+  CheckCircle2,
+  Star,
+  Zap,
+  ChevronRight,
+} from "lucide-react";
 import { useSelector, shallowEqual } from "react-redux";
 import { useState, useMemo } from "react";
 import { RootState } from "../../redux/store";
 import { useClaimAchievementMutation } from "../../redux/services/user/user-api";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface AchievementsModalProps {
   isOpen: boolean;
@@ -43,28 +52,23 @@ export const AchievementsModal = ({
 
   const [claimAchievement] = useClaimAchievementMutation();
 
-  // Extract required count from ID (e.g., "Invite-5" -> 5)
   const getRequiredCount = (id: string): number => {
     const match = id.match(/\d+/);
     return match ? parseInt(match[0]) : 0;
   };
 
-  // Get achievement type from ID
   const getAchievementType = (id: string): "invite" | "ad" => {
     return id.startsWith("Invite") ? "invite" : "ad";
   };
 
-  // Get current progress
   const getCurrentProgress = (id: string) => {
     const type = getAchievementType(id);
     return type === "invite" ? inviteCount : adsWatched;
   };
 
-  // Filter and separate achievements
   const { availableAchievements, claimedAchievements } = useMemo(() => {
     let filtered = allAchievements;
 
-    // Filter by type
     if (filterType === "invite") {
       filtered = allAchievements.filter(
         (a) => getAchievementType(a.id) === "invite"
@@ -75,18 +79,15 @@ export const AchievementsModal = ({
       );
     }
 
-    // Separate claimed and available
     const claimed = filtered.filter((a) => a.is_claimed);
     const available = filtered.filter((a) => !a.is_claimed);
 
     return { availableAchievements: available, claimedAchievements: claimed };
   }, [allAchievements, filterType]);
 
-  // Get displayed achievements based on view type
   const displayedAchievements =
     viewType === "available" ? availableAchievements : claimedAchievements;
 
-  // Handle claim action
   const handleClaim = async (achievementId: string) => {
     if (!userId || claimingId) return;
 
@@ -96,11 +97,8 @@ export const AchievementsModal = ({
         user_id: userId,
         achievement_id: achievementId,
       }).unwrap();
-
-      console.log("Achievement claimed successfully:", achievementId);
     } catch (error: any) {
       console.error("Failed to claim achievement:", error);
-      alert(error?.data?.message || "Failed to claim achievement");
     } finally {
       setClaimingId(null);
     }
@@ -113,309 +111,258 @@ export const AchievementsModal = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 pb-20 overflow-y-auto"
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="relative bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-purple-500/30 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden my-auto"
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="bg-slate-950 border border-slate-800 rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Content */}
-            <div className="relative">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl">
-                    <Trophy className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
-                      Achievements
-                    </h2>
-                    <p className="text-purple-300/70 text-xs font-medium mt-0.5">
-                      Complete tasks and earn rewards
-                    </p>
-                  </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/20">
+                  <Trophy className="w-5 h-5 text-amber-500" />
                 </div>
-                <button
-                  onClick={onClose}
-                  className="group w-10 h-10 bg-slate-800/80 hover:bg-slate-700/80 rounded-xl flex items-center justify-center transition-all border border-slate-700/50"
-                >
-                  <X className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
-                </button>
-              </div>
-
-              {/* Stats Bar */}
-              <div className="px-6 py-4 bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-b border-slate-800/50">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-slate-400 mb-1">Total</p>
-                    <p className="text-xl font-bold text-white">
-                      {allAchievements.length}
-                    </p>
-                  </div>
-                  <div className="text-center border-x border-slate-700/50">
-                    <p className="text-xs text-slate-400 mb-1">Claimed</p>
-                    <p className="text-xl font-bold text-emerald-400">
-                      {claimedAchievements.length}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-slate-400 mb-1">Available</p>
-                    <p className="text-xl font-bold text-amber-400">
-                      {availableAchievements.length}
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white leading-tight">
+                    Achievements
+                  </h2>
+                  <p className="text-slate-400 text-xs">
+                    Completed:{" "}
+                    <span className="text-white font-bold">
+                      {claimedAchievements.length}/{allAchievements.length}
+                    </span>
+                  </p>
                 </div>
               </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* View Type Tabs */}
-              <div className="px-6 pt-4 flex gap-2">
+            {/* Scrollable Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-950">
+              {/* TABS (Available / Badges) */}
+              <div className="flex p-4 gap-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm z-20 border-b border-white/5">
                 <button
                   onClick={() => setViewType("available")}
-                  className={`flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all relative ${
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all relative ${
                     viewType === "available"
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                      : "bg-slate-800/30 text-slate-400 hover:bg-slate-800/50"
+                      ? "bg-slate-800 text-white shadow-lg"
+                      : "text-slate-500 hover:bg-slate-900"
                   }`}
                 >
-                  Available
+                  Active Missions
                   {availableAchievements.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="ml-2 bg-amber-500 text-black text-[10px] px-1.5 py-0.5 rounded-full">
                       {availableAchievements.length}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => setViewType("claimed")}
-                  className={`flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all relative ${
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                     viewType === "claimed"
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                      : "bg-slate-800/30 text-slate-400 hover:bg-slate-800/50"
+                      ? "bg-emerald-900/20 text-emerald-400 border border-emerald-500/20"
+                      : "text-slate-500 hover:bg-slate-900"
                   }`}
                 >
-                  <Award className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                  My Badges
+                  <Award className="w-4 h-4" />
+                  Completed
                 </button>
               </div>
 
-              {/* Filter Buttons */}
-              <div className="px-6 pt-3 pb-4 flex gap-2">
-                <button
-                  onClick={() => setFilterType("all")}
-                  className={`flex-1 px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
-                    filterType === "all"
-                      ? "bg-slate-700 text-white"
-                      : "bg-slate-800/30 text-slate-500 hover:bg-slate-800/50"
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilterType("invite")}
-                  className={`flex-1 px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
-                    filterType === "invite"
-                      ? "bg-slate-700 text-white"
-                      : "bg-slate-800/30 text-slate-500 hover:bg-slate-800/50"
-                  }`}
-                >
-                  Invites
-                </button>
-                <button
-                  onClick={() => setFilterType("ad")}
-                  className={`flex-1 px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
-                    filterType === "ad"
-                      ? "bg-slate-700 text-white"
-                      : "bg-slate-800/30 text-slate-500 hover:bg-slate-800/50"
-                  }`}
-                >
-                  Ads
-                </button>
+              {/* FILTERS (All / Invite / Ads) */}
+              <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+                {["all", "invite", "ad"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setFilterType(type as FilterType)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-medium capitalize border transition-all whitespace-nowrap ${
+                      filterType === type
+                        ? "bg-slate-800 text-white border-slate-600"
+                        : "bg-transparent text-slate-500 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    {type === "all"
+                      ? "All Tasks"
+                      : type === "ad"
+                      ? "Watch Ads"
+                      : "Invites"}
+                  </button>
+                ))}
               </div>
 
-              {/* Achievements List */}
-              <div className="px-6 pb-6 max-h-[500px] overflow-y-auto">
-                <div className="space-y-3">
-                  {displayedAchievements.map((achievement) => {
-                    const requiredCount = getRequiredCount(achievement.id);
-                    const currentProgress = getCurrentProgress(achievement.id);
-                    const progressPercentage = Math.min(
-                      (currentProgress / requiredCount) * 100,
-                      100
-                    );
-                    const isCompleted = currentProgress >= requiredCount;
+              {/* LIST */}
+              <div className="p-4 space-y-3 pb-20">
+                {displayedAchievements.map((achievement) => {
+                  const requiredCount = getRequiredCount(achievement.id);
+                  const currentProgress = getCurrentProgress(achievement.id);
+                  const progressPercentage = Math.min(
+                    (currentProgress / requiredCount) * 100,
+                    100
+                  );
+                  const isCompleted = currentProgress >= requiredCount;
+                  const canClaim = isCompleted && !achievement.is_claimed;
 
-                    return (
-                      <motion.div
-                        key={achievement.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={`relative rounded-xl border-2 overflow-hidden transition-all ${
-                          achievement.is_claimed
-                            ? "bg-gradient-to-r from-emerald-900/30 to-green-900/30 border-emerald-500/40"
-                            : isCompleted
-                            ? "bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-amber-500/40"
-                            : "bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/40"
-                        }`}
-                      >
-                        {/* Progress Bar Background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
-                          <div
-                            className={`h-full transition-all duration-500 ${
-                              achievement.is_claimed
-                                ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20"
-                                : "bg-gradient-to-r from-purple-500/20 to-pink-500/20"
-                            }`}
-                            style={{ width: `${progressPercentage}%` }}
-                          />
-                        </div>
+                  return (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      key={achievement.id}
+                      className={`relative rounded-2xl border overflow-hidden transition-all ${
+                        achievement.is_claimed
+                          ? "bg-slate-900/40 border-slate-800 opacity-60 grayscale-[0.5]" // Alınmış: Sönük
+                          : canClaim
+                          ? "bg-slate-900 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]" // Alınabilir: Parlak
+                          : "bg-slate-900 border-slate-800" // Normal
+                      }`}
+                    >
+                      {/* Can Claim Glow Effect */}
+                      {canClaim && (
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[40px] rounded-full pointer-events-none" />
+                      )}
 
-                        {/* Content */}
-                        <div className="relative p-4">
-                          {/* Header with Title and Badge */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
+                      <div className="p-4 relative z-10">
+                        <div className="flex justify-between items-start mb-2">
+                          {/* Icon & Title */}
+                          <div className="flex gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                                achievement.is_claimed
+                                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                                  : canClaim
+                                  ? "bg-amber-500/20 border-amber-500/30 text-amber-500"
+                                  : "bg-slate-800 border-slate-700 text-slate-500"
+                              }`}
+                            >
+                              {getAchievementType(achievement.id) ===
+                              "invite" ? (
+                                <Star className="w-5 h-5" />
+                              ) : (
+                                <Zap className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div>
                               <h3
-                                className={`font-bold text-base ${
+                                className={`text-sm font-bold ${
                                   achievement.is_claimed
-                                    ? "text-emerald-300"
-                                    : isCompleted
-                                    ? "text-amber-300"
+                                    ? "text-emerald-400"
+                                    : canClaim
+                                    ? "text-white"
                                     : "text-slate-300"
                                 }`}
                               >
                                 {achievement.title}
                               </h3>
-                              {achievement.is_claimed && (
-                                <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-bold text-emerald-300">
-                                  CLAIMED
-                                </span>
-                              )}
+                              <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                                {achievement.description}
+                              </p>
                             </div>
-
-                            {/* Right Icon */}
-                            {achievement.is_claimed ? (
-                              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border-2 border-emerald-500/40 flex items-center justify-center flex-shrink-0">
-                                <Award className="w-5 h-5 text-emerald-400" />
-                              </div>
-                            ) : (
-                              !isCompleted && (
-                                <div className="w-10 h-10 rounded-xl bg-slate-700/30 border-2 border-slate-600/30 flex items-center justify-center flex-shrink-0">
-                                  <Trophy className="w-5 h-5 text-slate-500" />
-                                </div>
-                              )
-                            )}
                           </div>
 
-                          {/* Description */}
-                          <p
-                            className={`text-sm mb-3 ${
-                              achievement.is_claimed
-                                ? "text-emerald-400/70"
-                                : "text-slate-400"
-                            }`}
-                          >
-                            {achievement.description}
-                          </p>
-
-                          {/* Progress Info */}
-                          <div className="flex items-center gap-4 mb-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-xs font-bold ${
-                                  achievement.is_claimed
-                                    ? "text-emerald-300"
-                                    : isCompleted
-                                    ? "text-amber-300"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                {Math.min(currentProgress, requiredCount)} /{" "}
-                                {requiredCount}
-                              </span>
-                              <div className="h-1.5 w-24 bg-slate-900/50 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full transition-all duration-300 ${
-                                    achievement.is_claimed
-                                      ? "bg-gradient-to-r from-emerald-400 to-green-400"
-                                      : isCompleted
-                                      ? "bg-gradient-to-r from-amber-400 to-orange-400"
-                                      : "bg-gradient-to-r from-slate-500 to-slate-600"
-                                  }`}
-                                  style={{ width: `${progressPercentage}%` }}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
+                          {/* Reward Badge */}
+                          <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-1 bg-slate-950/50 px-2 py-1 rounded-lg border border-slate-800">
                               <img
                                 src="/stone.svg"
                                 alt="Stone"
-                                className="w-4 h-4"
+                                className="w-3.5 h-3.5"
                               />
-                              <span
-                                className={`text-sm font-bold ${
-                                  achievement.is_claimed
-                                    ? "text-emerald-300"
-                                    : "text-amber-400"
-                                }`}
-                              >
-                                +{achievement.stone_reward}
+                              <span className="text-xs font-bold text-white">
+                                +{formatInteger(achievement.stone_reward!)}
                               </span>
                             </div>
                           </div>
-
-                          {/* Claim Button - Bottom */}
-                          {!achievement.is_claimed && isCompleted && (
-                            <button
-                              onClick={() => handleClaim(achievement.id)}
-                              disabled={claimingId === achievement.id}
-                              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-green-500 active:from-emerald-600 active:to-green-600 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-none shadow-lg flex items-center justify-center gap-2"
-                            >
-                              {claimingId === achievement.id ? (
-                                "Claiming..."
-                              ) : (
-                                <>
-                                  Claim Reward
-                                  <ChevronRight className="w-4 h-4" />
-                                </>
-                              )}
-                            </button>
-                          )}
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+
+                        {/* Progress Bar Area */}
+                        <div className="mt-3">
+                          <div className="flex justify-between text-[10px] font-medium mb-1.5">
+                            <span
+                              className={
+                                canClaim ? "text-amber-400" : "text-slate-500"
+                              }
+                            >
+                              {canClaim ? "Task Completed!" : "Progress"}
+                            </span>
+                            <span className="text-slate-400">
+                              {Math.min(currentProgress, requiredCount)} /{" "}
+                              {requiredCount}
+                            </span>
+                          </div>
+
+                          <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800/50">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                achievement.is_claimed
+                                  ? "bg-emerald-500"
+                                  : canClaim
+                                  ? "bg-amber-500"
+                                  : "bg-slate-600"
+                              }`}
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Claim Button (Only if completed and not claimed) */}
+                        {canClaim && (
+                          <button
+                            onClick={() => handleClaim(achievement.id)}
+                            disabled={claimingId === achievement.id}
+                            className="mt-4 w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-sm font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                          >
+                            {claimingId === achievement.id ? (
+                              "Claiming..."
+                            ) : (
+                              <>
+                                Claim Reward
+                                <ChevronRight className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Claimed Stamp */}
+                        {achievement.is_claimed && (
+                          <div className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-500 bg-emerald-500/5 py-2 rounded-lg border border-emerald-500/10">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Reward Claimed
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
 
                 {/* Empty State */}
                 {displayedAchievements.length === 0 && (
-                  <div className="text-center py-16">
-                    {viewType === "claimed" ? (
-                      <>
-                        <Award className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400 text-base font-medium mb-2">
-                          No claimed achievements yet
-                        </p>
-                        <p className="text-slate-500 text-sm">
-                          Complete tasks to earn badges
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400 text-base font-medium mb-2">
-                          All achievements claimed!
-                        </p>
-                        <p className="text-slate-500 text-sm">Great job! 🎉</p>
-                      </>
-                    )}
+                  <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
+                    <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                      {viewType === "claimed" ? (
+                        <Award className="w-8 h-8 text-slate-500" />
+                      ) : (
+                        <Trophy className="w-8 h-8 text-slate-500" />
+                      )}
+                    </div>
+                    <p className="text-slate-400 font-medium">
+                      No achievements found
+                    </p>
+                    <p className="text-slate-600 text-xs">
+                      Try changing filters
+                    </p>
                   </div>
                 )}
               </div>

@@ -1,22 +1,20 @@
 import { useMemo, useState } from "react";
+import { useSelector, shallowEqual } from "react-redux";
+import { RootState } from "../redux/store";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tv, X } from "lucide-react";
+import { CgArrowsExchange } from "react-icons/cg";
+
+// Components
 import { RockCounter } from "../components/rock/RockCounter";
+import { ProfileCard } from "../components/main/ProfileCard"; // YENİ COMPONENT
 import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { AchievementsModal } from "../components/main/AchievementsModal";
 import { PremiumModal } from "../components/premium/PremiumModal";
-import { useSelector, shallowEqual } from "react-redux";
-import { RootState } from "../redux/store";
-import { motion } from "framer-motion";
-import { User, Tv, Gift, Pickaxe, Trophy, Crown, X } from "lucide-react";
-
 import { StoneTodustExchange } from "../components/main/exchange/Exchange";
-import { CgArrowsExchange } from "react-icons/cg";
-
 import { AdRewardSection } from "../components/main/ads/AdRewardSection";
-import { AnimatePresence } from "framer-motion";
 
 export const MainPage = () => {
-  // Select only needed fields to avoid re-renders from displayRocks updates
-
   const user = useSelector((state: RootState) => state.user);
   const premiumMarketItem = useSelector(
     (state: RootState) => state.user.premium_market_item
@@ -50,6 +48,7 @@ export const MainPage = () => {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [showAdRewardModal, setShowAdRewardModal] = useState(false);
+
   const currentRewardDay = user.daily_reward_data.day;
 
   const handleClaimReward = (day: number) => {
@@ -57,200 +56,61 @@ export const MainPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-slate-950 to-black relative overflow-hidden pb-24">
-      {/* Animated background effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+    // TopBar için pt-20 boşluğu bıraktık
+    <div className="min-h-screen bg-slate-950 pt-3 pb-24 relative overflow-hidden">
+      {/* Background Gradients (Sabit ve hafif) */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-64 bg-cyan-900/10 blur-[100px]" />
       </div>
 
-      {/* Content */}
-      <div className="relative container mx-auto px-4 pt-6 pb-4 max-w-lg">
-        {/* Profile Card */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4"
-        >
-          <div className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 shadow-2xl">
-            {/* User Info Row */}
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
-                {/* Avatar */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur-md opacity-60" />
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-slate-800">
-                    {telegramData?.photo_url ? (
-                      <img
-                        src={telegramData.photo_url}
-                        alt={telegramData.username}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-cyan-600">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full" />
-                </div>
+      <div className="relative container mx-auto px-4 max-w-lg space-y-4">
+        {/* 1. YENİ PROFILE CARD */}
+        <ProfileCard
+          telegramData={telegramData}
+          isPremium={user.is_premium}
+          minerLevel={currentUserMinerLevel}
+          hiltiLevel={currentUserHiltiLevel}
+          rewardDay={currentRewardDay}
+          onOpenDailyReward={() => setShowDailyRewardModal(true)}
+          onOpenAchievements={() => setShowAchievementsModal(true)}
+          onOpenPremium={() => setShowPremiumModal(true)}
+        />
 
-                {/* Name and Streak */}
-                <div>
-                  <h2 className="text-lg font-bold text-white mb-1">
-                    {telegramData?.username || "Guest"}
-                  </h2>
-                  {user.is_premium && (
-                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/40 rounded-lg px-2 py-1 w-fit">
-                      <Crown className="w-3.5 h-3.5 text-yellow-400" />
-                      <span className="text-xs font-semibold text-yellow-300">
-                        Premium
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+        {/* 2. ROCK COUNTER */}
+        <RockCounter />
 
-              {/* Level Badges - Compact in top right */}
-              <div className="flex flex-col gap-1">
-                <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
-                  <Pickaxe className="w-3 h-3 text-blue-400" />
-                  <span className="text-xs text-blue-300/70">
-                    Lv {currentUserMinerLevel}
-                  </span>
-                </div>
-                <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-lg px-2 py-1 flex items-center gap-1.5">
-                  <img
-                    src="./jackhammer.svg"
-                    alt="Jackhammer"
-                    className="w-3 h-3 object-contain text-purple-400"
-                  />
-                  <span className="text-xs text-purple-300/70">
-                    Lv {currentUserHiltiLevel}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons - Daily Reward & Achievements */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {/* Daily Reward Button */}
-              <button
-                onClick={() => setShowDailyRewardModal(true)}
-                className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/20 via-orange-500/20 to-yellow-500/20 p-[2px] hover:from-amber-400/30 hover:via-orange-400/30 hover:to-yellow-400/30 transition-all duration-300 active:scale-95"
-              >
-                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-1.5 rounded-lg">
-                      <Gift className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="text-[10px] text-amber-300/60 font-medium">
-                        Daily Reward
-                      </div>
-                      <div className="text-base font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                        Day {currentRewardDay}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Progress indicator */}
-                  <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(currentRewardDay / 10) * 100}%` }}
-                      className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
-                    />
-                  </div>
-                </div>
-              </button>
-
-              {/* Achievements Button */}
-              <button
-                onClick={() => setShowAchievementsModal(true)}
-                className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-purple-500/20 p-[2px] hover:from-purple-400/30 hover:via-pink-400/30 hover:to-purple-400/30 transition-all duration-300 active:scale-95"
-              >
-                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-1.5 rounded-lg">
-                      <Trophy className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="text-[10px] text-purple-300/60 font-medium">
-                        Achievements
-                      </div>
-                      <div className="text-base font-bold bg-gradient-to-r from-purple-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
-                        Claim
-                      </div>
-                    </div>
-                  </div>
-                  {/* Decorative bar */}
-                  <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full w-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-50" />
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {/* Get Premium Button - Only show if user is not premium */}
-            {!user.is_premium && (
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                onClick={() => setShowPremiumModal(true)}
-                className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/20 via-yellow-500/20 to-orange-500/20 p-[2px] hover:from-amber-400/30 hover:via-yellow-400/30 hover:to-orange-400/30 transition-all duration-300 active:scale-95"
-              >
-                <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="bg-gradient-to-br from-amber-500 to-yellow-600 p-1.5 rounded-lg">
-                      <Crown className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                        Get Premium
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.button>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Rock Counter - Full Width */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="w-full"
-        >
-          <RockCounter />
-        </motion.div>
-
-        {/* Exchange and Watch Ads Buttons */}
+        {/* 3. ALT BUTONLAR (Exchange & Ads) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="w-full grid grid-cols-2 gap-3 mt-4"
+          className="grid grid-cols-2 gap-3"
         >
+          {/* Exchange Button */}
           <button
             onClick={() => setShowExchangeModal(true)}
-            className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/20 via-cyan-500/20 to-blue-500/20 p-[2px] hover:from-blue-400/30 hover:via-cyan-400/30 hover:to-blue-400/30 transition-all duration-300 active:scale-95"
+            className="group relative overflow-hidden bg-slate-900/60 border border-slate-700/50 hover:border-cyan-500/30 rounded-2xl p-4 transition-all active:scale-95"
           >
-            <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300 flex items-center justify-center gap-2">
-              <CgArrowsExchange className="w-4 h-4 text-orange-300" />
-              <span className="text-sm font-bold text-blue-100">Exchange</span>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                <CgArrowsExchange className="w-6 h-6 text-blue-400" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-white">
+                Exchange
+              </span>
             </div>
           </button>
 
+          {/* Watch Ads Button */}
           <button
             onClick={() => setShowAdRewardModal(true)}
-            className="relative group overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-purple-500/20 p-[2px] hover:from-purple-400/30 hover:via-pink-400/30 hover:to-purple-400/30 transition-all duration-300 active:scale-95"
+            className="group relative overflow-hidden bg-slate-900/60 border border-slate-700/50 hover:border-purple-500/30 rounded-2xl p-4 transition-all active:scale-95"
           >
-            <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-xl p-3 group-hover:from-gray-800 group-hover:to-gray-900 transition-all duration-300 flex items-center justify-center gap-2">
-              <Tv className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-bold text-purple-100">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                <Tv className="w-5 h-5 text-purple-400" />
+              </div>
+              <span className="text-sm font-bold text-slate-300 group-hover:text-white">
                 Watch Ads
               </span>
             </div>
@@ -258,7 +118,8 @@ export const MainPage = () => {
         </motion.div>
       </div>
 
-      {/* Daily Reward Modal */}
+      {/* --- MODALS --- */}
+
       <DailyRewardModal
         isOpen={showDailyRewardModal}
         onClose={() => setShowDailyRewardModal(false)}
@@ -266,13 +127,11 @@ export const MainPage = () => {
         onClaimReward={handleClaimReward}
       />
 
-      {/* Achievements Modal */}
       <AchievementsModal
         isOpen={showAchievementsModal}
         onClose={() => setShowAchievementsModal(false)}
       />
 
-      {/* Premium Modal */}
       <PremiumModal
         user_id={user._id}
         isOpen={showPremiumModal}
@@ -280,29 +139,31 @@ export const MainPage = () => {
         premiumStarPrice={premiumMarketItem?.stars_price || 500}
         premiumTonPrice={premiumMarketItem?.ton_price || 0.5}
       />
-      {/* Exchange Modal */}
+
+      {/* Exchange Modal Wrapper */}
       <AnimatePresence>
         {showExchangeModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             onClick={() => setShowExchangeModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="absolute -top-12 right-0">
+              {/* Close Button inside modal for better UX */}
+              <div className="absolute top-4 right-4 z-10">
                 <button
                   onClick={() => setShowExchangeModal(false)}
-                  className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white border border-slate-700"
+                  className="p-2 bg-black/20 rounded-full hover:bg-black/40"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
               <StoneTodustExchange />
@@ -311,29 +172,29 @@ export const MainPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Ad Reward Modal */}
+      {/* Ad Reward Modal Wrapper */}
       <AnimatePresence>
         {showAdRewardModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             onClick={() => setShowAdRewardModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden p-1" // p-1 for border padding if needed
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="absolute -top-12 right-0">
+              <div className="absolute top-4 right-4 z-10">
                 <button
                   onClick={() => setShowAdRewardModal(false)}
-                  className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white border border-slate-700"
+                  className="p-2 bg-black/20 rounded-full hover:bg-black/40"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
               <AdRewardSection />

@@ -11,11 +11,12 @@ import {
 } from "../../utils/timeUtils";
 import { useClaimDailyRewardMutation } from "../../redux/services/daily-reward/daily-reward-api";
 import WebApp from "@twa-dev/sdk";
+import { formatInteger } from "../../utils/formatNumber";
 
 interface DailyRewardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentDay: number; // Kullanıcının şu anki günü (örn: 3)
+  currentDay: number;
   onClaimReward: (day: number) => void;
 }
 
@@ -51,30 +52,18 @@ export const DailyRewardModal = ({
     shallowEqual
   );
 
-  // Redux'tan günlük ödül listesini çekiyoruz
   const dailyRewardsList = useSelector(
     (state: RootState) => state.dailyReward.dailyReward,
     shallowEqual
   );
 
-  // Sayaç Mantığı (08:00 AM UTC)
+  // Sayaç Mantığı
   const nextResetTime = useMemo(() => getNextResetTime(), []);
   const { formattedTime } = useCountdown(nextResetTime);
 
-  // Bugünün ödülü alınmış mı?
   const isTodayClaimed = isClaimedToday(dailyRewardData.last_claim_date);
-
-  // Streak bozulmuş mu?
   const isBroken = isStreakBroken(dailyRewardData.last_claim_date);
 
-  // Görüntülenecek gün:
-  // 1. Eğer bugün ödül alındıysa -> Bir sonraki günü göster (currentDay + 1)
-  // 2. Eğer streak bozulduysa (ve bugün alınmadıysa) -> 1. günü göster
-  // 3. Normal durum -> currentDay
-  // Görüntülenecek gün:
-  // 1. Eğer hiç claim yoksa -> 1
-  // 2. Eğer streak bozulduysa -> 1
-  // 3. Aksi halde -> currentDay + 1 (10'dan sonra 1'e döner)
   let effectiveDay = 1;
   const hasClaimedBefore = !!dailyRewardData.last_claim_date;
 
@@ -85,23 +74,16 @@ export const DailyRewardModal = ({
     if (effectiveDay > 10) effectiveDay = 1;
   }
 
-  // Seçili gün artık her zaman effectiveDay
   const selectedDay = effectiveDay;
-
-  // Seçili günün verisini bul
   const selectedRewardData = dailyRewardsList.find(
     (r) => r.day === selectedDay
   );
 
-  // Seçili günün durumu
   const isSelectedDayAvailable = selectedDay === effectiveDay;
-
-  // Bakiye kontrolü (Sadece Premium değilse kontrol et)
   const dustCost = selectedRewardData?.dust_price || 0;
   const hasEnoughDust = userDust >= dustCost;
 
   const handleClaimReward = async () => {
-    // Sadece mevcut gün alınabilir ve kilitli/alınmış olmamalı
     if (isSelectedDayAvailable && !isTodayClaimed) {
       onClaimReward(selectedDay);
       const response = await claimDailyReward({ user_id }).unwrap();
@@ -118,24 +100,37 @@ export const DailyRewardModal = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          transition={{ duration: 0.2 }}
+          // Z-INDEX DÜZELTMESİ: z-[100] Navbar'ın (z-50) üzerine çıkarır.
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
           onClick={onClose}
         >
+          {/* MODAL KAPSAYICI */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }} // Hafif Animasyon
+            className="bg-slate-950/90 border border-slate-800 rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 pb-2">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Daily Rewards</h2>
-                <p className="text-slate-400 text-sm">
-                  Come back daily to earn more!
-                </p>
+            {/* Header (Sabit) */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/20">
+                  <Gift className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white leading-tight">
+                    Daily Rewards
+                  </h2>
+                  <p className="text-slate-400 text-xs">
+                    Streak:{" "}
+                    <span className="text-amber-400 font-bold">
+                      {effectiveDay > 1 ? effectiveDay - 1 : 0} Days
+                    </span>
+                  </p>
+                </div>
               </div>
               <button
                 onClick={onClose}
@@ -145,51 +140,54 @@ export const DailyRewardModal = ({
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-6 pt-4">
+            {/* Scrollable Content */}
+            <div className="p-6 overflow-y-auto custom-scrollbar">
               {/* Progress Bar */}
-              <div className="mb-6">
+              <div className="mb-6 bg-slate-900 rounded-xl p-3 border border-slate-800">
                 <div className="flex justify-between text-xs font-medium mb-2">
-                  <span className="text-slate-400">Your Progress</span>
+                  <span className="text-slate-400">Current Streak</span>
                   <span className="text-amber-400">
-                    {effectiveDay > 10 ? 10 : effectiveDay}/10 Days
+                    {Math.min(effectiveDay, 10)}/10
                   </span>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-800 rounded-full overflow-hidden relative">
+                  {/* Background Track Pattern */}
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')] opacity-10" />
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{
                       width: `${(Math.min(effectiveDay, 10) / 10) * 100}%`,
                     }}
-                    className="h-full bg-amber-500 rounded-full"
-                  />
+                    transition={{ duration: 1, ease: "circOut" }}
+                    className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full relative"
+                  >
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50 blur-[2px]" />
+                  </motion.div>
                 </div>
               </div>
 
-              {/* Grid */}
-              <div className="grid grid-cols-5 gap-3 mb-8">
+              {/* Day Grid */}
+              <div className="grid grid-cols-5 gap-2.5 mb-6">
                 {dailyRewardsList.map((reward) => {
                   const dayNum = reward.day;
                   const isClaimed = dayNum < effectiveDay;
                   const isAvailable = dayNum === effectiveDay;
                   const isLocked = dayNum > effectiveDay;
-                  const isSelected = selectedDay === dayNum;
 
                   return (
-                    <button
+                    <div
                       key={dayNum}
-                      // onClick={() => setSelectedDay(dayNum)} // Navigation disabled
-                      className={`relative aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-                        isSelected
-                          ? "ring-2 ring-amber-500 bg-amber-500/10"
-                          : "bg-slate-800/50"
-                      } ${isLocked ? "opacity-50" : "opacity-100"} ${
-                        isAvailable ? "bg-amber-500/20" : ""
+                      className={`relative aspect-[0.85] rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border ${
+                        isAvailable
+                          ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.15)] scale-105 z-10"
+                          : isClaimed
+                          ? "bg-emerald-500/5 border-emerald-500/20 opacity-60"
+                          : "bg-slate-900 border-slate-800 opacity-50"
                       }`}
                     >
                       <span
-                        className={`text-[10px] font-bold ${
-                          isSelected ? "text-amber-400" : "text-slate-500"
+                        className={`text-[9px] font-bold uppercase ${
+                          isAvailable ? "text-amber-400" : "text-slate-500"
                         }`}
                       >
                         Day {dayNum}
@@ -200,122 +198,134 @@ export const DailyRewardModal = ({
                         <img
                           src="/stone.svg"
                           alt="Stone"
-                          className={`w-5 h-5 ${
-                            isLocked || isClaimed ? "opacity-50" : ""
+                          className={`w-6 h-6 object-contain ${
+                            isAvailable
+                              ? "brightness-110 drop-shadow-sm"
+                              : "grayscale"
                           }`}
                         />
                         <span
-                          className={`text-[10px] font-bold ${
+                          className={`text-[10px] font-bold mt-0.5 ${
                             isClaimed
-                              ? "text-green-500"
-                              : isLocked
-                              ? "text-slate-500"
-                              : "text-white"
+                              ? "text-emerald-400"
+                              : isAvailable
+                              ? "text-white"
+                              : "text-slate-500"
                           }`}
                         >
-                          {reward.reward * minerLevel}
+                          {formatInteger(reward.reward * minerLevel)}
                         </span>
                       </div>
 
-                      {/* Status Indicators */}
+                      {/* Status Icons */}
                       {isClaimed && (
-                        <div className="absolute top-1 right-1 bg-green-500/20 p-0.5 rounded-full">
-                          <Check className="w-3 h-3 text-green-500" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl backdrop-blur-[1px]">
+                          <Check className="w-5 h-5 text-emerald-500 font-bold" />
                         </div>
                       )}
                       {isLocked && (
                         <div className="absolute top-1 right-1">
-                          <Lock className="w-3 h-3 text-slate-600" />
+                          <Lock className="w-2.5 h-2.5 text-slate-700" />
                         </div>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
 
-              {/* Action Area */}
-              <div className="text-center">
-                <div className="mb-4">
-                  <p className="text-slate-400 text-sm mb-1">
-                    Day {selectedDay} Reward
-                  </p>
-                  <div className="flex items-center justify-center gap-2">
-                    <img src="/stone.svg" alt="Stone" className="w-8 h-8" />
-                    <span className="text-3xl font-black text-white">
-                      {selectedRewardData?.reward! * minerLevel || 0}
-                    </span>
+              {/* Action Area (Bottom) */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 text-center">
+                {isTodayClaimed ? (
+                  // DURUM 2: Bugün Alındı -> Sayaç Göster
+                  <div className="py-2">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                        <Clock className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-sm">Next reward in</p>
+                        <p className="text-2xl font-mono font-bold text-white tracking-widest">
+                          {formattedTime}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  // DURUM 1: Claim Edilebilir
+                  <>
+                    <div className="mb-4">
+                      <p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-bold">
+                        Today's Reward
+                      </p>
+                      <div className="flex items-center justify-center gap-3">
+                        <img
+                          src="/stone.svg"
+                          alt="Stone"
+                          className="w-10 h-10 drop-shadow-lg"
+                        />
+                        <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400">
+                          {formatInteger(
+                            selectedRewardData?.reward! * minerLevel || 0
+                          )}
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Buton Durumları */}
-                {isSelectedDayAvailable && !isTodayClaimed ? (
-                  // DURUM 1: Güncel Gün (Claim Edilebilir)
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleClaimReward}
-                      disabled={!isPremium && !hasEnoughDust}
-                      className={`w-full py-3.5 rounded-xl font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                        !isPremium && !hasEnoughDust
-                          ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                          : "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20"
-                      }`}
-                    >
-                      {isPremium ? (
-                        <>
-                          <Gift className="w-5 h-5" />
-                          Claim Free
-                        </>
-                      ) : (
-                        <>
-                          <span>Claim for</span>
-                          <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-lg">
-                            <img
-                              src="/dust.svg"
-                              alt="Dust"
-                              className="w-4 h-4"
-                            />
-                            <span>{dustCost}</span>
-                          </div>
-                        </>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleClaimReward}
+                        disabled={!isPremium && !hasEnoughDust}
+                        className={`w-full py-3.5 rounded-xl font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden group ${
+                          !isPremium && !hasEnoughDust
+                            ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
+                            : "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                        }`}
+                      >
+                        {isPremium ? (
+                          <>
+                            <Gift className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                            <span>Claim Reward Free</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Claim for</span>
+                            <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-lg border border-white/10">
+                              <img
+                                src="/dust.svg"
+                                alt="Dust"
+                                className="w-4 h-4"
+                              />
+                              <span>{dustCost}</span>
+                            </div>
+                          </>
+                        )}
+                      </button>
+
+                      {!isPremium && !hasEnoughDust && (
+                        <div className="text-center space-y-1">
+                          <p className="text-red-400 text-xs flex items-center justify-center gap-1">
+                            <X className="w-3 h-3" />
+                            Insufficient Dust ({dustCost - userDust} needed)
+                          </p>
+                          <p className="text-amber-500/80 text-xs cursor-pointer hover:underline">
+                            Watch ads to earn dust
+                          </p>
+                          <p className="text-yellow-300 text-xs cursor-pointer hover:underline">
+                            Premium members claim for free
+                          </p>
+                        </div>
                       )}
-                    </button>
 
-                    {!isPremium && !hasEnoughDust && (
-                      <div className="flex flex-col mt-1">
-                        {/* Hata Mesajı */}
-                        <p className="text-red-400 text-[12px]">
-                          Insufficient Dust ({dustCost - userDust} needed)
-                        </p>
-
-                        {/* Bilgilendirme Mesajı (Tıklanmaz, sadece yazı) */}
-                        <p className="text-yellow-500/80 text-[12px] mt-0.5">
-                          Watch Ads to earn Dust
-                        </p>
-                      </div>
-                    )}
-
-                    {!isPremium && (
-                      <div className="flex items-center justify-center gap-2 text-[12px] text-purple-400">
-                        <Crown className="w-3 h-3" />
-                        <span>Premium members claim for free</span>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
+                      {!isPremium && hasEnoughDust && (
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 opacity-60">
+                          <Crown className="w-3 h-3" />
+                          <span>Premium members claim for free</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-
-              {/* Reset Timer Footer - Sadece bugün alındıysa göster */}
-              {isTodayClaimed && (
-                <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-slate-500">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-xs font-medium">
-                    Next reward in:{" "}
-                    <span className="text-slate-300 font-mono">
-                      {formattedTime}
-                    </span>
-                  </span>
-                </div>
-              )}
             </div>
           </motion.div>
         </motion.div>
