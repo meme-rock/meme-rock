@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Crown, Zap, Rocket, Star, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { PaymentButtons } from "../shared/PaymentButtons";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
 import WebApp from "@twa-dev/sdk";
@@ -101,26 +101,20 @@ export const PremiumModal = ({
       );
     }
   };
+
+  // Sadece Başlıklar
   const premiumBenefits = [
     {
-      icon: <Zap className="w-5 h-5 text-yellow-400" />,
-      title: "2x Mining Speed",
-      description: "Mine stones twice as fast",
+      title: "4x Mining Rewards",
     },
     {
-      icon: <Rocket className="w-5 h-5 text-cyan-400" />,
+      title: "24H Mining Storage",
+    },
+    {
       title: "Exclusive Boosters",
-      description: "Access to premium-only boosters",
     },
     {
-      icon: <Star className="w-5 h-5 text-purple-400" />,
-      title: "Premium Badge",
-      description: "Show off your premium status",
-    },
-    {
-      icon: <Crown className="w-5 h-5 text-amber-400" />,
-      title: "Priority Support",
-      description: "Get help faster with priority support",
+      title: "Season Validity",
     },
   ];
 
@@ -162,14 +156,16 @@ export const PremiumModal = ({
               <div className="relative p-6 overflow-y-auto flex-1">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-500 to-yellow-500 shadow-lg shadow-amber-500/50">
-                    <Crown className="w-8 h-8 text-white" />
+                  {/* YENİ HEADER LOGO KISMI */}
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-500 to-yellow-500 shadow-lg shadow-amber-500/50 p-2">
+                    <img
+                      src="/premium-rock-logo.svg" // Public klasörden çağrıldı
+                      alt="Premium Rock Logo"
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                   <div>
                     <h3 className="text-white font-bold text-2xl">Premium</h3>
-                    <p className="text-gray-400 text-sm">
-                      Unlock exclusive benefits
-                    </p>
                   </div>
                 </div>
 
@@ -181,18 +177,20 @@ export const PremiumModal = ({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50"
+                      // Tik işareti ve başlık yan yana ve dikeyde ortalanmış olacak
+                      className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50"
                     >
-                      <div className="mt-0.5">{benefit.icon}</div>
+                      {/* SOL TARAFTA: Tik İkonu */}
+                      <div className="flex-shrink-0">
+                        <Check className="w-5 h-5 text-green-400" />
+                      </div>
+
+                      {/* SAĞ TARAFTA: Başlık */}
                       <div className="flex-1">
-                        <h4 className="text-white font-semibold text-sm mb-1">
+                        <h4 className="text-white font-semibold text-base">
                           {benefit.title}
                         </h4>
-                        <p className="text-gray-400 text-xs">
-                          {benefit.description}
-                        </p>
                       </div>
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                     </motion.div>
                   ))}
                 </div>

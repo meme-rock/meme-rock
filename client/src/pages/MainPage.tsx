@@ -6,7 +6,7 @@ import { Tv, X } from "lucide-react";
 import { CgArrowsExchange } from "react-icons/cg";
 
 // Components
-import { RockCounter } from "../components/rock/RockCounter";
+import { RockCounter } from "../components/main/RockCounter";
 import { ProfileCard } from "../components/main/ProfileCard"; // YENİ COMPONENT
 import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { AchievementsModal } from "../components/main/AchievementsModal";

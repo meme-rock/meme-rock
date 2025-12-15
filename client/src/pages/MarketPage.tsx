@@ -17,7 +17,7 @@ import {
 import { formatNumber, formatInteger } from "../utils/formatNumber";
 import { useGetBalanceDataMutation } from "../redux/services/user/user-api";
 import { usePurchaseStonesWithTonMutation } from "../redux/services/ton/ton-api";
-import { ShoppingBag, Loader2, Zap } from "lucide-react"; // Yeni ikonlar
+import { ShoppingBag, Loader2 } from "lucide-react"; // Yeni ikonlar
 
 type CurrencyType = "stars" | "ton";
 
@@ -249,9 +249,8 @@ export const MarketPage = ({}: MarketPageProps) => {
               <span className="text-sm font-bold tracking-wide">TON</span>
               {/* Badge for Offer */}
               <div className="absolute top-1 right-1">
-                <div className="bg-emerald-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                  <Zap className="w-2 h-2 fill-current" />
-                  30%
+                <div className="bg-emerald-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                  +30%
                 </div>
               </div>
             </button>

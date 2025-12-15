@@ -74,5 +74,9 @@ export interface LoadingResponse {
     new_dust_balance?: number;
     new_last_mine?: string;
   } | null;
+  airdrop_info: {
+    total_mined: number;
+    total_participants: number;
+  };
   message: string;
 }

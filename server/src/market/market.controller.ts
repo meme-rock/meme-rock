@@ -17,6 +17,7 @@ export class MarketController {
   @Get('get-stones-market-data')
   @Throttle({ strict: { limit: 1, ttl: 1000 } })
   async getStonesMarketData() {
+    console.log('get-stones-market-data');
     return await this.marketService.getStonesMarketData();
   }
 

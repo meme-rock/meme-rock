@@ -8,6 +8,8 @@ import {
   LayoutGrid,
   X,
 } from "lucide-react";
+import { FaParachuteBox } from "react-icons/fa";
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,6 +54,7 @@ export const Navbar = () => {
     { id: "task", label: "Task", icon: ListTodo, path: "/task" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
+    { id: "airdrop", label: "Airdrop", icon: FaParachuteBox, path: "/airdrop" },
   ];
 
   // Yardımcı Fonksiyon: Buton Renderlama

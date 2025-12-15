@@ -162,10 +162,7 @@ export const RockPage = () => {
           {/* Hilti Upgrade Button */}
           <HiltiUpgradeButton
             selectedHilti={selectedHilti}
-            selectedHiltiLevel={selectedHiltiLevel}
             currentUserHiltiLevel={currentUserHiltiLevel}
-            userStoneBalance={balanceData.stone}
-            userProfitPerHour={userProfitPerHour}
             onUpgrade={handleUpgrade}
             isUpgrading={isUpgrading}
           />

@@ -206,6 +206,10 @@ export class UserService {
         tasks: mergedTasks,
         premium_market_item,
         daily_reward: DAILY_REWARD,
+        airdrop_info: {
+          total_mined: 125000,
+          total_participants: await this.userModel.estimatedDocumentCount(),
+        },
         message: 'User updated successfully',
       };
     } catch (error) {
