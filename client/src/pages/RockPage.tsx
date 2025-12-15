@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { HiltiLevelThumbnails } from "../components/rock/HiltiLevelThumbnail";
 import { HiltiDisplay } from "../components/rock/HiltiDisplay";
 import { useSelector, shallowEqual } from "react-redux";
@@ -20,10 +20,6 @@ export const RockPage = () => {
   const userProfitPerHour = useSelector(
     (state: RootState) => state.user.airdrop_data.profit_per_hour
   );
-  const balanceData = useSelector(
-    (state: RootState) => state.user.balance_data,
-    shallowEqual
-  );
 
   const hilti_data = useSelector(
     (state: RootState) => state.hilti,
@@ -44,6 +40,11 @@ export const RockPage = () => {
   const [selectedHiltiLevel, setSelectedHiltiLevel] = useState(
     currentUserHiltiLevel
   );
+
+  // Sync selected level when current user level changes (after upgrade)
+  useEffect(() => {
+    setSelectedHiltiLevel(currentUserHiltiLevel);
+  }, [currentUserHiltiLevel]);
 
   // Get selected hilti from all_hiltis
   const selectedHilti = useMemo(
