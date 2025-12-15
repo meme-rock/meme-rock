@@ -6,6 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ["proper-church-nickel-desire.trycloudflare.com"],
+    allowedHosts: ["ash-aircraft-passes-thumbzilla.trycloudflare.com"],
   },
 });

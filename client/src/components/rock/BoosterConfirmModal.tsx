@@ -102,29 +102,6 @@ export const BoosterConfirmModal = ({
 
               {/* Content */}
               <div className="relative p-6">
-                {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      isUnlock
-                        ? "bg-gradient-to-br from-cyan-600 to-blue-600"
-                        : "bg-gradient-to-br from-purple-600 to-indigo-600"
-                    }`}
-                  >
-                    {isUnlock ? (
-                      <Unlock className="w-6 h-6 text-white" />
-                    ) : (
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold text-xl">
-                      {isUnlock ? "Unlock Booster" : "Upgrade Booster"}
-                    </h3>
-                    <p className="text-gray-400 text-sm">{boosterTitle}</p>
-                  </div>
-                </div>
-
                 {/* Level info - Only for upgrade */}
                 {!isUnlock &&
                   currentLevel !== undefined &&
@@ -257,9 +234,7 @@ export const BoosterConfirmModal = ({
                             alt="Stone"
                             className="w-4 h-4"
                           />
-                          <span>
-                            {formatInteger(requirements.stone)} Stone
-                          </span>
+                          <span>{formatInteger(requirements.stone)} Stone</span>
                         </div>
                       )}
                       {requirements.dust && (

@@ -47,9 +47,6 @@ export const HiltiUpgradeButton = memo(
     const isMaxLevel = selectedHiltiLevel >= MAX_HILTI_LEVEL;
     const isLocked = selectedHiltiLevel > currentUserHiltiLevel;
 
-    // Yalnızca mevcut seviye seçiliyken ve max seviyede değilken gösterilir
-    const showRequirements = isCurrentLevel && !isMaxLevel;
-
     const handleUpgradeClick = () => {
       if (!isCurrentLevel) return;
 
@@ -90,56 +87,8 @@ export const HiltiUpgradeButton = memo(
       buttonAction = "cursor-not-allowed";
     }
 
-    // PPH Gereksinim Kutusu Stilleri
-    const pphBoxBg = hasEnoughPPH
-      ? "bg-cyan-900/50 border-cyan-700/50"
-      : "bg-red-900/50 border-red-700/50";
-    const pphValueColor = hasEnoughPPH ? "text-cyan-400" : "text-red-400";
-    const pphLabelColor = hasEnoughPPH ? "text-gray-400" : "text-red-300";
-
     return (
       <div className="w-full px-4 mb-8 z-30">
-        {/* PROFIT PER HOUR REQUIREMENT BOX (Butonun Hemen Üstünde) */}
-        {showRequirements && requiredPPH > 0 && (
-          <div
-            className={`flex justify-between items-center px-4 py-2 rounded-xl mb-3 border backdrop-blur-md transition-colors ${pphBoxBg}`}
-          >
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold ${pphLabelColor}`}>
-                REQUIRED PPH:
-              </span>
-              <div className="flex items-center gap-1">
-                <span
-                  className={`text-lg font-black font-mono ${pphValueColor}`}
-                >
-                  {formatInteger(requiredPPH)}
-                </span>
-                <img
-                  src="/rock.svg"
-                  alt="Rock"
-                  className="w-5 h-5 opacity-80"
-                />
-              </div>
-            </div>
-
-            <div className="text-right">
-              <span className="text-xs text-gray-400 block">YOUR PPH:</span>
-              <div className="flex items-center justify-end gap-1">
-                <span
-                  className={`text-lg font-black font-mono ${pphValueColor}`}
-                >
-                  {formatInteger(userProfitPerHour)}
-                </span>
-                <img
-                  src="/rock.svg"
-                  alt="Rock"
-                  className="w-5 h-5 opacity-80"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* UPGRADE BUTTON */}
         <button
           onClick={handleUpgradeClick}
@@ -203,14 +152,14 @@ export const HiltiUpgradeButton = memo(
           {/* Lock overlay when PPH is insufficient, but Stone is sufficient (Visual Feedback) */}
           {!canUpgradeNow && isCurrentLevel && (
             <div
-              className={`absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 z-20 transition-opacity`}
+              className={`absolute inset-0 flex items-center justify-center rounded-xl z-20 transition-opacity`}
             >
               <div className="flex flex-col items-center justify-center gap-1 p-2">
                 <Lock className="w-6 h-6 text-red-400" />
                 <span className="text-xs text-red-200 font-semibold uppercase tracking-wider">
                   {!hasEnoughPPH && requiredPPH > 0
-                    ? "PPH Required"
-                    : "Stone Required"}
+                    ? `${formatInteger(requiredPPH)} Booster PPH Required`
+                    : `${formatInteger(requiredStone)} Stone Required`}
                 </span>
               </div>
             </div>

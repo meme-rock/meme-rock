@@ -47,18 +47,6 @@ export const HiltiDisplay = ({
             </motion.div>
           )}
 
-          {/* Current Level Badge */}
-          {isCurrentLevel && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold z-20 shadow-lg"
-            >
-              CURRENT
-            </motion.div>
-          )}
-
           {/* Hilti image */}
           <img
             src={imageSrc}
@@ -108,68 +96,81 @@ export const HiltiDisplay = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* Income Breakdown */}
+      {/* Income Breakdown - Combined PPH Frame */}
       <motion.div
         key={`income-${selectedHilti._id}`}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="mt-6 flex gap-4 items-center"
+        className="mt-6 w-full max-w-[260px]"
       >
-        {/* Jackhammer Income */}
         <div
-          className={`px-4 py-2 rounded-lg border ${
+          className={`relative px-2 py-3 rounded-xl border flex flex-col items-center ${
             isLocked
-              ? "bg-gradient-to-r from-gray-900/40 to-gray-800/40 border-gray-600/50"
-              : "bg-gradient-to-r from-cyan-900/40 to-cyan-800/40 border-cyan-600/50"
+              ? "bg-gradient-to-b from-gray-900/60 to-gray-800/60 border-gray-600/50"
+              : "bg-gradient-to-b from-slate-900/60 to-slate-800/60 border-cyan-500/30 shadow-lg shadow-cyan-900/10"
           }`}
         >
-          <div className="flex flex-col items-center gap-1">
+          {/* Frame Title: PPH */}
+          <div className="absolute -top-3 bg-slate-950 px-3 py-0.5 rounded-full border border-slate-800">
             <span
-              className={`text-xs font-medium ${
-                isLocked ? "text-gray-400" : "text-cyan-400"
+              className={`text-xs font-bold tracking-widest ${
+                isLocked ? "text-gray-400" : "text-cyan-300"
               }`}
             >
-              Jackhammer
+              PPH
             </span>
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/rock.svg"
-                alt="Rock"
-                className="w-4 h-4 object-contain"
-              />
-              <span className="text-white font-bold text-sm">
-                +{formatInteger(selectedHilti.profit_per_hour)}/h
-              </span>
-            </div>
           </div>
-        </div>
 
-        {/* User Profit Per Hour */}
-        <div
-          className={`px-4 py-2 rounded-lg border ${
-            isLocked
-              ? "bg-gradient-to-r from-gray-900/40 to-gray-800/40 border-gray-600/50"
-              : "bg-gradient-to-r from-yellow-900/40 to-yellow-800/40 border-yellow-600/50"
-          }`}
-        >
-          <div className="flex flex-col items-center gap-1">
-            <span
-              className={`text-xs font-medium ${
-                isLocked ? "text-gray-400" : "text-yellow-400"
-              }`}
-            >
-              Boosters
-            </span>
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/rock.svg"
-                alt="Rock"
-                className="w-4 h-4 object-contain"
-              />
-              <span className="text-white font-bold text-sm">
-                +{formatInteger(userProfitPerHour)}/h
+          {/* Content Row */}
+          <div className="flex items-center justify-between w-full mt-1 px-2">
+            {/* Jackhammer Side */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Jackhammer
               </span>
+              <div className="flex items-center gap-1.5">
+                <img
+                  src="/rock.svg"
+                  alt="Rock"
+                  className="w-4 h-4 object-contain"
+                />
+                <span
+                  className={`font-bold text-sm ${
+                    isLocked ? "text-gray-400" : "text-cyan-400"
+                  }`}
+                >
+                  +{formatInteger(selectedHilti.profit_per_hour)}/h
+                </span>
+              </div>
+            </div>
+
+            {/* Vertical Divider */}
+            <div
+              className={`w-px h-8 mx-2 ${
+                isLocked ? "bg-gray-700" : "bg-white/10"
+              }`}
+            ></div>
+
+            {/* Boosters Side */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Boosters
+              </span>
+              <div className="flex items-center gap-1.5">
+                <img
+                  src="/rock.svg"
+                  alt="Rock"
+                  className="w-4 h-4 object-contain"
+                />
+                <span
+                  className={`font-bold text-sm ${
+                    isLocked ? "text-gray-400" : "text-yellow-400"
+                  }`}
+                >
+                  +{formatInteger(userProfitPerHour)}/h
+                </span>
+              </div>
             </div>
           </div>
         </div>

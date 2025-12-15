@@ -38,7 +38,7 @@ export const RockCounter = () => {
         <div className="flex flex-col items-center justify-center py-6 px-4 relative">
           {/* Label: Total Balance */}
           <span className="text-[12px] uppercase tracking-[0.2em] text-blue-500 font-bold mb-1">
-            AIRDROP
+            AIRDROP POINTS
           </span>
           <div className="flex items-center justify-center gap-3 relative z-10">
             {/* Rock Icon */}
@@ -65,11 +65,6 @@ export const RockCounter = () => {
           {/* PROFIT KAPSÜLÜ (Alt Kısım) */}
           <div className="mt-3">
             <div className="flex items-center gap-3 bg-slate-950/40 border border-white/5 rounded-full pl-1.5 pr-4 py-1.5 shadow-inner">
-              {/* Yeşil İkon Kutucuğu */}
-              <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                <img src="/rock.svg" alt="rock" className="w-6 h-6" />
-              </div>
-
               {/* Profit Text */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
