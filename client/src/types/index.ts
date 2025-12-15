@@ -43,6 +43,7 @@ export interface IMinerDetail {
   _id: EMinerLevel;
   reward_type: EMinerRewardType;
   profit_per_hour: number;
+  max_periods: number;
   stone_price_to_upgrade: number;
   __v?: number;
   createdAt?: string;

@@ -4,8 +4,8 @@ import {
   Trophy,
   Award,
   CheckCircle2,
-  Star,
-  Zap,
+  UserPlus,
+  Tv,
   ChevronRight,
 } from "lucide-react";
 import { useSelector, shallowEqual } from "react-redux";
@@ -249,9 +249,9 @@ export const AchievementsModal = ({
                             >
                               {getAchievementType(achievement.id) ===
                               "invite" ? (
-                                <Star className="w-5 h-5" />
+                                <UserPlus className="w-5 h-5" />
                               ) : (
-                                <Zap className="w-5 h-5" />
+                                <Tv className="w-5 h-5" />
                               )}
                             </div>
                             <div>

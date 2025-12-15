@@ -1,4 +1,4 @@
-import { AnimatedNumber } from "./rock/AnimatedNumber";
+import { AnimatedNumber } from "./main/AnimatedNumber";
 
 interface TopBarProps {
   stones: number;

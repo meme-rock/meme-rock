@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { memo } from "react";
+import { Lock } from "lucide-react";
 
 interface HiltiLevel {
   level: number;
@@ -14,92 +16,78 @@ interface HiltiLevelThumbnailsProps {
   onLevelSelect: (level: number) => void;
 }
 
-export const HiltiLevelThumbnails = ({
-  currentLevel,
-  selectedLevel,
-  minLevel = 1,
-  maxLevel = 5,
-  onLevelSelect,
-}: HiltiLevelThumbnailsProps) => {
-  // Generate levels from minLevel to maxLevel
-  const levels: HiltiLevel[] = Array.from(
-    { length: maxLevel - minLevel + 1 },
-    (_, i) => {
-      const level = minLevel + i;
-      return {
-        level,
-        image: `/assets/hiltis/hilti-level-${level}.svg`,
-        locked: level > currentLevel,
-      };
-    }
-  );
+export const HiltiLevelThumbnails = memo(
+  ({
+    currentLevel,
+    selectedLevel,
+    minLevel = 1,
+    maxLevel = 5,
+    onLevelSelect,
+  }: HiltiLevelThumbnailsProps) => {
+    const levels: HiltiLevel[] = Array.from(
+      { length: maxLevel - minLevel + 1 },
+      (_, i) => {
+        const level = minLevel + i;
+        return {
+          level,
+          image: `/assets/hiltis/hilti-level-${level}.svg`,
+          locked: level > currentLevel,
+        };
+      }
+    );
 
-  return (
-    <div className="flex items-center justify-center gap-3">
-      {levels.map((levelData, index) => (
-        <motion.button
-          key={levelData.level}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onLevelSelect(levelData.level)}
-          className="relative focus:outline-none"
-        >
-          <div
-            className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-              levelData.level === selectedLevel
-                ? "border-cyan-400 shadow-lg shadow-cyan-500/50 scale-110"
-                : levelData.level === currentLevel
-                ? "border-green-400 shadow-lg shadow-green-500/50"
-                : levelData.locked
-                ? "border-gray-700 opacity-40 cursor-default"
-                : "border-gray-600 opacity-70 hover:opacity-100 hover:border-purple-500"
-            }`}
-          >
-            <div className="relative w-full h-full bg-gray-900">
-              <img
-                src={levelData.image}
-                alt={`Level ${levelData.level}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback if image doesn't exist
-                  (e.target as HTMLImageElement).src =
-                    "assets/hiltis/hilti-level-1.svg";
-                }}
-              />
-              {levelData.locked && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-gray-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
+    return (
+      <div className="w-full overflow-x-auto no-scrollbar py-2">
+        <div className="flex items-center justify-center gap-4 px-4">
+          {levels.map((levelData, index) => (
+            <motion.button
+              key={levelData.level}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              onClick={() => onLevelSelect(levelData.level)}
+              className="relative group focus:outline-none"
+            >
+              <div
+                className={`relative w-14 h-14 rounded-2xl border transition-all duration-300 flex items-center justify-center overflow-hidden ${
+                  levelData.level === selectedLevel
+                    ? "border-cyan-400 bg-cyan-900/30 shadow-[0_0_15px_rgba(34,211,238,0.4)] scale-110"
+                    : levelData.level === currentLevel
+                    ? "border-green-500/60 bg-green-900/20"
+                    : "border-white/10 bg-white/5 opacity-50"
+                }`}
+              >
+                <img
+                  src={levelData.image}
+                  alt={`Level ${levelData.level}`}
+                  className={`w-full h-full object-cover transition-opacity ${
+                    levelData.locked ? "opacity-40 grayscale" : "opacity-100"
+                  }`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "assets/hiltis/hilti-level-1.svg";
+                  }}
+                />
+
+                {/* Lock Overlay */}
+                {levelData.locked && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <Lock className="w-4 h-4 text-white/60" />
+                  </div>
+                )}
+              </div>
+
+              {/* Active Indicator Dot */}
+              {levelData.level === selectedLevel && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full"
+                />
               )}
-            </div>
-          </div>
-          {/* Level number badge */}
-          <div
-            className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-              levelData.level === selectedLevel
-                ? "bg-cyan-500 text-black"
-                : levelData.level === currentLevel
-                ? "bg-green-500 text-black"
-                : "bg-gray-700 text-gray-400"
-            }`}
-          >
-            {levelData.level}
-          </div>
-        </motion.button>
-      ))}
-    </div>
-  );
-};
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+);

@@ -15,6 +15,7 @@ import { useGlobalRockCounter } from "./hooks/useGlobalRockCounter";
 import { MinePage } from "./pages/MinePage";
 import { TaskPage } from "./pages/TaskPage";
 import { LeaderBoardPage2 } from "./pages/LeaderBoardPage2";
+import { AirdropPage } from "./pages/AirdropPage";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -40,6 +41,7 @@ function AppContent() {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/leaderboard-2" element={<LeaderBoardPage2 />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/airdrop" element={<AirdropPage />} />
           </Routes>
         </main>
 

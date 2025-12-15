@@ -16,6 +16,7 @@ import { setDailyRewards } from "../../slices/dailyRewardSlice";
 import { BalanceData, LoadingResponse } from "./responses";
 
 import { setTasks } from "../../slices/taskSlice";
+import { getStats } from "../../slices/statsSlice";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -65,6 +66,9 @@ export const userApi = createApi({
 
           // Store tasks in Redux
           dispatch(setTasks(data.tasks));
+
+          // Store stats in Redux
+          dispatch(getStats(data.airdrop_info));
 
           // Store mine claim data if available
           if (data.mine_claim) {

@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { Lock, ArrowUp, Zap } from "lucide-react";
+import { ArrowUpCircle } from "lucide-react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../../redux/store";
 import { memo, useMemo } from "react";
@@ -19,217 +18,108 @@ export const MinerUpgradeButton = memo(
     currentUserMinerLevel,
     onUpgrade,
   }: MinerUpgradeButtonProps) => {
-    // Kullanıcının stone balance'ı
     const userStoneBalance = useSelector(
       (state: RootState) => state.user.balance_data.stone,
       shallowEqual
     );
-
-    // Seçili miner'ın seviyesi
     const selectedMinerLevel = useMemo(
       () => parseInt(selectedMiner._id.split("_")[1]),
       [selectedMiner._id]
     );
-
-    // Maksimum seviye
     const MAX_MINER_LEVEL = 5;
 
-    // Eğer bu maksimum seviye ise upgrade butonu gösterme (kilitli bile olsa)
-    if (selectedMinerLevel >= MAX_MINER_LEVEL) {
-      return null;
-    }
-
-    // Bu miner kilitli mi?
-    const isLockedMiner = selectedMinerLevel > currentUserMinerLevel;
-
-    // Upgrade için gereken stone
     const requiredStone = selectedMiner.stone_price_to_upgrade;
-
-    // Kullanıcı yeterli stone'a sahip mi?
     const hasEnoughStone = userStoneBalance >= requiredStone;
+    const isCurrentLevel = selectedMinerLevel === currentUserMinerLevel;
+    const isMaxLevel = selectedMinerLevel >= MAX_MINER_LEVEL;
+    const isLocked = selectedMinerLevel > currentUserMinerLevel;
 
-    // Upgrade mümkün mü? (mevcut seviyedeyken göster)
-    const canUpgrade =
-      selectedMinerLevel === currentUserMinerLevel && hasEnoughStone;
+    const handleUpgradeClick = () => {
+      if (!hasEnoughStone) {
+        WebApp.showAlert(
+          `Need ${formatInteger(requiredStone - userStoneBalance)} more stones.`
+        );
+        return;
+      }
+      onUpgrade?.();
+    };
 
-    // Eğer bu mevcut miner ise upgrade butonu göster
-    if (selectedMinerLevel === currentUserMinerLevel) {
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="w-full max-w-md px-4"
-        >
-          <div className="relative">
-            {/* Glow effect when can upgrade */}
-            {canUpgrade && (
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 blur-xl rounded-2xl" />
-            )}
+    if (isMaxLevel) return null; // Max levelde göstermeyelim
 
-            <motion.button
-              onClick={() => {
-                if (!canUpgrade) {
-                  WebApp.showAlert(
-                    `You need ${formatInteger(
-                      requiredStone
-                    )} stone to upgrade. You have ${formatInteger(
-                      userStoneBalance
-                    )} stone.`
-                  );
-                  return;
-                }
-                onUpgrade?.();
-              }}
-              disabled={!canUpgrade}
-              whileTap={canUpgrade ? { scale: 0.95 } : {}}
-              className={`relative w-full rounded-2xl px-6 py-4 border-2 transition-all duration-300 ${
-                canUpgrade
-                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-400 shadow-lg shadow-cyan-500/50"
-                  : "bg-gradient-to-r from-gray-800/50 to-gray-900/50 border-gray-700/50 backdrop-blur-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                {/* Left side - Icon and text */}
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      canUpgrade ? "bg-white/20" : "bg-gray-700/50"
-                    }`}
-                  >
-                    {canUpgrade ? (
-                      <Zap className="w-5 h-5 text-white" />
-                    ) : (
-                      <Lock className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <p
-                      className={`font-bold text-sm ${
-                        canUpgrade ? "text-white" : "text-gray-400"
-                      }`}
-                    >
-                      {canUpgrade
-                        ? "Upgrade to Level " + (selectedMinerLevel + 1)
-                        : "Insufficient Stone"}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <img
-                        src="/stone.svg"
-                        alt="Stone"
-                        className={`w-5 h-5 flex items-center justify-center rounded-full ${
-                          canUpgrade
-                            ? "shadow-glow-cyan" // Yeni düşük maliyetli gölge sınıfı
-                            : "shadow-glow-white" // Yeni düşük maliyetli gölge sınıfı
-                        }`}
-                      />
-                      <span
-                        className={`text-sm font-bold ${
-                          hasEnoughStone ? "text-cyan-200" : "text-red-400"
-                        }`}
-                      >
-                        {formatInteger(userStoneBalance)} /{" "}
-                        {formatInteger(requiredStone)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+    // --- BUTTON STYLES ---
+    let buttonBg = "bg-gray-800/50 border-white/5";
+    let textColor = "text-gray-500";
 
-                {/* Right side - Arrow */}
-                <motion.div
-                  animate={
-                    canUpgrade
-                      ? {
-                          y: [0, -4, 0],
-                        }
-                      : {}
-                  }
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
+    if (isCurrentLevel) {
+      buttonBg = hasEnoughStone
+        ? "bg-gradient-to-r from-amber-500 to-orange-600 shadow-[0_0_20px_rgba(245,158,11,0.3)] border-amber-400/30"
+        : "bg-gray-900 border-amber-900/30";
+      textColor = hasEnoughStone ? "text-white" : "text-amber-500/50";
+    }
+
+    return (
+      <div className="w-full px-4 mb-3 z-30">
+        {isLocked ? (
+          ""
+        ) : (
+          <button
+            onClick={handleUpgradeClick}
+            disabled={!isCurrentLevel || !hasEnoughStone}
+            // "overflow-hidden" bazen yetersiz kalabilir, bu yüzden "isolation-auto" veya "transform" eklenebilir ama genelde iç div'e radius vermek çözer.
+            className={`w-full relative h-14 rounded-xl flex items-center justify-between px-1 overflow-hidden transition-all active:scale-98 border ${buttonBg}`}
+          >
+            {/* Left Side: Label */}
+            <div className="flex items-center gap-3 px-4 z-10">
+              <div
+                className={`p-1.5 rounded-full ${
+                  hasEnoughStone
+                    ? "bg-black/20 text-white"
+                    : "bg-amber-900/20 text-amber-700"
+                }`}
+              >
+                <ArrowUpCircle className="w-5 h-5" />
+              </div>
+              <span
+                className={`text-sm font-bold uppercase tracking-wide ${textColor}`}
+              >
+                Upgrade
+              </span>
+            </div>
+
+            {/* Right Side: Cost */}
+            <div className="flex items-center gap-2 px-4 z-10">
+              <span
+                className={`text-2xl font-mono font-black ${textColor} ${
+                  !hasEnoughStone && "opacity-50"
+                }`}
+              >
+                {formatInteger(requiredStone)}
+              </span>
+              <img
+                src="/stone.svg"
+                className={`w-10 h-10 ${
+                  !hasEnoughStone && "grayscale opacity-30"
+                }`}
+                alt="Cost"
+              />
+            </div>
+
+            {/* Progress Bar Background for Insufficient Funds */}
+            {!hasEnoughStone && isCurrentLevel && (
+              // DÜZELTME BURADA: 'rounded-xl' sınıfını içteki div'e de ekledik.
+              // Bu, koyu gri arka planın butonun köşelerine tam oturmasını sağlar ve taşmayı engeller.
+              <div className="absolute inset-0 bg-gray-900 rounded-xl">
+                <div
+                  className="h-full bg-amber-900/20 rounded-l-xl" // Soldaki dolan kısım için de radius ekledik
+                  style={{
+                    width: `${(userStoneBalance / requiredStone) * 100}%`,
                   }}
-                >
-                  <ArrowUp
-                    className={`w-6 h-6 ${
-                      canUpgrade ? "text-white" : "text-gray-600"
-                    }`}
-                  />
-                </motion.div>
+                />
               </div>
-
-              {/* Progress bar for stone collection */}
-              {!hasEnoughStone && (
-                <div className="mt-3">
-                  <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${(userStoneBalance / requiredStone) * 100}%`,
-                      }}
-                      transition={{ duration: 0.5 }}
-                      className="h-full bg-gradient-to-r from-gray-600 to-gray-500"
-                    />
-                  </div>
-                </div>
-              )}
-            </motion.button>
-          </div>
-        </motion.div>
-      );
-    }
-
-    // Eğer bu miner kilitli ise
-    if (isLockedMiner) {
-      return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="w-full max-w-md px-4"
-        >
-          <div className="relative">
-            <motion.button
-              disabled
-              className="relative w-full rounded-2xl px-6 py-4 border-2 transition-all duration-300 bg-gradient-to-r from-gray-800/50 to-gray-900/50 border-gray-700/50 backdrop-blur-sm cursor-not-allowed"
-            >
-              <div className="flex items-center justify-between">
-                {/* Left side - Icon and text */}
-                <div className="flex items-center gap-3">
-                  <div className="bg-gray-700/50 p-2 rounded-lg">
-                    <Lock className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-gray-400 text-sm font-medium">
-                      Locked Level {selectedMinerLevel}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <img src="/stone.svg" alt="Stone" className="w-5 h-5 " />
-                      <span className="text-xs font-bold text-gray-300">
-                        {formatInteger(requiredStone)} stone to upgrade
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side - Lock Icon */}
-                <div>
-                  <Lock className="w-6 h-6 text-gray-600" />
-                </div>
-              </div>
-
-              {/* Info text */}
-              <div className="mt-2 pt-2 border-t border-gray-700/50">
-                <p className="text-gray-500 text-xs text-center">
-                  Unlock previous levels first
-                </p>
-              </div>
-            </motion.button>
-          </div>
-        </motion.div>
-      );
-    }
-
-    return null;
+            )}
+          </button>
+        )}
+      </div>
+    );
   }
 );

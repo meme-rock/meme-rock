@@ -44,11 +44,11 @@ export const RockCounter = () => {
             {/* Rock Icon */}
             <div className="relative">
               {/* İkon Arkası Hafif Parlama */}
-              <div className="absolute inset-0 bg-white/10 blur-xl rounded-full" />
+              <div className="absolute inset-0 rounded-full" />
               <img
                 src="/rock.svg"
                 alt="Rock"
-                className="relative w-14 h-14 object-contain drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                className="relative w-14 h-14 object-contain"
               />
             </div>
 
@@ -83,10 +83,6 @@ export const RockCounter = () => {
             </div>
           </div>
         </div>
-
-        {/* Dekoratif Köşe Detayları (Sadece Görsel) */}
-        <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-cyan-900/10 to-transparent rounded-tr-full pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-blue-900/10 to-transparent rounded-tl-full pointer-events-none" />
       </div>
     </div>
   );

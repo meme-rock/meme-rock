@@ -6,6 +6,7 @@ import boosterReducer from "./slices/boosterSlice";
 import achievementsReducer from "./slices/achievementsSlice";
 import taskReducer from "./slices/taskSlice";
 import dailyRewardReducer from "./slices/dailyRewardSlice";
+import statsReducer from "./slices/statsSlice";
 
 import { userApi } from "./services/user/user-api";
 import { boosterApi } from "./services/booster/booster-api";
@@ -28,6 +29,7 @@ export const store = configureStore({
     achievements: achievementsReducer,
     dailyReward: dailyRewardReducer,
     task: taskReducer,
+    stats: statsReducer,
     [userApi.reducerPath]: userApi.reducer,
     [boosterApi.reducerPath]: boosterApi.reducer,
     [marketApi.reducerPath]: marketApi.reducer,

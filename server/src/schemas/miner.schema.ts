@@ -6,7 +6,7 @@ export type MinerDocument = HydratedDocument<Miner>;
 
 @Schema({ timestamps: true, _id: false })
 export class Miner {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
   _id: EMinerLevel;
 
   @Prop({ type: String, required: true })
