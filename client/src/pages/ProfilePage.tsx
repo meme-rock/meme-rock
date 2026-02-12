@@ -1,6 +1,5 @@
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
-import { Crown, Sparkles } from "lucide-react";
 
 // Components
 import { ProfileHeader } from "../components/profile/ProfileHeader";
@@ -37,36 +36,6 @@ export const ProfilePage = () => {
           userId={userId}
           isPremium={isPremium}
         />
-
-        {/* 4. Premium Upsell (Only if not premium) */}
-        {!isPremium && (
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-5 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-            <div className="relative z-10">
-              <div className="flex items-start gap-3">
-                <div className="bg-amber-500/10 p-2 rounded-lg">
-                  <Sparkles className="w-6 h-6 text-amber-500" />
-                </div>
-                <div>
-                  <h4 className="text-white font-bold text-lg">
-                    Boost Your Rewards
-                  </h4>
-                  <p className="text-slate-400 text-sm mt-1 leading-relaxed">
-                    Upgrade to{" "}
-                    <span className="text-amber-400 font-semibold">
-                      Premium
-                    </span>{" "}
-                    to unlock 4x multiplier and exclusive mining capabilities.
-                  </p>
-                </div>
-              </div>
-              <button className="w-full mt-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                <Crown className="w-4 h-4" />
-                Get Premium Access
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* 5. Wallet & Invite Modules */}
         <WalletConnection />
