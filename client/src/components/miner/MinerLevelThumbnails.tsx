@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { memo } from "react";
+import { Lock } from "lucide-react";
 
 interface MinerLevel {
   level: number;
@@ -36,67 +37,82 @@ export const MinerLevelThumbnails = memo(
     );
 
     return (
-      <div className="w-full overflow-x-auto no-scrollbar py-2">
-        <div className="flex items-center justify-center gap-4 px-4">
-          {levels.map((levelData, index) => (
-            <motion.button
-              key={levelData.level}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => onLevelSelect(levelData.level)}
-              className="relative group focus:outline-none"
-            >
-              <div
-                className={`relative w-14 h-14 rounded-2xl border transition-all duration-300 flex items-center justify-center overflow-hidden ${
-                  levelData.level === selectedLevel
-                    ? "border-cyan-400 bg-cyan-900/30 shadow-[0_0_15px_rgba(34,211,238,0.4)] scale-110"
-                    : levelData.level === currentLevel
-                    ? "border-green-500/60 bg-green-900/20"
-                    : "border-white/10 bg-white/5 opacity-50"
-                }`}
+      <div className="w-full py-3 px-4">
+        <div className="flex items-center justify-center gap-3">
+          {levels.map((levelData, index) => {
+            const isSelected = levelData.level === selectedLevel;
+            const isCurrent = levelData.level === currentLevel;
+
+            return (
+              <motion.button
+                key={levelData.level}
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06, type: "spring", stiffness: 300 }}
+                onClick={() => onLevelSelect(levelData.level)}
+                className="relative group focus:outline-none"
               >
-                <img
-                  src={levelData.image}
-                  alt={`Level ${levelData.level}`}
-                  className={`w-full h-full object-cover transition-opacity ${
-                    levelData.locked ? "opacity-40 grayscale" : "opacity-100"
-                  }`}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "assets/miners/miner-LEVEL_1.svg";
-                  }}
-                />
-
-                {/* Lock Overlay */}
-                {levelData.locked && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <svg
-                      className="w-4 h-4 text-white/60"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                  </div>
+                {/* Glow effect for selected */}
+                {isSelected && (
+                  <div className="absolute -inset-1 bg-cyan-500/20 rounded-2xl blur-md" />
                 )}
-              </div>
 
-              {/* Active Indicator Dot */}
-              {levelData.level === selectedLevel && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full"
-                />
-              )}
-            </motion.button>
-          ))}
+                <div
+                  className={`relative w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center overflow-hidden ${
+                    isSelected
+                      ? "border-cyan-400 bg-cyan-950/60 shadow-lg shadow-cyan-500/20 scale-110"
+                      : isCurrent
+                      ? "border-cyan-600/40 bg-slate-800/60"
+                      : "border-slate-700/40 bg-slate-900/40"
+                  }`}
+                >
+                  <img
+                    src={levelData.image}
+                    alt={`Level ${levelData.level}`}
+                    className={`w-full h-full object-cover transition-all duration-300 ${
+                      levelData.locked
+                        ? "opacity-30 grayscale"
+                        : isSelected
+                        ? "opacity-100 scale-105"
+                        : "opacity-70"
+                    }`}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "assets/miners/miner-LEVEL_1.svg";
+                    }}
+                  />
+
+                  {/* Lock overlay */}
+                  {levelData.locked && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[1px]">
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Level label */}
+                <span
+                  className={`block text-center mt-1.5 text-[10px] font-bold transition-colors duration-300 ${
+                    isSelected
+                      ? "text-cyan-400"
+                      : isCurrent
+                      ? "text-slate-300"
+                      : "text-slate-600"
+                  }`}
+                >
+                  Lv.{levelData.level}
+                </span>
+
+                {/* Active indicator */}
+                {isSelected && (
+                  <motion.div
+                    layoutId="minerActiveTab"
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.6)]"
+                  />
+                )}
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     );
