@@ -33,6 +33,10 @@ export const MinerUpgradeButton = memo(
     const isCurrentLevel = selectedMinerLevel === currentUserMinerLevel;
     const isMaxLevel = selectedMinerLevel >= MAX_MINER_LEVEL;
     const isLocked = selectedMinerLevel > currentUserMinerLevel;
+    const progressPercent = Math.min(
+      (userStoneBalance / requiredStone) * 100,
+      100
+    );
 
     const handleUpgradeClick = () => {
       if (!hasEnoughStone) {
@@ -44,81 +48,67 @@ export const MinerUpgradeButton = memo(
       onUpgrade?.();
     };
 
-    if (isMaxLevel) return null; // Max levelde göstermeyelim
-
-    // --- BUTTON STYLES ---
-    let buttonBg = "bg-gray-800/50 border-white/5";
-    let textColor = "text-gray-500";
-
-    if (isCurrentLevel) {
-      buttonBg = hasEnoughStone
-        ? "bg-gradient-to-r from-amber-500 to-orange-600 shadow-[0_0_20px_rgba(245,158,11,0.3)] border-amber-400/30"
-        : "bg-gray-900 border-amber-900/30";
-      textColor = hasEnoughStone ? "text-white" : "text-amber-500/50";
-    }
+    if (isMaxLevel || isLocked) return null;
 
     return (
-      <div className="w-full px-4 mb-3 z-30">
-        {isLocked ? (
-          ""
-        ) : (
-          <button
-            onClick={handleUpgradeClick}
-            disabled={!isCurrentLevel || !hasEnoughStone}
-            // "overflow-hidden" bazen yetersiz kalabilir, bu yüzden "isolation-auto" veya "transform" eklenebilir ama genelde iç div'e radius vermek çözer.
-            className={`w-full relative h-14 rounded-xl flex items-center justify-between px-1 overflow-hidden transition-all active:scale-98 border ${buttonBg}`}
-          >
-            {/* Left Side: Label */}
-            <div className="flex items-center gap-3 px-4 z-10">
+      <div className="w-full px-4 z-30">
+        <button
+          onClick={handleUpgradeClick}
+          disabled={!isCurrentLevel || !hasEnoughStone}
+          className={`w-full relative h-14 rounded-2xl flex items-center justify-between overflow-hidden transition-all duration-300 active:scale-[0.98] border ${
+            hasEnoughStone
+              ? "bg-gradient-to-r from-amber-500 to-orange-600 border-amber-400/30 shadow-lg shadow-amber-500/20"
+              : "bg-slate-900/80 border-slate-700/30"
+          }`}
+        >
+          {/* Progress bar for insufficient funds */}
+          {!hasEnoughStone && isCurrentLevel && (
+            <div className="absolute inset-0">
               <div
-                className={`p-1.5 rounded-full ${
-                  hasEnoughStone
-                    ? "bg-black/20 text-white"
-                    : "bg-amber-900/20 text-amber-700"
-                }`}
-              >
-                <ArrowUpCircle className="w-5 h-5" />
-              </div>
-              <span
-                className={`text-sm font-bold uppercase tracking-wide ${textColor}`}
-              >
-                Upgrade
-              </span>
-            </div>
-
-            {/* Right Side: Cost */}
-            <div className="flex items-center gap-2 px-4 z-10">
-              <span
-                className={`text-2xl font-mono font-black ${textColor} ${
-                  !hasEnoughStone && "opacity-50"
-                }`}
-              >
-                {formatInteger(requiredStone)}
-              </span>
-              <img
-                src="/stone.svg"
-                className={`w-10 h-10 ${
-                  !hasEnoughStone && "grayscale opacity-30"
-                }`}
-                alt="Cost"
+                className="h-full bg-amber-900/25 transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
+          )}
 
-            {/* Progress Bar Background for Insufficient Funds */}
-            {!hasEnoughStone && isCurrentLevel && (
-              // DÜZELTME BURADA: 'rounded-xl' sınıfını içteki div'e de ekledik.
-              // Bu, koyu gri arka planın butonun köşelerine tam oturmasını sağlar ve taşmayı engeller.
-              <div className="absolute inset-0 bg-gray-900 rounded-xl">
-                <div
-                  className="h-full bg-amber-900/20 rounded-l-xl" // Soldaki dolan kısım için de radius ekledik
-                  style={{
-                    width: `${(userStoneBalance / requiredStone) * 100}%`,
-                  }}
-                />
-              </div>
-            )}
-          </button>
-        )}
+          {/* Left: Label */}
+          <div className="flex items-center gap-3 px-4 z-10">
+            <div
+              className={`p-1.5 rounded-xl ${
+                hasEnoughStone
+                  ? "bg-black/20 text-white"
+                  : "bg-slate-800/50 text-amber-600"
+              }`}
+            >
+              <ArrowUpCircle className="w-5 h-5" />
+            </div>
+            <span
+              className={`text-sm font-bold uppercase tracking-wide ${
+                hasEnoughStone ? "text-white" : "text-amber-500/60"
+              }`}
+            >
+              Upgrade
+            </span>
+          </div>
+
+          {/* Right: Cost */}
+          <div className="flex items-center gap-2 px-4 z-10">
+            <span
+              className={`text-xl font-mono font-black ${
+                hasEnoughStone ? "text-white" : "text-slate-400"
+              }`}
+            >
+              {formatInteger(requiredStone)}
+            </span>
+            <img
+              src="/stone.svg"
+              className={`w-8 h-8 transition-all ${
+                !hasEnoughStone ? "grayscale opacity-40" : ""
+              }`}
+              alt="Stone"
+            />
+          </div>
+        </button>
       </div>
     );
   }

@@ -189,17 +189,15 @@ export const Navbar = () => {
                 {/* 2. İç Daire (Arka Plan)
                     - HER ZAMAN: Mavi Gradient (Değişmez)
                 */}
-                <div className="absolute inset-1.5 rounded-full flex items-center justify-center shadow-inner bg-gradient-to-br from-cyan-500 to-blue-600">
-                  {/* 3. İkon */}
+                <div className="absolute inset-1.5 rounded-full flex items-center justify-center shadow-inner bg-gradient-to-br from-cyan-500 to-blue-600 overflow-hidden">
+                  {/* 3. İkon - brightness filtresi SVG iç filtreleriyle çakışıp siyah bg oluşturduğu için scale/opacity kullanıyoruz */}
                   <img
                     src={centerItem.icon}
                     alt="Main"
-                    // w-25 h-20 çok büyüktü, w-10 h-10 (40px) ideal boyuta çekildi.
-                    // İkon her zaman net ve parlak, aktifken ekstra parlıyor.
-                    className={`w-15 h-15 transition-all duration-300 ${
+                    className={`w-15 h-15 transition-transform duration-300 ${
                       isMainActive
-                        ? "brightness-125 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-                        : "brightness-100 opacity-100"
+                        ? "scale-105 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                        : "scale-100"
                     }`}
                   />
                 </div>
