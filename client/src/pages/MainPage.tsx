@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,12 +7,13 @@ import { CgArrowsExchange } from "react-icons/cg";
 
 // Components
 import { RockCounter } from "../components/main/RockCounter";
-import { ProfileCard } from "../components/main/ProfileCard"; // YENİ COMPONENT
+import { ProfileCard } from "../components/main/ProfileCard";
 import { DailyRewardModal } from "../components/main/DailyRewardModal";
 import { AchievementsModal } from "../components/main/AchievementsModal";
 import { PremiumModal } from "../components/premium/PremiumModal";
 import { StoneTodustExchange } from "../components/main/exchange/Exchange";
-import { AdRewardSection } from "../components/main/ads/AdRewardSection";
+import { useAdsgram } from "../ad/hooks/useAdsgram";
+import { useUpdateAfterAdRewardMutation } from "../redux/services/ad/ad-api";
 
 export const MainPage = () => {
   const user = useSelector((state: RootState) => state.user);
@@ -47,13 +48,26 @@ export const MainPage = () => {
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
-  const [showAdRewardModal, setShowAdRewardModal] = useState(false);
 
   const currentRewardDay = user.daily_reward_data.day;
 
   const handleClaimReward = (day: number) => {
     console.log(`Claiming reward for day ${day}`);
   };
+
+  // Adsgram
+  const adsgram = useAdsgram(import.meta.env.VITE_ADSGRAM_BLOCK_ID || "");
+  const [updateUserAfterAdReward] = useUpdateAfterAdRewardMutation();
+
+  const handleWatchAd = useCallback(async () => {
+    if (!adsgram.isReady || adsgram.isLoading) return;
+    const result = await adsgram.showAd();
+    if (result.success) {
+      setTimeout(() => {
+        updateUserAfterAdReward({ user_id: user._id });
+      }, 1000);
+    }
+  }, [adsgram, user._id, updateUserAfterAdReward]);
 
   return (
     // TopBar için pt-20 boşluğu bıraktık
@@ -103,15 +117,24 @@ export const MainPage = () => {
 
           {/* Watch Ads Button */}
           <button
-            onClick={() => setShowAdRewardModal(true)}
-            className="group relative overflow-hidden bg-slate-900/60 border border-slate-700/50 hover:border-purple-500/30 rounded-2xl p-4 transition-all active:scale-95"
+            onClick={handleWatchAd}
+            disabled={!adsgram.isReady || adsgram.isLoading}
+            className={`group relative overflow-hidden bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 transition-all ${
+              !adsgram.isReady || adsgram.isLoading
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:border-purple-500/30 active:scale-95"
+            }`}
           >
+            <div className="flex items-center gap-1 justify-center mb-2">
+              <img src="/dust.svg" alt="Dust" className="w-3.5 h-3.5" />
+              <span className="text-cyan-400 font-bold text-xs">+5</span>
+            </div>
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
                 <Tv className="w-5 h-5 text-purple-400" />
               </div>
               <span className="text-sm font-bold text-slate-300 group-hover:text-white">
-                Watch Ads
+                {adsgram.isLoading ? "Loading..." : "Watch Ads"}
               </span>
             </div>
           </button>
@@ -172,36 +195,6 @@ export const MainPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Ad Reward Modal Wrapper */}
-      <AnimatePresence>
-        {showAdRewardModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-            onClick={() => setShowAdRewardModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden p-1" // p-1 for border padding if needed
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="absolute top-4 right-4 z-10">
-                <button
-                  onClick={() => setShowAdRewardModal(false)}
-                  className="p-2 bg-black/20 rounded-full hover:bg-black/40"
-                >
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
-              <AdRewardSection />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

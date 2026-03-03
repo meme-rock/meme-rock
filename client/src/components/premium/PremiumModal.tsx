@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check } from "lucide-react";
+import { X, Crown, Zap, Clock, Rocket, ShieldCheck } from "lucide-react";
 import { PaymentButtons } from "../shared/PaymentButtons";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
 import WebApp from "@twa-dev/sdk";
@@ -20,6 +20,37 @@ interface PremiumModalProps {
   premiumStarPrice?: number;
   premiumTonPrice?: number;
 }
+
+const premiumBenefits = [
+  {
+    title: "4x Mining Rewards",
+    description: "Quadruple your mining output",
+    icon: Zap,
+    color: "text-amber-400",
+    bg: "bg-amber-500/10 border-amber-500/20",
+  },
+  {
+    title: "24H Mining Storage",
+    description: "Extended storage capacity",
+    icon: Clock,
+    color: "text-cyan-400",
+    bg: "bg-cyan-500/10 border-cyan-500/20",
+  },
+  {
+    title: "Exclusive Boosters",
+    description: "Access premium-only boosters",
+    icon: Rocket,
+    color: "text-purple-400",
+    bg: "bg-purple-500/10 border-purple-500/20",
+  },
+  {
+    title: "Season Validity",
+    description: "Active for the entire season",
+    icon: ShieldCheck,
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+];
 
 export const PremiumModal = ({
   user_id,
@@ -54,27 +85,23 @@ export const PremiumModal = ({
 
       WebApp.openInvoice(invoice_link, async (status) => {
         if (status === "paid") {
-          // Show loading animation during processing
           setIsPaymentProcessing(true);
-          // Wait 2 seconds for payment confirmation
           await new Promise((resolve) => setTimeout(resolve, 2000));
           await isPremium({ user_id: user_id }).unwrap();
-          // Refresh user data to update premium status
           WebApp.showAlert("Premium purchased successfully");
-          // Hide loading animation after user data is loaded
           setIsPaymentProcessing(false);
-          // Close modal after successful purchase
           onClose();
         }
       });
     } catch (error) {
-      console.error("❌ Purchase Premium with Stars error:", error);
+      console.error("Purchase Premium with Stars error:", error);
       setIsPaymentProcessing(false);
       WebApp.showAlert(
         "Failed to purchase premium with stars. Please try again."
       );
     }
   };
+
   const handleTonPurchase = async () => {
     try {
       setIsPaymentProcessing(true);
@@ -94,29 +121,13 @@ export const PremiumModal = ({
       await tonConnectUI.sendTransaction(response as SendTransactionRequest);
       setIsPaymentProcessing(false);
     } catch (error) {
-      console.error("❌ Purchase Premium with Ton error:", error);
+      console.error("Purchase Premium with Ton error:", error);
       setIsPaymentProcessing(false);
       WebApp.showAlert(
         "Failed to purchase premium with ton. Please try again."
       );
     }
   };
-
-  // Sadece Başlıklar
-  const premiumBenefits = [
-    {
-      title: "4x Mining Rewards",
-    },
-    {
-      title: "24H Mining Storage",
-    },
-    {
-      title: "Exclusive Boosters",
-    },
-    {
-      title: "Season Validity",
-    },
-  ];
 
   return (
     <AnimatePresence>
@@ -127,79 +138,87 @@ export const PremiumModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={isPaymentProcessing ? undefined : onClose}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-20">
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pb-20">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md max-h-[85vh] bg-gradient-to-br from-gray-900 via-gray-900 to-black border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              className="relative w-full max-w-sm max-h-[85vh] bg-slate-900 border border-amber-500/20 rounded-3xl shadow-2xl shadow-amber-500/10 overflow-hidden flex flex-col"
             >
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-yellow-500/10 pointer-events-none" />
+              {/* Top gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-transparent pointer-events-none" />
 
               {/* Close button */}
-              <button
-                onClick={onClose}
-                disabled={isPaymentProcessing}
-                className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-gray-800/80 hover:bg-gray-700 transition-colors disabled:opacity-50"
-              >
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
+              {!isPaymentProcessing && (
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
 
               {/* Content */}
               <div className="relative p-6 overflow-y-auto flex-1">
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                  {/* YENİ HEADER LOGO KISMI */}
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-500 to-yellow-500 shadow-lg shadow-amber-500/50 p-2">
-                    <img
-                      src="/premium-rock-logo.svg" // Public klasörden çağrıldı
-                      alt="Premium Rock Logo"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold text-2xl">Premium</h3>
-                  </div>
+                <div className="flex flex-col items-center text-center mb-6">
+                  {/* Crown icon */}
+                  <motion.div
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", delay: 0.1, stiffness: 200 }}
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-amber-400 to-yellow-600 shadow-lg shadow-amber-500/40 mb-4"
+                  >
+                    <Crown className="w-8 h-8 text-white" />
+                  </motion.div>
+
+                  <h3 className="text-2xl font-black text-white mb-1">
+                    Go Premium
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Unlock the full power of your mining operation
+                  </p>
                 </div>
 
-                {/* Benefits List */}
-                <div className="space-y-3">
-                  {premiumBenefits.map((benefit, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      // Tik işareti ve başlık yan yana ve dikeyde ortalanmış olacak
-                      className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50"
-                    >
-                      {/* SOL TARAFTA: Tik İkonu */}
-                      <div className="flex-shrink-0">
-                        <Check className="w-5 h-5 text-green-400" />
-                      </div>
-
-                      {/* SAĞ TARAFTA: Başlık */}
-                      <div className="flex-1">
-                        <h4 className="text-white font-semibold text-base">
-                          {benefit.title}
-                        </h4>
-                      </div>
-                    </motion.div>
-                  ))}
+                {/* Benefits */}
+                <div className="space-y-2.5">
+                  {premiumBenefits.map((benefit, index) => {
+                    const Icon = benefit.icon;
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + index * 0.07 }}
+                        className={`flex items-center gap-3 p-3 rounded-xl border ${benefit.bg}`}
+                      >
+                        <div className="flex-shrink-0">
+                          <Icon className={`w-5 h-5 ${benefit.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-white">
+                            {benefit.title}
+                          </h4>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {benefit.description}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Payment Buttons - Fixed at bottom */}
-              <div className="p-6 pt-0 border-t border-gray-800/50 flex-shrink-0 bg-gradient-to-br from-gray-900 via-gray-900 to-black">
-                <p className="text-xs text-gray-400 font-semibold mb-3 text-center">
-                  Choose your payment method:
+              {/* Payment section */}
+              <div className="p-5 pt-4 border-t border-slate-800/50 flex-shrink-0">
+                <p className="text-[11px] text-slate-500 font-semibold mb-3 text-center uppercase tracking-wider">
+                  Choose payment method
                 </p>
                 <PaymentButtons
                   starOption={
