@@ -16,6 +16,8 @@ import { MinePage } from "./pages/MinePage";
 import { TaskPage } from "./pages/TaskPage";
 import { LeaderBoardPage2 } from "./pages/LeaderBoardPage2";
 import { AirdropPage } from "./pages/AirdropPage";
+import { MiniGamesPage } from "./pages/MiniGamesPage";
+import { DrillPage } from "./pages/DrillPage";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -42,6 +44,8 @@ function AppContent() {
             <Route path="/leaderboard-2" element={<LeaderBoardPage2 />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/airdrop" element={<AirdropPage />} />
+            <Route path="/mini-games" element={<MiniGamesPage />} />
+            <Route path="/mini-games/drill" element={<DrillPage />} />
           </Routes>
         </main>
 

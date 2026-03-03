@@ -7,6 +7,7 @@ import {
   ListTodo,
   LayoutGrid,
   X,
+  Gamepad2,
 } from "lucide-react";
 import { FaParachuteBox } from "react-icons/fa";
 
@@ -49,10 +50,11 @@ export const Navbar = () => {
     },
   ];
 
-  // 4. MENÜ İÇİNDEKİLER (Task, Market, Profile)
+  // 4. MENÜ İÇİNDEKİLER (Task, Market, Mini Games, Profile, Airdrop)
   const menuItems = [
     { id: "task", label: "Task", icon: ListTodo, path: "/task" },
     { id: "market", label: "Market", icon: ShoppingCart, path: "/market" },
+    { id: "mini-games", label: "Mini Games", icon: Gamepad2, path: "/mini-games" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
     { id: "airdrop", label: "Airdrop", icon: FaParachuteBox, path: "/airdrop" },
   ];
