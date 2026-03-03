@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ShowPromiseResult {
   done: boolean;
@@ -9,8 +9,6 @@ interface ShowPromiseResult {
 
 interface AdController {
   show(): Promise<ShowPromiseResult>;
-  addEventListener(event: string, handler: () => void): void;
-  removeEventListener(event: string, handler: () => void): void;
   destroy(): void;
 }
 
@@ -22,9 +20,6 @@ interface AdsgramWindow extends Window {
 
 declare const window: AdsgramWindow;
 
-/**
- * Adsgram Reward Ad Hook - With Status Tracking
- */
 export const useAdsgram = (blockId: string) => {
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,181 +27,89 @@ export const useAdsgram = (blockId: string) => {
     "idle" | "no-ads" | "success" | "error"
   >("idle");
   const adControllerRef = useRef<AdController | null>(null);
-  const initializationAttemptedRef = useRef(false);
-  const eventHandlersRef = useRef<Record<string, () => void>>({});
 
-  // Initialize Adsgram once
   useEffect(() => {
     if (!blockId || !blockId.match(/^\d+$/)) {
       console.warn("⚠️ Adsgram: Invalid blockId");
       return;
     }
 
-    if (initializationAttemptedRef.current) {
-      return;
-    }
-
-    const initializeAdsgram = () => {
-      if (!window.Adsgram) {
-        return false;
-      }
-
+    const initialize = () => {
+      if (!window.Adsgram) return false;
       try {
-        console.log("🔄 Initializing Adsgram...");
         adControllerRef.current = window.Adsgram.init({
-          blockId: blockId,
+          blockId,
           debug: false,
         });
-
-        eventHandlersRef.current = {
-          onReward: () => {
-            console.log("✅ Adsgram: Reward event");
-          },
-          onComplete: () => {
-            console.log("✅ Adsgram: Ad completed");
-            setIsLoading(false);
-            setLastAttemptStatus("success");
-          },
-          onStart: () => {
-            console.log("📺 Adsgram: Ad started");
-            setIsLoading(true);
-          },
-          onSkip: () => {
-            console.log("⏭️ Adsgram: Ad skipped");
-            setIsLoading(false);
-            setLastAttemptStatus("error");
-          },
-          onBannerNotFound: () => {
-            console.log("⚠️ Adsgram: No ad available");
-            setIsLoading(false);
-            setLastAttemptStatus("no-ads");
-          },
-          onError: () => {
-            console.log("⚠️ Adsgram: Ad error");
-            setIsLoading(false);
-            setLastAttemptStatus("error");
-          },
-        };
-
-        Object.entries(eventHandlersRef.current).forEach(([event, handler]) => {
-          adControllerRef.current!.addEventListener(event, handler);
-        });
-
         setIsReady(true);
-        initializationAttemptedRef.current = true;
         console.log("✅ Adsgram initialized");
         return true;
       } catch (error) {
         console.error("❌ Adsgram initialization error:", error);
-        setIsReady(false);
         return false;
       }
     };
 
-    if (window.Adsgram) {
-      initializeAdsgram();
-      return;
-    }
+    if (initialize()) return;
 
     let attempts = 0;
-    const maxAttempts = 100;
-    const checkSDK = setInterval(() => {
+    const poll = setInterval(() => {
       attempts++;
-      if (window.Adsgram) {
-        if (initializeAdsgram()) {
-          clearInterval(checkSDK);
-        }
-      } else if (attempts >= maxAttempts) {
-        console.error("❌ Adsgram: SDK not loaded");
-        clearInterval(checkSDK);
-        setIsReady(false);
+      if (initialize()) {
+        clearInterval(poll);
+      } else if (attempts >= 100) {
+        console.error("❌ Adsgram: SDK not loaded after 10s");
+        clearInterval(poll);
       }
     }, 100);
 
     return () => {
-      clearInterval(checkSDK);
+      clearInterval(poll);
       if (adControllerRef.current) {
         try {
-          Object.entries(eventHandlersRef.current).forEach(
-            ([event, handler]) => {
-              adControllerRef.current!.removeEventListener(event, handler);
-            }
-          );
           adControllerRef.current.destroy();
           adControllerRef.current = null;
-        } catch (error) {
-          console.error("⚠️ Adsgram cleanup error:", error);
-        }
+        } catch {}
       }
     };
-  }, []);
+  }, [blockId]);
 
   const showAd = useCallback(async (): Promise<{ success: boolean }> => {
-    if (!adControllerRef.current) {
-      console.log("⚠️ Adsgram: Controller not initialized");
+    if (!adControllerRef.current || !isReady || isLoading) {
       setLastAttemptStatus("error");
-      return { success: false };
-    }
-
-    if (!isReady) {
-      console.log("⚠️ Adsgram: Not ready");
-      setLastAttemptStatus("error");
-      return { success: false };
-    }
-
-    if (isLoading) {
-      console.log("⚠️ Adsgram: Already showing");
       return { success: false };
     }
 
     try {
       setIsLoading(true);
-      // Reset status at the START of new attempt
       setLastAttemptStatus("idle");
-      console.log("📺 Adsgram: Showing ad...");
 
-      const result = await adControllerRef.current.show();
+      await adControllerRef.current.show();
 
-      setIsLoading(false);
-
-      if (result.error) {
-        console.log("⚠️ Adsgram: Show returned error");
+      // Promise resolved = user watched the ad completely
+      setLastAttemptStatus("success");
+      return { success: true };
+    } catch (result: unknown) {
+      // Promise rejected = user skipped, no ads, or error
+      const res = result as ShowPromiseResult | undefined;
+      if (res && !res.error && res.state === "load") {
+        setLastAttemptStatus("no-ads");
+      } else {
         setLastAttemptStatus("error");
-        return { success: false };
       }
-
-      if (result.done) {
-        console.log("✅ Adsgram: Completed");
-        setLastAttemptStatus("success");
-        return { success: true };
-      }
-
-      console.log("⚠️ Adsgram: Not completed");
-      setLastAttemptStatus("error");
       return { success: false };
-    } catch (error) {
-      console.error("❌ Adsgram: Show error:", error);
+    } finally {
       setIsLoading(false);
-      setLastAttemptStatus("error");
-      return { success: false };
     }
   }, [isReady, isLoading]);
 
-  // Auto-reset status after success (but not error/no-ads)
+  // Auto-reset status after success
   useEffect(() => {
     if (lastAttemptStatus === "success") {
-      const timer = setTimeout(() => {
-        console.log("🔄 Adsgram: Resetting status to idle");
-        setLastAttemptStatus("idle");
-      }, 5000); // 5 seconds
+      const timer = setTimeout(() => setLastAttemptStatus("idle"), 5000);
       return () => clearTimeout(timer);
     }
   }, [lastAttemptStatus]);
 
-  return {
-    isReady,
-    isLoading,
-    lastAttemptStatus,
-    showAd,
-  };
+  return { isReady, isLoading, lastAttemptStatus, showAd };
 };
