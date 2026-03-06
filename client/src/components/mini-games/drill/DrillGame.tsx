@@ -6,18 +6,24 @@ import { DrillEngine } from "./drillEngine";
 import { DrillRewardPopup } from "./DrillRewardPopup";
 import { DrillGameOverModal } from "./DrillGameOverModal";
 import { DrillUpgradeMenu } from "./DrillUpgradeMenu";
-import { loadDrillState, saveDrillState } from "./drillStorage";
 import {
   DrillReward,
-  DrillEngineConfig,
-  DRILL_UPGRADES,
-  ROCKS_PER_AD,
-  MAX_ADS_PER_DAY,
-  DAILY_ROCKS,
   getUpgradeCost,
 } from "./drillTypes";
 import { updateUserStones } from "../../../redux/slices/userSlice";
 import { useAdsgram } from "../../../ad/hooks/useAdsgram";
+import {
+  useStartSessionMutation,
+  useEndSessionMutation,
+  useUpgradeMiniGameMutation,
+  useClaimAdRewardMutation,
+  useLazyGetMiniGameStateQuery,
+} from "../../../redux/services/mini-game/mini-game-api";
+import type {
+  RockSequenceItem,
+  MiniGameConfigFromAPI,
+  UpgradeDefFromAPI,
+} from "../../../redux/services/mini-game/responses";
 
 interface RewardEntry {
   id: number;
@@ -26,6 +32,15 @@ interface RewardEntry {
 
 let rewardIdCounter = 0;
 
+// Default config used while loading
+const DEFAULT_CONFIG: MiniGameConfigFromAPI = {
+  daily_plays: 20,
+  max_ads_per_day: 5,
+  plays_per_ad: 5,
+  max_upgrade_level: 10,
+  upgrades: [],
+};
+
 export const DrillGame = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<DrillEngine | null>(null);
@@ -33,14 +48,38 @@ export const DrillGame = () => {
   const dispatch = useDispatch();
 
   // Redux state
+  const userId = useSelector((state: any) => state.user._id ?? "");
   const userStone = useSelector(
     (state: any) => state.user.balance_data?.stone ?? 0
   );
 
-  // Drill state from localStorage
-  const [drillState, setDrillState] = useState(() => loadDrillState());
-  const drillStateRef = useRef(drillState);
-  drillStateRef.current = drillState;
+  // API hooks
+  const [fetchState] = useLazyGetMiniGameStateQuery();
+  const [startSession] = useStartSessionMutation();
+  const [endSession] = useEndSessionMutation();
+  const [upgradeMiniGame] = useUpgradeMiniGameMutation();
+  const [claimAdReward] = useClaimAdRewardMutation();
+
+  // Game state from API
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [dailyPlaysLeft, setDailyPlaysLeft] = useState(0);
+  const [adsWatchedToday, setAdsWatchedToday] = useState(0);
+  const [drillCoins, setDrillCoins] = useState(0);
+  const [upgradeLevels, setUpgradeLevels] = useState<Record<string, number>>({});
+
+  // Config from API
+  const [config, setConfig] = useState<MiniGameConfigFromAPI>(DEFAULT_CONFIG);
+
+  // Session state - stored in refs to avoid closure issues
+  const sessionIdRef = useRef<string | null>(null);
+  const rocksSmashed = useRef(0);
+  const userStoneRef = useRef(userStone);
+  userStoneRef.current = userStone;
+
+  // Pending rock sequence: set by handlePlay, consumed by useEffect to create engine
+  const [pendingSequence, setPendingSequence] = useState<RockSequenceItem[] | null>(null);
+  const pendingConfigRef = useRef<{ drillPower: number; comboSpeed: number } | null>(null);
 
   // UI state
   const [isMuted, setIsMuted] = useState(false);
@@ -48,31 +87,11 @@ export const DrillGame = () => {
   const [showUpgradeMenu, setShowUpgradeMenu] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [rewards, setRewards] = useState<RewardEntry[]>([]);
-  const [remainingRocks, setRemainingRocks] = useState(drillState.remainingRocks);
-  const [drillCoins, setDrillCoins] = useState(drillState.drillCoins);
   const [rockHP, setRockHP] = useState({ hp: 80, maxHP: 80 });
 
   // Ad hook
   const adsgram = useAdsgram(import.meta.env.VITE_ADSGRAM_BLOCK_ID || "");
   const [isAdLoading, setIsAdLoading] = useState(false);
-
-  // Refs for callback closures
-  const userStoneRef = useRef(userStone);
-  userStoneRef.current = userStone;
-
-  // Build engine config from upgrade levels
-  const getEngineConfig = useCallback(
-    (state: typeof drillState): DrillEngineConfig => {
-      const drillPowerLevel = state.upgradeLevels["drill_power"] || 0;
-      const rapidFireLevel = state.upgradeLevels["rapid_fire"] || 0;
-      return {
-        drillPower: 1 + drillPowerLevel,
-        comboSpeed: rapidFireLevel * 0.5,
-        totalRocksSmashed: state.totalRocksSmashed,
-      };
-    },
-    []
-  );
 
   // Show reward popup
   const showRewardPopup = useCallback((reward: DrillReward) => {
@@ -83,154 +102,270 @@ export const DrillGame = () => {
     }, 1500);
   }, []);
 
-  // Handle rock smashed
-  const handleRockSmashed = useCallback(
-    (rockRewards: DrillReward[]) => {
-      const state = drillStateRef.current;
-      let newDrillCoins = state.drillCoins;
-      let stoneEarned = 0;
+  // Stable callback refs for engine (avoids stale closures)
+  const showRewardPopupRef = useRef(showRewardPopup);
+  showRewardPopupRef.current = showRewardPopup;
 
-      for (const reward of rockRewards) {
-        if (reward.type === "drill_coin") {
-          newDrillCoins += reward.amount;
-          showRewardPopup(reward);
-        } else if (reward.type === "stone") {
-          stoneEarned += reward.amount;
-          showRewardPopup(reward);
-        } else if (reward.type === "rock_coin") {
-          showRewardPopup(reward);
+  const handleRockSmashedRef = useRef((_index: number, rockRewards: DrillReward[]) => {
+    rocksSmashed.current++;
+    // Update remaining rocks counter dynamically
+    setDailyPlaysLeft((prev) => Math.max(0, prev - 1));
+    // Update drill coins in real-time from rewards
+    for (const reward of rockRewards) {
+      showRewardPopupRef.current(reward);
+      if (reward.type === "drill_coin") {
+        setDrillCoins((prev) => prev + reward.amount);
+      }
+    }
+  });
+
+  const handleGameOverRef = useRef(async () => {
+    setIsPlaying(false);
+    const sid = sessionIdRef.current;
+
+    if (sid && userId) {
+      try {
+        const result = await endSession({
+          user_id: userId,
+          game_type: "DRILL",
+          rocksSmashed: rocksSmashed.current,
+        }).unwrap();
+
+        const ns = result.data.new_state;
+        setDailyPlaysLeft(ns.daily_plays_left);
+        setAdsWatchedToday(ns.ads_watched_today);
+        setDrillCoins(ns.game_data.drill_coins);
+        setUpgradeLevels(ns.game_data.upgrade_levels);
+
+        if (result.data.rewards.stones > 0) {
+          dispatch(
+            updateUserStones({
+              stones: userStoneRef.current + result.data.rewards.stones,
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Error ending session:", err);
+      }
+    }
+
+    sessionIdRef.current = null;
+    setShowGameOver(true);
+  });
+  // Keep ref updated with latest userId/endSession/dispatch
+  useEffect(() => {
+    handleGameOverRef.current = async () => {
+      setIsPlaying(false);
+      const sid = sessionIdRef.current;
+
+      if (sid && userId) {
+        try {
+          const result = await endSession({
+            user_id: userId,
+            game_type: "DRILL",
+            rocksSmashed: rocksSmashed.current,
+          }).unwrap();
+
+          const ns = result.data.new_state;
+          setDailyPlaysLeft(ns.daily_plays_left);
+          setAdsWatchedToday(ns.ads_watched_today);
+          setDrillCoins(ns.game_data?.drill_coins ?? 0);
+          setUpgradeLevels(ns.game_data?.upgrade_levels ?? {});
+
+          if (result.data.rewards.stones > 0) {
+            dispatch(
+              updateUserStones({
+                stones: userStoneRef.current + result.data.rewards.stones,
+              })
+            );
+          }
+        } catch (err) {
+          console.error("Error ending session:", err);
         }
       }
 
-      // Update drill state
-      const newState = {
-        ...state,
-        remainingRocks: state.remainingRocks - 1,
-        drillCoins: newDrillCoins,
-        totalRocksSmashed: state.totalRocksSmashed + 1,
-      };
-      setDrillState(newState);
-      saveDrillState(newState);
-      setRemainingRocks(newState.remainingRocks);
-      setDrillCoins(newDrillCoins);
+      sessionIdRef.current = null;
+      setShowGameOver(true);
+    };
+  }, [userId, endSession, dispatch]);
 
-      // Dispatch stone to Redux
-      if (stoneEarned > 0) {
-        dispatch(
-          updateUserStones({ stones: userStoneRef.current + stoneEarned })
-        );
-      }
-    },
-    [dispatch, showRewardPopup]
-  );
-
-  // Handle game over
-  const handleGameOver = useCallback(() => {
-    setShowGameOver(true);
-  }, []);
-
-  // Handle HP change
-  const handleHPChange = useCallback((hp: number, maxHP: number) => {
-    setRockHP({ hp, maxHP });
-  }, []);
-
-  // Initialize engine
+  // Load initial state from API
   useEffect(() => {
-    // Load Bungee font
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadState = async () => {
+      try {
+        const result = await fetchState({
+          user_id: userId,
+          game_type: "DRILL",
+        }).unwrap();
+
+        const d = result.data;
+        setDailyPlaysLeft(d.daily_plays_left);
+        setAdsWatchedToday(d.ads_watched_today);
+        setDrillCoins(d.game_data?.drill_coins ?? 0);
+        setUpgradeLevels(d.game_data?.upgrade_levels ?? {});
+        if (d.config) {
+          setConfig(d.config);
+        }
+      } catch (err) {
+        console.error("Error loading game state:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadState();
+  }, [userId, fetchState]);
+
+  // Load Bungee font
+  useEffect(() => {
     const link = document.createElement("link");
     link.href =
       "https://fonts.googleapis.com/css2?family=Bungee&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
-
-    if (!containerRef.current) return;
-
-    const state = drillStateRef.current;
-    const config = getEngineConfig(state);
-
-    const engine = new DrillEngine(containerRef.current, {
-      onRockSmashed: handleRockSmashed,
-      onGameOver: handleGameOver,
-      onHPChange: handleHPChange,
-      onHideHint: () => setShowHint(false),
-    }, config);
-
-    engine.setRemainingRocks(state.remainingRocks);
-    engine.setUpgradeLevels(
-      state.upgradeLevels["stone_refinery"] || 0,
-      state.upgradeLevels["mineral_scanner"] || 0
-    );
-
-    engineRef.current = engine;
-
     return () => {
-      engine.destroy();
-      engineRef.current = null;
       document.head.removeChild(link);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Create engine AFTER container is in DOM (triggered by pendingSequence + isPlaying)
+  useEffect(() => {
+    if (!isPlaying || !pendingSequence || !containerRef.current) return;
+
+    const engineConfig = pendingConfigRef.current || { drillPower: 1, comboSpeed: 0 };
+
+    if (engineRef.current) {
+      // Engine already exists (ad reward → new session), just update
+      engineRef.current.updateConfig(engineConfig);
+      engineRef.current.setRockSequence(pendingSequence);
+      engineRef.current.resumeGame();
+    } else {
+      // Create new engine
+      const engine = new DrillEngine(
+        containerRef.current,
+        {
+          onRockSmashed: (index: number, rws: DrillReward[]) =>
+            handleRockSmashedRef.current(index, rws),
+          onGameOver: () => handleGameOverRef.current(),
+          onHPChange: (hp: number, maxHP: number) => setRockHP({ hp, maxHP }),
+          onHideHint: () => setShowHint(false),
+        },
+        engineConfig,
+        pendingSequence
+      );
+      engineRef.current = engine;
+    }
+
+    setPendingSequence(null);
+  }, [isPlaying, pendingSequence]);
+
+  // Cleanup engine on unmount
+  useEffect(() => {
+    return () => {
+      if (engineRef.current) {
+        engineRef.current.destroy();
+        engineRef.current = null;
+      }
+    };
+  }, []);
+
+  // Start a new play session
+  const handlePlay = useCallback(async () => {
+    if (!userId || dailyPlaysLeft <= 0) return;
+
+    try {
+      const result = await startSession({
+        user_id: userId,
+        game_type: "DRILL",
+      }).unwrap();
+
+      const d = result.data;
+      sessionIdRef.current = d.session_id;
+      setDrillCoins(d.drill_coins ?? 0);
+      setUpgradeLevels(d.upgrade_levels ?? {});
+      rocksSmashed.current = 0;
+
+      const drillPowerLevel = (d.upgrade_levels ?? {})["drill_power"] || 0;
+      const rapidFireLevel = (d.upgrade_levels ?? {})["rapid_fire"] || 0;
+      pendingConfigRef.current = {
+        drillPower: 1 + drillPowerLevel,
+        comboSpeed: rapidFireLevel * 0.5,
+      };
+
+      // Set state → triggers re-render → containerRef becomes available → useEffect creates engine
+      setShowGameOver(false);
+      setIsPlaying(true);
+      setPendingSequence(d.rock_sequence);
+    } catch (err) {
+      console.error("Error starting session:", err);
+    }
+  }, [userId, dailyPlaysLeft, startSession]);
 
   // Watch ad handler
   const handleWatchAd = useCallback(async () => {
     setIsAdLoading(true);
     try {
-      const result = await adsgram.showAd();
-      if (result.success) {
-        const state = drillStateRef.current;
-        const newState = {
-          ...state,
-          remainingRocks: state.remainingRocks + ROCKS_PER_AD,
-          adsWatchedToday: state.adsWatchedToday + 1,
-        };
-        setDrillState(newState);
-        saveDrillState(newState);
-        setRemainingRocks(newState.remainingRocks);
+      const adResult = await adsgram.showAd();
+      if (adResult.success && userId) {
+        const result = await claimAdReward({
+          user_id: userId,
+          game_type: "DRILL",
+        }).unwrap();
+
+        setDailyPlaysLeft(result.data.daily_plays_left);
+        setAdsWatchedToday(result.data.ads_watched_today);
         setShowGameOver(false);
 
-        // Resume engine
-        if (engineRef.current) {
-          engineRef.current.setRemainingRocks(newState.remainingRocks);
-          engineRef.current.resumeGame();
-        }
+        // Start new session (handlePlay will set isPlaying + pendingSequence)
+        await handlePlay();
       }
+    } catch (err) {
+      console.error("Error claiming ad reward:", err);
     } finally {
       setIsAdLoading(false);
     }
-  }, [adsgram]);
+  }, [adsgram, userId, claimAdReward, handlePlay]);
 
-  // Handle upgrade
+  // Handle upgrade via API
   const handleUpgrade = useCallback(
-    (upgradeId: string) => {
-      const state = drillStateRef.current;
-      const upgrade = DRILL_UPGRADES.find((u) => u.id === upgradeId);
+    async (upgradeId: string) => {
+      if (!userId) return;
+
+      const upgrade = config.upgrades.find((u) => u.id === upgradeId);
       if (!upgrade) return;
 
-      const currentLevel = state.upgradeLevels[upgradeId] || 0;
-      const cost = getUpgradeCost(upgrade, currentLevel);
-      if (state.drillCoins < cost) return;
+      const currentLevel = upgradeLevels[upgradeId] || 0;
+      const cost = getUpgradeCost(upgrade.base_cost, upgrade.cost_multiplier, currentLevel);
+      if (drillCoins < cost) return;
 
-      const newState = {
-        ...state,
-        drillCoins: state.drillCoins - cost,
-        upgradeLevels: {
-          ...state.upgradeLevels,
-          [upgradeId]: currentLevel + 1,
-        },
-      };
-      setDrillState(newState);
-      saveDrillState(newState);
-      setDrillCoins(newState.drillCoins);
+      try {
+        const result = await upgradeMiniGame({
+          user_id: userId,
+          game_type: "DRILL",
+          upgradeId,
+        }).unwrap();
 
-      // Update engine config
-      if (engineRef.current) {
-        engineRef.current.updateConfig(getEngineConfig(newState));
-        engineRef.current.setUpgradeLevels(
-          newState.upgradeLevels["stone_refinery"] || 0,
-          newState.upgradeLevels["mineral_scanner"] || 0
-        );
+        setDrillCoins(result.data.new_drill_coins);
+        setUpgradeLevels(result.data.upgrade_levels);
+
+        if (engineRef.current) {
+          const drillPowerLevel = result.data.upgrade_levels["drill_power"] || 0;
+          const rapidFireLevel = result.data.upgrade_levels["rapid_fire"] || 0;
+          engineRef.current.updateConfig({
+            drillPower: 1 + drillPowerLevel,
+            comboSpeed: rapidFireLevel * 0.5,
+          });
+        }
+      } catch (err) {
+        console.error("Error upgrading:", err);
       }
     },
-    [getEngineConfig]
+    [userId, drillCoins, upgradeLevels, upgradeMiniGame, config.upgrades]
   );
 
   const toggleMute = useCallback((e: React.MouseEvent) => {
@@ -252,9 +387,141 @@ export const DrillGame = () => {
   );
 
   const hpPct = rockHP.maxHP > 0 ? rockHP.hp / rockHP.maxHP : 0;
+  const maxRocksToday = config.daily_plays + adsWatchedToday * config.plays_per_ad;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div
+        className="w-full min-h-screen flex items-center justify-center"
+        style={{ background: "#0a0e1a" }}
+      >
+        <div
+          style={{
+            fontFamily: "Bungee, cursive",
+            fontSize: "18px",
+            color: "#8ab4f0",
+          }}
+        >
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  // Pre-play state: show Play button
+  if (!isPlaying && !showGameOver) {
+    return (
+      <div
+        className="w-full min-h-screen flex flex-col items-center justify-center gap-6 relative"
+        style={{ background: "#0a0e1a" }}
+      >
+        {/* Back button */}
+        <button
+          onClick={handleBack}
+          className="absolute top-4 left-4 w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{
+            background: "rgba(30,42,70,0.85)",
+            border: "2px solid #3a7bd5",
+          }}
+        >
+          <ArrowLeft className="w-5 h-5 text-[#8ab4f0]" />
+        </button>
+
+        {/* Drill Coins */}
+        <div
+          className="flex items-center gap-2 rounded-xl px-4 py-2"
+          style={{
+            background: "rgba(30,42,70,0.85)",
+            border: "2px solid #3a7bd5",
+          }}
+        >
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+            style={{
+              background: "radial-gradient(circle at 35% 35%, #b0ff90, #60c040)",
+              border: "2px solid #40a020",
+              fontFamily: "Bungee, cursive",
+              color: "#1a3010",
+            }}
+          >
+            D
+          </div>
+          <span
+            style={{
+              fontFamily: "Bungee, cursive",
+              fontSize: "20px",
+              color: "#b0ff90",
+            }}
+          >
+            {drillCoins}
+          </span>
+        </div>
+
+        {/* Remaining rocks info */}
+        <div
+          style={{
+            fontFamily: "Bungee, cursive",
+            fontSize: "14px",
+            color: "#8ab4f0",
+          }}
+        >
+          Rocks: {dailyPlaysLeft}/{maxRocksToday}
+        </div>
+
+        {/* Play button */}
+        <button
+          onClick={handlePlay}
+          disabled={dailyPlaysLeft <= 0}
+          className="px-8 py-4 rounded-2xl text-lg transition-all active:scale-95"
+          style={{
+            fontFamily: "Bungee, cursive",
+            background:
+              dailyPlaysLeft > 0
+                ? "linear-gradient(135deg, #3a7bd5, #5a9bf5)"
+                : "rgba(30,42,70,0.5)",
+            color: dailyPlaysLeft > 0 ? "#fff" : "#555",
+            border: `2px solid ${dailyPlaysLeft > 0 ? "#5a9bf5" : "#333"}`,
+            boxShadow:
+              dailyPlaysLeft > 0
+                ? "0 0 30px rgba(58,123,213,0.4)"
+                : "none",
+          }}
+        >
+          {dailyPlaysLeft > 0 ? "PLAY" : "No Rocks Left"}
+        </button>
+
+        {/* Upgrade button */}
+        <button
+          onClick={() => setShowUpgradeMenu(true)}
+          className="px-6 py-3 rounded-xl transition-all active:scale-95"
+          style={{
+            fontFamily: "Bungee, cursive",
+            fontSize: "14px",
+            background: "rgba(30,42,70,0.85)",
+            border: "2px solid #3a7bd5",
+            color: "#8ab4f0",
+          }}
+        >
+          Upgrades
+        </button>
+
+        {/* Upgrade Menu */}
+        <DrillUpgradeMenu
+          isOpen={showUpgradeMenu}
+          onClose={() => setShowUpgradeMenu(false)}
+          drillCoins={drillCoins}
+          upgradeLevels={upgradeLevels}
+          onUpgrade={handleUpgrade}
+          upgrades={config.upgrades}
+          maxUpgradeLevel={config.max_upgrade_level}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full min-h-screen" style={{ background: "#0a0e1a" }}>
       {/* UI Overlay - Top Bar */}
       <div
         className="fixed top-0 left-0 right-0 z-10"
@@ -335,7 +602,7 @@ export const DrillGame = () => {
                 textShadow: "0 0 10px rgba(138,180,240,0.3)",
               }}
             >
-              {remainingRocks}/{DAILY_ROCKS + (drillState.adsWatchedToday * ROCKS_PER_AD)}
+              {dailyPlaysLeft}/{maxRocksToday}
             </span>
           </div>
 
@@ -400,7 +667,7 @@ export const DrillGame = () => {
       <DrillRewardPopup rewards={rewards} />
 
       {/* Upgrade Button (bottom-right) */}
-      {!showGameOver && (
+      {!showGameOver && isPlaying && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -421,7 +688,7 @@ export const DrillGame = () => {
       )}
 
       {/* Hint */}
-      {showHint && !showGameOver && (
+      {showHint && !showGameOver && isPlaying && (
         <div
           className="fixed bottom-5 left-1/2 -translate-x-1/2 z-10 text-sm pointer-events-none"
           style={{
@@ -439,14 +706,17 @@ export const DrillGame = () => {
         isOpen={showUpgradeMenu}
         onClose={() => setShowUpgradeMenu(false)}
         drillCoins={drillCoins}
-        upgradeLevels={drillState.upgradeLevels}
+        upgradeLevels={upgradeLevels}
         onUpgrade={handleUpgrade}
+        upgrades={config.upgrades}
+        maxUpgradeLevel={config.max_upgrade_level}
       />
 
       {/* Game Over Modal */}
       {showGameOver && (
         <DrillGameOverModal
-          adsWatchedToday={drillState.adsWatchedToday}
+          adsWatchedToday={adsWatchedToday}
+          maxAdsPerDay={config.max_ads_per_day}
           onWatchAd={handleWatchAd}
           onBack={(e?: any) => {
             if (e) {

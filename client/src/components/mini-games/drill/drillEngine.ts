@@ -1,10 +1,18 @@
 import * as PIXI from "pixi.js";
 import { DrillAudio } from "./drillAudio";
 import { createSpritesheet } from "./createSpritesheet";
-import { DrillEngineConfig, DrillReward, getRockHP, calculateDamage, calculateRewards } from "./drillTypes";
+import {
+  DrillEngineConfig,
+  DrillReward,
+  calculateDamage,
+  RockType,
+  RockColorPalette,
+  ROCK_PALETTES,
+} from "./drillTypes";
+import type { RockSequenceItem } from "../../../redux/services/mini-game/responses";
 
 export interface DrillCallbacks {
-  onRockSmashed: (rewards: DrillReward[]) => void;
+  onRockSmashed: (index: number, rewards: DrillReward[]) => void;
   onGameOver: () => void;
   onHPChange: (hp: number, maxHP: number) => void;
   onHideHint: () => void;
@@ -192,11 +200,10 @@ export class DrillEngine {
   private lastCrackLevel = 0;
   private gameOver = false;
 
-  // Economy config
-  private remainingRocks = 20;
-  private totalRocksSmashed = 0;
-  private stoneRefineryLevel = 0;
-  private mineralScannerLevel = 0;
+  // Rock sequence from server
+  private rockSequence: RockSequenceItem[] = [];
+  private currentRockIndex = 0;
+  private currentPalette: RockColorPalette = ROCK_PALETTES.COMMON;
 
   // Particle arrays
   private particles: any[] = [];
@@ -219,10 +226,12 @@ export class DrillEngine {
   constructor(
     container: HTMLElement,
     callbacks: DrillCallbacks,
-    config: DrillEngineConfig
+    config: DrillEngineConfig,
+    rockSequence: RockSequenceItem[]
   ) {
     this.callbacks = callbacks;
     this.audio = new DrillAudio();
+    this.rockSequence = rockSequence;
 
     this.APP_W = Math.min(container.clientWidth || window.innerWidth, 800);
     this.APP_H = container.clientHeight || window.innerHeight;
@@ -230,13 +239,15 @@ export class DrillEngine {
     this.ROCK_Y = this.APP_H * 0.58;
 
     this.drillPower = config.drillPower;
-    this.totalRocksSmashed = config.totalRocksSmashed;
     this.drillTickThreshold = Math.max(1, 3 - config.comboSpeed);
 
-    // Set initial rock HP based on totalRocksSmashed
-    const hp = getRockHP(this.totalRocksSmashed);
-    this.rockHP = hp;
-    this.maxRockHP = hp;
+    // Set initial rock from sequence
+    if (this.rockSequence.length > 0) {
+      const firstRock = this.rockSequence[0];
+      this.rockHP = firstRock.hp;
+      this.maxRockHP = firstRock.hp;
+      this.currentPalette = ROCK_PALETTES[firstRock.type] || ROCK_PALETTES.COMMON;
+    }
 
     this.boundOnDown = this.onDown.bind(this);
     this.boundOnUp = this.onUp.bind(this);
@@ -244,35 +255,42 @@ export class DrillEngine {
     this.init(container);
   }
 
-  // Public methods for economy integration
+  // Public methods
   updateConfig(config: DrillEngineConfig) {
     this.drillPower = config.drillPower;
-    this.totalRocksSmashed = config.totalRocksSmashed;
     this.drillTickThreshold = Math.max(1, 3 - config.comboSpeed);
   }
 
-  setUpgradeLevels(stoneRefinery: number, mineralScanner: number) {
-    this.stoneRefineryLevel = stoneRefinery;
-    this.mineralScannerLevel = mineralScanner;
-  }
-
-  setRemainingRocks(n: number) {
-    this.remainingRocks = n;
+  setRockSequence(sequence: RockSequenceItem[]) {
+    this.rockSequence = sequence;
+    this.currentRockIndex = 0;
+    if (sequence.length > 0) {
+      const firstRock = sequence[0];
+      this.rockHP = firstRock.hp;
+      this.maxRockHP = firstRock.hp;
+      this.currentPalette = ROCK_PALETTES[firstRock.type] || ROCK_PALETTES.COMMON;
+    }
   }
 
   resumeGame() {
     this.gameOver = false;
-    // Spawn a new rock if none visible
     if (!this.rockContainer.visible && !this.rockEmerging) {
       this.spawnNewRock();
     }
   }
 
   private spawnNewRock() {
-    const hp = getRockHP(this.totalRocksSmashed);
-    this.maxRockHP = hp;
-    this.rockHP = hp;
+    if (this.currentRockIndex >= this.rockSequence.length) {
+      this.gameOver = true;
+      this.callbacks.onGameOver();
+      return;
+    }
+
+    const rock = this.rockSequence[this.currentRockIndex];
+    this.maxRockHP = rock.hp;
+    this.rockHP = rock.hp;
     this.lastCrackLevel = 0;
+    this.currentPalette = ROCK_PALETTES[rock.type] || ROCK_PALETTES.COMMON;
     this.updateHPBar();
     this.callbacks.onHPChange(this.rockHP, this.maxRockHP);
     this.audio.playRockEmergeSound();
@@ -305,7 +323,6 @@ export class DrillEngine {
   }
 
   private init(container: HTMLElement) {
-    // Create PIXI application
     this.app = new PIXI.Application({
       width: this.APP_W,
       height: this.APP_H,
@@ -319,7 +336,6 @@ export class DrillEngine {
     this.canvas.style.display = "block";
     this.canvas.style.cursor = "pointer";
 
-    // Build textures from spritesheet
     const sheetCanvas = createSpritesheet();
     const sheetTexture = PIXI.Texture.from(sheetCanvas);
     const baseTexture = sheetTexture.baseTexture;
@@ -337,7 +353,6 @@ export class DrillEngine {
     this.coinFrames = getFrames(2, 4);
     this.debrisFrames = getFrames(3, 4);
 
-    // Scene
     this.gameContainer = new PIXI.Container();
     this.app.stage.addChild(this.gameContainer);
 
@@ -349,7 +364,6 @@ export class DrillEngine {
     this.setupInput();
     this.startGameLoop();
 
-    // Initial HP callback
     this.callbacks.onHPChange(this.rockHP, this.maxRockHP);
   }
 
@@ -401,6 +415,7 @@ export class DrillEngine {
   }
 
   private drawRockBody(dmgPct: number) {
+    const p = this.currentPalette;
     this.rockBody.clear();
 
     // Ground shadow
@@ -412,7 +427,7 @@ export class DrillEngine {
     this.rockBody.endFill();
 
     // Layer 1: Deepest shadow
-    this.rockBody.beginFill(0x0e1420);
+    this.rockBody.beginFill(p.shadow);
     this.rockBody.moveTo(rockVertices[0].x + 4, rockVertices[0].y + 5);
     for (let i = 1; i < rockVertices.length; i++) {
       this.rockBody.lineTo(rockVertices[i].x + 4, rockVertices[i].y + 5);
@@ -421,33 +436,33 @@ export class DrillEngine {
     this.rockBody.endFill();
 
     // Layer 2: Dark base
-    this.rockBody.beginFill(0x1a2235);
+    this.rockBody.beginFill(p.darkBase);
     drawRockPoly(this.rockBody, 0, 0);
     this.rockBody.endFill();
 
     // Layer 3: Mid-tone
-    this.rockBody.beginFill(0x2d3a50);
+    this.rockBody.beginFill(p.midTone);
     drawRockPolyScaled(this.rockBody, 0.95, -1);
     this.rockBody.endFill();
 
     // Layer 4: Upper surface
-    this.rockBody.beginFill(0x3d4e68);
+    this.rockBody.beginFill(p.upperSurface);
     drawRockPolyScaled(this.rockBody, 0.85, -3);
     this.rockBody.endFill();
 
     // Layer 5: Top highlight
-    this.rockBody.beginFill(0x4a607e, 0.7);
+    this.rockBody.beginFill(p.topHighlight, 0.7);
     drawRockPolyScaled(this.rockBody, 0.65, -8);
     this.rockBody.endFill();
 
     // Specular highlights
-    this.rockBody.beginFill(0x5a7898, 0.4);
+    this.rockBody.beginFill(p.specular1, 0.4);
     this.rockBody.drawEllipse(-22, -38, 35, 16);
     this.rockBody.endFill();
-    this.rockBody.beginFill(0x7090b5, 0.25);
+    this.rockBody.beginFill(p.specular2, 0.25);
     this.rockBody.drawEllipse(-18, -42, 20, 9);
     this.rockBody.endFill();
-    this.rockBody.beginFill(0x90b0d0, 0.12);
+    this.rockBody.beginFill(p.specular3, 0.12);
     this.rockBody.drawEllipse(-15, -44, 10, 5);
     this.rockBody.endFill();
 
@@ -474,43 +489,43 @@ export class DrillEngine {
       if (!isPointInRock(bx, by)) continue;
       const bs = 3 + (i % 5) * 2.5;
       if (i % 3 === 0) {
-        this.rockBody.beginFill(0x4a607a, 0.3);
+        this.rockBody.beginFill(p.topHighlight, 0.3);
         this.rockBody.drawEllipse(bx, by - 1, bs, bs * 0.6);
         this.rockBody.endFill();
-        this.rockBody.beginFill(0x2a3a50, 0.2);
+        this.rockBody.beginFill(p.midTone, 0.2);
         this.rockBody.drawEllipse(bx, by + 1, bs, bs * 0.5);
         this.rockBody.endFill();
       } else {
-        this.rockBody.beginFill(0x1a2535, 0.25);
+        this.rockBody.beginFill(p.darkBase, 0.25);
         this.rockBody.drawEllipse(bx, by, bs * 0.8, bs * 0.5);
         this.rockBody.endFill();
       }
     }
 
-    // Blue mineral veins
-    this.rockBody.lineStyle(3, 0x2a5a9a, 0.45);
+    // Mineral veins
+    this.rockBody.lineStyle(3, p.vein1, 0.45);
     this.rockBody.moveTo(-40, -35);
     this.rockBody.quadraticCurveTo(-25, -15, -28, 10);
     this.rockBody.quadraticCurveTo(-30, 30, -18, 52);
-    this.rockBody.lineStyle(2, 0x2a5a9a, 0.35);
+    this.rockBody.lineStyle(2, p.vein2, 0.35);
     this.rockBody.moveTo(-25, -15);
     this.rockBody.quadraticCurveTo(-10, -8, -5, 10);
-    this.rockBody.lineStyle(1.2, 0x3070b0, 0.3);
+    this.rockBody.lineStyle(1.2, p.vein3, 0.3);
     this.rockBody.moveTo(-10, -8);
     this.rockBody.quadraticCurveTo(0, -15, 10, -20);
 
-    this.rockBody.lineStyle(2.5, 0x2a5a9a, 0.4);
+    this.rockBody.lineStyle(2.5, p.vein1, 0.4);
     this.rockBody.moveTo(35, -50);
     this.rockBody.quadraticCurveTo(42, -25, 30, 0);
     this.rockBody.quadraticCurveTo(20, 20, 35, 45);
-    this.rockBody.lineStyle(1.8, 0x2a5a9a, 0.3);
+    this.rockBody.lineStyle(1.8, p.vein2, 0.3);
     this.rockBody.moveTo(42, -25);
     this.rockBody.quadraticCurveTo(55, -15, 60, 5);
-    this.rockBody.lineStyle(1, 0x3070b0, 0.25);
+    this.rockBody.lineStyle(1, p.vein3, 0.25);
     this.rockBody.moveTo(30, 0);
     this.rockBody.quadraticCurveTo(15, 8, 5, 5);
 
-    this.rockBody.lineStyle(1.5, 0x3a6aaa, 0.3);
+    this.rockBody.lineStyle(1.5, p.vein3, 0.3);
     this.rockBody.moveTo(-60, 0);
     this.rockBody.quadraticCurveTo(-40, 12, -20, 8);
 
@@ -526,10 +541,10 @@ export class DrillEngine {
       { x: 0, y: 15, s: 4, rot: 0.3 },
     ];
     crystals.forEach((cr) => {
-      this.rockBody.beginFill(0x3a7bd5, 0.1 + dmgPct * 0.1);
+      this.rockBody.beginFill(p.crystal, 0.1 + dmgPct * 0.1);
       this.rockBody.drawCircle(cr.x, cr.y, cr.s + 8);
       this.rockBody.endFill();
-      this.rockBody.beginFill(0x4a8be5, 0.08 + dmgPct * 0.08);
+      this.rockBody.beginFill(p.crystalFace, 0.08 + dmgPct * 0.08);
       this.rockBody.drawCircle(cr.x, cr.y, cr.s + 5);
       this.rockBody.endFill();
 
@@ -542,13 +557,13 @@ export class DrillEngine {
           y: cr.y + Math.sin(va) * vr,
         });
       }
-      this.rockBody.beginFill(0x2a5a90, 0.8);
+      this.rockBody.beginFill(p.vein1, 0.8);
       this.rockBody.moveTo(pts[0].x, pts[0].y);
-      pts.forEach((p) => this.rockBody.lineTo(p.x, p.y));
+      pts.forEach((pt) => this.rockBody.lineTo(pt.x, pt.y));
       this.rockBody.closePath();
       this.rockBody.endFill();
 
-      this.rockBody.beginFill(0x5a9ae0, 0.7);
+      this.rockBody.beginFill(p.crystalFace, 0.7);
       this.rockBody.moveTo(pts[0].x, pts[0].y);
       this.rockBody.lineTo(pts[1].x, pts[1].y);
       this.rockBody.lineTo(pts[2].x, pts[2].y);
@@ -556,13 +571,13 @@ export class DrillEngine {
       this.rockBody.closePath();
       this.rockBody.endFill();
 
-      this.rockBody.beginFill(0x8ac4ff, 0.5);
+      this.rockBody.beginFill(p.crystalHighlight, 0.5);
       this.rockBody.drawCircle(cr.x - cr.s * 0.2, cr.y - cr.s * 0.2, cr.s * 0.3);
       this.rockBody.endFill();
 
-      this.rockBody.lineStyle(1.5, 0x1a3a5a, 0.7);
+      this.rockBody.lineStyle(1.5, p.shadow, 0.7);
       this.rockBody.moveTo(pts[0].x, pts[0].y);
-      pts.forEach((p) => this.rockBody.lineTo(p.x, p.y));
+      pts.forEach((pt) => this.rockBody.lineTo(pt.x, pt.y));
       this.rockBody.closePath();
       this.rockBody.lineStyle(0);
     });
@@ -588,7 +603,7 @@ export class DrillEngine {
     });
 
     // Cartoon outline
-    this.rockBody.lineStyle(3.5, 0x0a0f18, 0.9);
+    this.rockBody.lineStyle(3.5, p.outline, 0.9);
     this.rockBody.moveTo(rockVertices[0].x, rockVertices[0].y);
     for (let i = 1; i < rockVertices.length; i++) {
       this.rockBody.lineTo(rockVertices[i].x, rockVertices[i].y);
@@ -599,7 +614,7 @@ export class DrillEngine {
     if (dmgPct > 0.25) {
       const tintAlpha = (dmgPct - 0.25) * 0.12;
       this.rockBody.lineStyle(0);
-      this.rockBody.beginFill(0x88443a, tintAlpha);
+      this.rockBody.beginFill(p.damageTint, tintAlpha);
       drawRockPoly(this.rockBody, 0, 0);
       this.rockBody.endFill();
     }
@@ -607,7 +622,7 @@ export class DrillEngine {
     // Crystal glow intensifies with damage
     if (dmgPct > 0.4) {
       crystals.forEach((cr) => {
-        this.rockBody.beginFill(0x5a9ae0, (dmgPct - 0.4) * 0.15);
+        this.rockBody.beginFill(p.crystalGlow, (dmgPct - 0.4) * 0.15);
         this.rockBody.drawCircle(cr.x, cr.y, cr.s + 6 + dmgPct * 4);
         this.rockBody.endFill();
       });
@@ -615,6 +630,7 @@ export class DrillEngine {
   }
 
   private drawCracks(dmgPct: number) {
+    const p = this.currentPalette;
     this.crackOverlay.clear();
     if (dmgPct <= 0) return;
 
@@ -641,7 +657,7 @@ export class DrillEngine {
           const glowAlpha = (dmgPct - 0.3) * 0.7;
           this.crackOverlay.lineStyle(
             lineW + 4,
-            0x3a7bd5,
+            p.crackGlow,
             glowAlpha * 0.3
           );
           this.crackOverlay.moveTo(seg[0].x, seg[0].y);
@@ -650,7 +666,7 @@ export class DrillEngine {
           }
           this.crackOverlay.lineStyle(
             lineW + 10,
-            0x3a7bd5,
+            p.crackGlow,
             glowAlpha * 0.1
           );
           this.crackOverlay.moveTo(seg[0].x, seg[0].y);
@@ -660,7 +676,7 @@ export class DrillEngine {
         }
 
         if (dmgPct > 0.5) {
-          this.crackOverlay.lineStyle(0.5, 0x8ab8e8, (dmgPct - 0.5) * 0.6);
+          this.crackOverlay.lineStyle(0.5, p.crackGlowInner, (dmgPct - 0.5) * 0.6);
           this.crackOverlay.moveTo(seg[0].x + 1, seg[0].y + 1);
           for (let i = 1; i < pointsToDraw; i++) {
             this.crackOverlay.lineTo(seg[i].x + 1, seg[i].y + 1);
@@ -778,7 +794,7 @@ export class DrillEngine {
 
   private showImpact(x: number, y: number) {
     this.impactFlash.clear();
-    this.impactFlash.beginFill(0x3a7bd5, 0.6);
+    this.impactFlash.beginFill(this.currentPalette.crystal, 0.6);
     this.impactFlash.drawCircle(x, y, 30);
     this.impactFlash.endFill();
     this.impactFlash.beginFill(0xffffff, 0.4);
@@ -885,8 +901,9 @@ export class DrillEngine {
   }
 
   private shatterRock() {
+    const p = this.currentPalette;
     const fragmentColors = [
-      0x2d3548, 0x3d4a60, 0x4a5a75, 0x1a1f2e, 0x354565, 0x253050,
+      p.midTone, p.upperSurface, p.topHighlight, p.shadow, p.darkBase, p.midTone,
     ];
     const numFragments = 12 + Math.floor(Math.random() * 6);
 
@@ -917,13 +934,13 @@ export class DrillEngine {
       const cy = this.ROCK_Y + Math.sin(angle) * dist;
 
       const g = new PIXI.Graphics();
-      g.beginFill(0x3d4a60);
+      g.beginFill(p.upperSurface);
       g.drawPolygon([-8, -5, 6, -8, 10, 2, 4, 9, -7, 6]);
       g.endFill();
-      g.beginFill(0x5a9ae0, 0.8);
+      g.beginFill(p.crystalFace, 0.8);
       g.drawCircle(1, 0, 4);
       g.endFill();
-      g.beginFill(0x8ac0ff, 0.5);
+      g.beginFill(p.crystalHighlight, 0.5);
       g.drawCircle(0, -1, 2);
       g.endFill();
 
@@ -1012,20 +1029,18 @@ export class DrillEngine {
     const coinCount = 3 + Math.floor(Math.random() * 4);
     this.spawnCoinBurst(this.ROCK_X, this.ROCK_Y, coinCount);
 
-    // Economy: calculate rewards and notify
-    this.remainingRocks--;
-    this.totalRocksSmashed++;
-    const rewards = calculateRewards(
-      this.totalRocksSmashed,
-      this.stoneRefineryLevel,
-      this.mineralScannerLevel
-    );
-    this.callbacks.onRockSmashed(rewards);
+    // Notify: pass the current rock index and its pre-calculated rewards
+    const rock = this.rockSequence[this.currentRockIndex];
+    const rewards: DrillReward[] = rock
+      ? (rock.rewards as DrillReward[])
+      : [];
+    this.callbacks.onRockSmashed(this.currentRockIndex, rewards);
+
+    this.currentRockIndex++;
 
     // Check game over
-    if (this.remainingRocks <= 0) {
+    if (this.currentRockIndex >= this.rockSequence.length) {
       this.gameOver = true;
-      // Stop drilling
       this.isDrilling = false;
       this.audio.isDrilling = false;
       this.drillSprite.gotoAndStop(0);
@@ -1047,11 +1062,11 @@ export class DrillEngine {
     }, 600);
     this.timeouts.push(t);
 
-    if (this.totalRocksSmashed % 5 === 0) {
+    if (this.currentRockIndex % 5 === 0) {
       this.showFloatingText(
         this.APP_W / 2,
         this.APP_H * 0.4,
-        `${this.totalRocksSmashed} Rocks!`,
+        `${this.currentRockIndex} Rocks!`,
         0x66aaff
       );
       this.audio.playLevelUpSound();
@@ -1122,15 +1137,15 @@ export class DrillEngine {
 
       // Update particles
       for (let i = this.particles.length - 1; i >= 0; i--) {
-        const p = this.particles[i] as any;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.25;
-        p.rotation += p.vr;
-        p.life -= 0.02;
-        p.alpha = p.life;
-        if (p.life <= 0) {
-          this.gameContainer.removeChild(p);
+        const pa = this.particles[i] as any;
+        pa.x += pa.vx;
+        pa.y += pa.vy;
+        pa.vy += 0.25;
+        pa.rotation += pa.vr;
+        pa.life -= 0.02;
+        pa.alpha = pa.life;
+        if (pa.life <= 0) {
+          this.gameContainer.removeChild(pa);
           this.particles.splice(i, 1);
         }
       }
@@ -1180,14 +1195,14 @@ export class DrillEngine {
 
       // Update floating texts
       for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
-        const t = this.floatingTexts[i] as any;
-        t.y += t.vy;
-        t.vy -= 0.02;
-        t.life -= 0.015;
-        t.alpha = t.life;
-        t.scale.set(1 + (1 - t.life) * 0.3);
-        if (t.life <= 0) {
-          this.gameContainer.removeChild(t);
+        const ft = this.floatingTexts[i] as any;
+        ft.y += ft.vy;
+        ft.vy -= 0.02;
+        ft.life -= 0.015;
+        ft.alpha = ft.life;
+        ft.scale.set(1 + (1 - ft.life) * 0.3);
+        if (ft.life <= 0) {
+          this.gameContainer.removeChild(ft);
           this.floatingTexts.splice(i, 1);
         }
       }
@@ -1225,14 +1240,14 @@ export class DrillEngine {
 
       // Update crack dust
       for (let i = this.crackDustParticles.length - 1; i >= 0; i--) {
-        const p = this.crackDustParticles[i] as any;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy -= 0.02;
-        p.life -= 0.025;
-        p.alpha = p.life * 0.6;
-        if (p.life <= 0) {
-          this.gameContainer.removeChild(p);
+        const cd = this.crackDustParticles[i] as any;
+        cd.x += cd.vx;
+        cd.y += cd.vy;
+        cd.vy -= 0.02;
+        cd.life -= 0.025;
+        cd.alpha = cd.life * 0.6;
+        if (cd.life <= 0) {
+          this.gameContainer.removeChild(cd);
           this.crackDustParticles.splice(i, 1);
         }
       }
@@ -1246,11 +1261,9 @@ export class DrillEngine {
   destroy() {
     this.destroyed = true;
 
-    // Clear all timeouts
     this.timeouts.forEach((t) => clearTimeout(t));
     this.timeouts = [];
 
-    // Remove event listeners
     if (this.canvas) {
       this.canvas.removeEventListener("pointerdown", this.boundOnDown);
       this.canvas.removeEventListener("pointerup", this.boundOnUp);
@@ -1259,10 +1272,8 @@ export class DrillEngine {
       this.canvas.removeEventListener("touchend", this.boundOnUp);
     }
 
-    // Destroy audio
     this.audio.destroy();
 
-    // Destroy PIXI app
     try {
       this.app.destroy(true, { children: true, texture: true, baseTexture: true });
     } catch (_) {}

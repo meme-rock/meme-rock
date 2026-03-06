@@ -20,6 +20,7 @@ import { HiltiModule } from './hilti/hilti.module';
 import { TaskModule } from './task/task.module';
 import { AdModule } from './ad/ad.module';
 import { DailyRewardModule } from './daily-reward/daily-reward.module';
+import { MiniGameModule } from './mini-game/mini-game.module';
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -84,6 +85,7 @@ const mainAppImports = [
   BoosterModule,
   AdminModule,
   BotModule,
+  MiniGameModule,
 ];
 
 @Module({

@@ -19,6 +19,7 @@ import { taskApi } from "./services/tasks/task-api";
 import { hiltiApi } from "./services/hilti/hilti-api";
 import { adApi } from "./services/ad/ad-api";
 import { dailyRewardApi } from "./services/daily-reward/daily-reward-api";
+import { miniGameApi } from "./services/mini-game/mini-game-api";
 
 export const store = configureStore({
   reducer: {
@@ -41,6 +42,7 @@ export const store = configureStore({
     [taskApi.reducerPath]: taskApi.reducer,
     [adApi.reducerPath]: adApi.reducer,
     [dailyRewardApi.reducerPath]: dailyRewardApi.reducer,
+    [miniGameApi.reducerPath]: miniGameApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -54,7 +56,8 @@ export const store = configureStore({
       tonApi.middleware,
       taskApi.middleware,
       adApi.middleware,
-      dailyRewardApi.middleware
+      dailyRewardApi.middleware,
+      miniGameApi.middleware
     ),
 });
 
