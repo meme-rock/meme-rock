@@ -5,18 +5,8 @@ export interface DrillUpgrade {
   name: string;
   description: string;
   icon: string;
-  maxLevel: number;
   baseCost: number;
   costMultiplier: number;
-}
-
-export interface DrillGameState {
-  remainingRocks: number;
-  drillCoins: number;
-  upgradeLevels: Record<string, number>;
-  adsWatchedToday: number;
-  lastResetDate: string; // YYYY-MM-DD
-  totalRocksSmashed: number;
 }
 
 export interface DrillReward {
@@ -27,104 +17,106 @@ export interface DrillReward {
 export interface DrillEngineConfig {
   drillPower: number;
   comboSpeed: number;
-  totalRocksSmashed: number;
 }
 
-// ── Constants ──
+// ── Rock Types ──
 
-export const DAILY_ROCKS = 20;
-export const ROCKS_PER_AD = 5;
-export const MAX_ADS_PER_DAY = 5;
-export const MAX_UPGRADE_LEVEL = 10;
+export type RockType = "COMMON" | "RARE" | "LEGENDARY";
 
-// ── Upgrade Definitions ──
+export interface RockColorPalette {
+  shadow: number;
+  darkBase: number;
+  midTone: number;
+  upperSurface: number;
+  topHighlight: number;
+  specular1: number;
+  specular2: number;
+  specular3: number;
+  vein1: number;
+  vein2: number;
+  vein3: number;
+  crystal: number;
+  crystalFace: number;
+  crystalHighlight: number;
+  crystalGlow: number;
+  outline: number;
+  damageTint: number;
+  crackGlow: number;
+  crackGlowInner: number;
+}
 
-export const DRILL_UPGRADES: DrillUpgrade[] = [
-  {
-    id: "drill_power",
-    name: "Drill Power",
-    description: "+1 damage per level",
-    icon: "\u26CF",
-    maxLevel: MAX_UPGRADE_LEVEL,
-    baseCost: 10,
-    costMultiplier: 1.8,
+export const ROCK_PALETTES: Record<RockType, RockColorPalette> = {
+  COMMON: {
+    shadow: 0x0e1420,
+    darkBase: 0x1a2235,
+    midTone: 0x2d3a50,
+    upperSurface: 0x3d4e68,
+    topHighlight: 0x4a607e,
+    specular1: 0x5a7898,
+    specular2: 0x7090b5,
+    specular3: 0x90b0d0,
+    vein1: 0x2a5a9a,
+    vein2: 0x2a5a9a,
+    vein3: 0x3070b0,
+    crystal: 0x3a7bd5,
+    crystalFace: 0x5a9ae0,
+    crystalHighlight: 0x8ac4ff,
+    crystalGlow: 0x5a9ae0,
+    outline: 0x0a0f18,
+    damageTint: 0x88443a,
+    crackGlow: 0x3a7bd5,
+    crackGlowInner: 0x8ab8e8,
   },
-  {
-    id: "lucky_strike",
-    name: "Lucky Strike",
-    description: "+5% coin chance per level",
-    icon: "\u2728",
-    maxLevel: MAX_UPGRADE_LEVEL,
-    baseCost: 15,
-    costMultiplier: 1.9,
+  RARE: {
+    shadow: 0x1a1408,
+    darkBase: 0x2a2210,
+    midTone: 0x4a3a18,
+    upperSurface: 0x6a5420,
+    topHighlight: 0x8a7030,
+    specular1: 0xa08840,
+    specular2: 0xc0a850,
+    specular3: 0xe0c870,
+    vein1: 0xd4a017,
+    vein2: 0xd4a017,
+    vein3: 0xf0c040,
+    crystal: 0xffd700,
+    crystalFace: 0xffe44d,
+    crystalHighlight: 0xfff0a0,
+    crystalGlow: 0xffd700,
+    outline: 0x1a1408,
+    damageTint: 0x886a3a,
+    crackGlow: 0xffd700,
+    crackGlowInner: 0xfff0a0,
   },
-  {
-    id: "stone_refinery",
-    name: "Stone Refinery",
-    description: "+1 stone reward per level",
-    icon: "\uD83D\uDC8E",
-    maxLevel: MAX_UPGRADE_LEVEL,
-    baseCost: 20,
-    costMultiplier: 2.0,
+  LEGENDARY: {
+    shadow: 0x1a0808,
+    darkBase: 0x2a1010,
+    midTone: 0x4a1818,
+    upperSurface: 0x6a2020,
+    topHighlight: 0x8a3030,
+    specular1: 0xa04040,
+    specular2: 0xc05050,
+    specular3: 0xe06060,
+    vein1: 0xcc2200,
+    vein2: 0xcc2200,
+    vein3: 0xff4400,
+    crystal: 0xff4500,
+    crystalFace: 0xff6a40,
+    crystalHighlight: 0xffa080,
+    crystalGlow: 0xff4500,
+    outline: 0x1a0808,
+    damageTint: 0x883a3a,
+    crackGlow: 0xff4500,
+    crackGlowInner: 0xffa080,
   },
-  {
-    id: "mineral_scanner",
-    name: "Mineral Scanner",
-    description: "+2% rock coin chance per level",
-    icon: "\uD83D\uDD2C",
-    maxLevel: MAX_UPGRADE_LEVEL,
-    baseCost: 50,
-    costMultiplier: 2.2,
-  },
-  {
-    id: "rapid_fire",
-    name: "Rapid Fire",
-    description: "+0.5 combo speed per level",
-    icon: "\u26A1",
-    maxLevel: MAX_UPGRADE_LEVEL,
-    baseCost: 25,
-    costMultiplier: 1.7,
-  },
-];
+};
 
 // ── Helper Functions ──
 
-export function getUpgradeCost(upgrade: DrillUpgrade, currentLevel: number): number {
-  return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, currentLevel));
-}
-
-export function getRockHP(totalRocksSmashed: number): number {
-  return Math.min(300, 80 + totalRocksSmashed * 3);
+export function getUpgradeCost(baseCost: number, costMultiplier: number, currentLevel: number): number {
+  return Math.floor(baseCost * Math.pow(costMultiplier, currentLevel));
 }
 
 export function calculateDamage(drillPowerLevel: number, combo: number): number {
   return (1 + drillPowerLevel) + Math.floor(combo / 10);
-}
-
-export function calculateRewards(
-  totalRocksSmashed: number,
-  stoneRefineryLevel: number,
-  mineralScannerLevel: number
-): DrillReward[] {
-  const rewards: DrillReward[] = [];
-
-  // DrillCoin always drops
-  rewards.push({
-    type: "drill_coin",
-    amount: 1 + Math.floor(totalRocksSmashed / 10),
-  });
-
-  // Stone drop: 60% chance
-  if (Math.random() < 0.6) {
-    const stoneAmount = Math.floor(Math.random() * 3) + 1 + stoneRefineryLevel;
-    rewards.push({ type: "stone", amount: stoneAmount });
-  }
-
-  // Rock Coin drop: 5% + (mineralScannerLevel * 2)% chance
-  const rockCoinChance = 0.05 + mineralScannerLevel * 0.02;
-  if (Math.random() < rockCoinChance) {
-    rewards.push({ type: "rock_coin", amount: 1 });
-  }
-
-  return rewards;
 }

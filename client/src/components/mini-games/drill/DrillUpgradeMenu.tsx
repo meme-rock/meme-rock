@@ -1,9 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  DRILL_UPGRADES,
-  MAX_UPGRADE_LEVEL,
-  getUpgradeCost,
-} from "./drillTypes";
+import { getUpgradeCost } from "./drillTypes";
+import type { UpgradeDefFromAPI } from "../../../redux/services/mini-game/responses";
 
 interface DrillUpgradeMenuProps {
   isOpen: boolean;
@@ -11,6 +8,8 @@ interface DrillUpgradeMenuProps {
   drillCoins: number;
   upgradeLevels: Record<string, number>;
   onUpgrade: (upgradeId: string) => void;
+  upgrades: UpgradeDefFromAPI[];
+  maxUpgradeLevel: number;
 }
 
 export const DrillUpgradeMenu = ({
@@ -19,6 +18,8 @@ export const DrillUpgradeMenu = ({
   drillCoins,
   upgradeLevels,
   onUpgrade,
+  upgrades,
+  maxUpgradeLevel,
 }: DrillUpgradeMenuProps) => {
   return (
     <AnimatePresence>
@@ -87,10 +88,10 @@ export const DrillUpgradeMenu = ({
             {/* Upgrade list */}
             <div className="overflow-y-auto px-4 pb-8" style={{ maxHeight: "calc(75vh - 80px)" }}>
               <div className="flex flex-col gap-3">
-                {DRILL_UPGRADES.map((upgrade) => {
-                  const level = upgradeLevels[upgrade.id] || 0;
-                  const isMaxed = level >= MAX_UPGRADE_LEVEL;
-                  const cost = isMaxed ? 0 : getUpgradeCost(upgrade, level);
+                {upgrades.map((upgrade) => {
+                  const level = (upgradeLevels ?? {})[upgrade.id] || 0;
+                  const isMaxed = level >= maxUpgradeLevel;
+                  const cost = isMaxed ? 0 : getUpgradeCost(upgrade.base_cost, upgrade.cost_multiplier, level);
                   const canAfford = drillCoins >= cost;
 
                   return (
@@ -133,7 +134,7 @@ export const DrillUpgradeMenu = ({
                         </div>
                         {/* Level bar */}
                         <div className="flex gap-0.5 mt-1.5">
-                          {Array.from({ length: MAX_UPGRADE_LEVEL }).map((_, i) => (
+                          {Array.from({ length: maxUpgradeLevel }).map((_, i) => (
                             <div
                               key={i}
                               className="h-1.5 rounded-full flex-1"

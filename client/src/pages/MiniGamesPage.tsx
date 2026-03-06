@@ -1,40 +1,24 @@
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Lock, Play } from "lucide-react";
-
-interface MiniGame {
-  id: string;
-  title: string;
-  icon: string;
-  path: string;
-  isLocked: boolean;
-}
-
-const games: MiniGame[] = [
-  {
-    id: "drill",
-    title: "Rock Drill",
-    icon: "\u26CF\uFE0F",
-    path: "/mini-games/drill",
-    isLocked: false,
-  },
-  {
-    id: "coming-soon-1",
-    title: "Coming Soon",
-    icon: "",
-    path: "",
-    isLocked: true,
-  },
-  {
-    id: "coming-soon-2",
-    title: "Coming Soon",
-    icon: "",
-    path: "",
-    isLocked: true,
-  },
-];
+import {
+  useGetCatalogQuery,
+  useGetMiniGameStateQuery,
+} from "../redux/services/mini-game/mini-game-api";
 
 export const MiniGamesPage = () => {
   const navigate = useNavigate();
+  const userId = useSelector((state: any) => state.user._id ?? "");
+
+  const { data: catalogData } = useGetCatalogQuery();
+  const games = catalogData?.data ?? [];
+
+  const { data: drillState } = useGetMiniGameStateQuery(
+    { user_id: userId, game_type: "DRILL" },
+    { skip: !userId }
+  );
+
+  const drillPlaysLeft = drillState?.data?.daily_plays_left ?? 0;
 
   return (
     <div
@@ -58,7 +42,7 @@ export const MiniGamesPage = () => {
         {/* Game List */}
         <div className="flex flex-col gap-3">
           {games.map((game) =>
-            game.isLocked ? (
+            game.is_locked ? (
               <div
                 key={game.id}
                 className="flex items-center justify-between px-5 py-4 rounded-2xl"
@@ -93,16 +77,29 @@ export const MiniGamesPage = () => {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{game.icon}</span>
-                  <span
-                    style={{
-                      fontFamily: "'Orbitron', sans-serif",
-                      fontSize: "14px",
-                      color: "#c0d4ec",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {game.title}
-                  </span>
+                  <div className="flex flex-col items-start">
+                    <span
+                      style={{
+                        fontFamily: "'Orbitron', sans-serif",
+                        fontSize: "14px",
+                        color: "#c0d4ec",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {game.title}
+                    </span>
+                    {game.id === "DRILL" && drillPlaysLeft > 0 && (
+                      <span
+                        style={{
+                          fontFamily: "'Outfit', sans-serif",
+                          fontSize: "11px",
+                          color: "#5a8ec0",
+                        }}
+                      >
+                        {drillPlaysLeft} rocks left
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div

@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { MAX_ADS_PER_DAY } from "./drillTypes";
 
 interface DrillGameOverModalProps {
   adsWatchedToday: number;
+  maxAdsPerDay: number;
   onWatchAd: () => void;
   onBack: () => void;
   isAdLoading: boolean;
@@ -10,11 +10,12 @@ interface DrillGameOverModalProps {
 
 export const DrillGameOverModal = ({
   adsWatchedToday,
+  maxAdsPerDay,
   onWatchAd,
   onBack,
   isAdLoading,
 }: DrillGameOverModalProps) => {
-  const adsRemaining = MAX_ADS_PER_DAY - adsWatchedToday;
+  const adsRemaining = maxAdsPerDay - adsWatchedToday;
   const canWatchAd = adsRemaining > 0;
 
   return (
