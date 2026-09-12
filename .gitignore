@@ -63,3 +63,15 @@ lerna-debug.log*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+# local dev artifacts
+scripts/initdata.txt
+scripts/url.txt
+client/.env.backup
+server/.env.local.backup
+
+# tek servis build çıktısı (Dockerfile üretir)
+server/public/
+
+# veritabanı yedekleri (asla commit etme)
+mrdump/
+*.bson

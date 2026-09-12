@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Put, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Put,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateMinerDto } from './dto/miners.dto';
 import { CreateHiltiDto } from './dto/hiltis.dto';
@@ -6,7 +14,11 @@ import { CreateBoosterDto } from './dto/boosters.dto';
 import { AdminRanksService } from './admin.ranks.service';
 import { CreateMarketItemDto } from './dto/market.dto';
 import { CreateTaskDto } from './dto/tasks.dto';
+import { Public } from 'src/common/decorators/public.decorator';
+import { AdminApiKeyGuard } from 'src/common/guards/admin-api-key.guard';
 
+@Public() // Telegram initData beklenmez — istek panelden gelir
+@UseGuards(AdminApiKeyGuard)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -99,6 +111,8 @@ export class AdminController {
   }
 }
 
+@Public()
+@UseGuards(AdminApiKeyGuard)
 @Controller('admin/schedules')
 export class AdminRanksController {
   constructor(private readonly adminRanksService: AdminRanksService) {}

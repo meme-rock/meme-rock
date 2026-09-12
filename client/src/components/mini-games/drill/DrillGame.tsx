@@ -22,7 +22,6 @@ import {
 import type {
   RockSequenceItem,
   MiniGameConfigFromAPI,
-  UpgradeDefFromAPI,
 } from "../../../redux/services/mini-game/responses";
 
 interface RewardEntry {

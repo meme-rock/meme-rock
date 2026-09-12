@@ -5,7 +5,7 @@ import { useSelector, shallowEqual } from "react-redux";
 import { RootState } from "../redux/store";
 import { HiltiUpgradeButton } from "../components/rock/HiltiUpgradeButton";
 import { BoosterPage } from "../components/rock/BoosterPage";
-import boosterAnimation from "../../public/animated-booster.json";
+import boosterAnimation from "../assets/lottie/animated-booster.json";
 import Lottie from "lottie-react";
 import { useGetBoostersMutation } from "../redux/services/booster/booster-api";
 import { useUpgradeHiltiMutation } from "../redux/services/hilti/hilti-api";

@@ -33,8 +33,13 @@ const isWorker = process.env.APP_MODE === 'WORKER';
           throw new Error('TELEGRAM Environment variables missing!');
         }
 
+        // Lokal geliştirmede webhook kurulumunu atla (TELEGRAM_WEBHOOK_DISABLED=true)
+        const webhookDisabled =
+          configService.get<string>('TELEGRAM_WEBHOOK_DISABLED') === 'true';
+
         // Worker ise webhook kurma (passive mode)
-        const launchOptions = isWorker
+        const launchOptions =
+          isWorker || webhookDisabled
           ? false
           : {
               webhook: {

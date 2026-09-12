@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { MarketService } from './market.service';
+import { Public } from 'src/common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('market')
@@ -40,6 +41,7 @@ export class MarketController {
     );
   }
 
+  @Public()
   @Get('check-ton-payments')
   async checkTonPayments(@Headers('x-api-key') api_key: string) {
     if (api_key !== process.env.TON_ENDPOINT_SECRET) {

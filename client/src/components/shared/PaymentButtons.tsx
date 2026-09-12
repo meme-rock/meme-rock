@@ -1,6 +1,6 @@
 import Lottie from "lottie-react";
-import animatedStar from "../../../public/animated-star.json";
-import animatedTon from "../../../public/animated-ton.json";
+import animatedStar from "../../assets/lottie/animated-star.json";
+import animatedTon from "../../assets/lottie/animated-ton.json";
 import { EBoosterUnlockCurrencyType } from "../../types/enums";
 
 interface PaymentButtonsProps {

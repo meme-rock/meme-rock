@@ -5,7 +5,6 @@ import {
   DrillEngineConfig,
   DrillReward,
   calculateDamage,
-  RockType,
   RockColorPalette,
   ROCK_PALETTES,
 } from "./drillTypes";

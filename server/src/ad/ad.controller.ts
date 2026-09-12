@@ -2,11 +2,13 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AdService } from './ad.service';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('ad')
 export class AdController {
   constructor(private readonly adService: AdService) {}
   @Get('ad-reward')
+  @Public()
   @SkipThrottle()
   async adRewardWebhook(
     @Query('userid') userid: string,

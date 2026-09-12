@@ -1,24 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface ShowPromiseResult {
-  done: boolean;
-  description: string;
-  state: "load" | "render" | "playing" | "destroy";
-  error: boolean;
-}
-
-interface AdController {
-  show(): Promise<ShowPromiseResult>;
-  destroy(): void;
-}
-
-interface AdsgramWindow extends Window {
-  Adsgram?: {
-    init(params: { blockId: string; debug?: boolean }): AdController;
-  };
-}
-
-declare const window: AdsgramWindow;
+import type { AdController, ShowPromiseResult } from "../types/adsgram";
 
 export const useAdsgram = (blockId: string) => {
   const [isReady, setIsReady] = useState(false);
