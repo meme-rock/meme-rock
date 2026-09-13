@@ -224,19 +224,43 @@ enforcement" tercihi olarak) çıkar — Actions adımında değil.
 
 5. **Variables & Secrets** → Adım 5'teki değişkenleri gir → **Create**
 
+İlk build birkaç dakika sürer. Bittikten sonra **4d'ye dön** — temizlik
+kuralını ancak deploy tamamlandıktan sonra kurabilirsin.
+
 > Cloud Build'de **machine type'ı değiştirme** — özel makine tipi seçmek
 > ücretsiz katmanı tamamen iptal eder. Varsayılanı bırak.
 
-### 4d — Artifact Registry temizlik kuralı (şart)
+### 4d — Artifact Registry temizlik kuralı (ilk deploy'dan SONRA)
 
-Ücretsiz depolama **tüm faturalandırma hesabı için 0.5 GB** ve her deploy yeni
+> ⚠️ Bu adımı 4c'den önce yapamazsın. `cloud-run-source-deploy` deposu
+> önceden yoktur — Cloud Run onu **ilk deploy sırasında kendisi oluşturur**.
+> Deploy bitmeden Artifact Registry ekranı boş görünür.
+
+Ücretsiz depolama **tüm faturalandırma hesabı için 0,5 GB** ve her deploy yeni
 bir image yazar. Kural koymazsan birkaç deploy sonra ücret başlar.
 
-**Artifact Registry → `cloud-run-source-deploy` → Cleanup policies → Add**
-- Policy type: **Keep most recent versions**
-- Keep count: **3**
+1. Konsol arama çubuğuna **Artifact Registry** yaz → **Repositories**
+2. Bölge filtresini **us-central1** yap
+3. **`cloud-run-source-deploy`** deposuna tıkl
+4. Üstteki sekmelerden **Cleanup policies** → **Add policy** (ya da
+   depo listesinde satırın sonundaki ⋮ → **Edit cleanup policies**)
+5. Policy ekle:
 
-Eski projelerden kalan image'ları da kontrol et — kota hesap geneli.
+| Alan | Değer |
+|---|---|
+| Name | `keep-3` |
+| Policy type | **Keep most recent versions** |
+| Keep count | **3** |
+
+6. **Dry run** kutusu varsa **kapat** — açık kalırsa kural sadece raporlar, silmez
+7. **Save**
+
+Deponun boyutunu **Repositories** listesindeki *Size* sütunundan takip
+edebilirsin. Bizim image ~55 MB, üç sürüm ~165 MB → 0,5 GB içinde rahat.
+
+Eski projelerden kalan image'ları da kontrol et — kota proje başına değil,
+**hesap geneli**. Eski bir Cloud Run projen vardı (`.env`'deki
+`api-1009676845888` adresi), onun deposu da kotayı yiyor olabilir.
 
 ### 4e — Webhook adresini bağla
 
