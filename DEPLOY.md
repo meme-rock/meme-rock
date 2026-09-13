@@ -143,13 +143,25 @@ git push -u origin bilal
    yalnızca Kuzey Amerika bölgelerinden geçerli. Frankfurt'a kurarsan çıkış
    trafiği ilk bayttan itibaren ücretli (~$0.12/GB).
 
-### 4b — Harcama koruması (önce bunu yap)
+### 4b — Harcama koruması
 
-Bütçe **uyarıları** harcamayı durdurmaz; **spend cap** durdurur. Ama spend cap
-yalnızca **tek proje + tek servise** kapsanmış bütçelerde açılır. O yüzden
-iki ayrı bütçe kuruyoruz.
+Üç katmanlı koruma kuruyoruz. Asıl güvence 1 ve 2; spend cap (3) henüz
+Preview'da ve herkeste çıkmıyor.
 
-**1) Erken uyarı bütçesi — tüm servisler**
+**1) Yapısal sınır — en önemlisi (Adım 4c'de giriliyor)**
+
+Cloud Run servisinde:
+
+| Ayar | Değer | Neden |
+|---|---|---|
+| Minimum instances | **0** | boştayken hiç ücret yok |
+| Maximum instances | **2** | hesaplama maliyetinin tavanı; trafik patlasa bile 2 konteyneri aşmaz |
+| CPU allocation | only during request processing | istek yokken CPU saymaz |
+
+Bu, faturanın büyümesini engelleyen asıl mekanizma — Preview özelliğine
+bağlı değil, her hesapta çalışır.
+
+**2) Erken uyarı bütçesi — tüm servisler**
 
 Billing → **Budgets & alerts → Create budget**
 
@@ -158,39 +170,36 @@ Billing → **Budgets & alerts → Create budget**
 | Name | `meme-rock-preview` |
 | Time range | Monthly |
 | Services | **All services** |
-| Savings programs / Other savings | **işaretli kalsın** — böylece bütçe ücretsiz katman kredileri düşüldükten sonraki gerçek maliyeti izler |
-| Budget type | **Specified amount** |
-| Amount | **₺1** (para birimin neyse en küçük anlamlı değer) |
+| Savings programs / Other savings | **işaretli kalsın** — böylece bütçe ücretsiz katman kredileri düşüldükten sonraki **net** maliyeti izler |
+| Budget type | Specified amount |
+| Amount | **₺1** |
 | Alert thresholds | 50% / 90% / 100%, Trigger on **Actual** |
 | Email alerts to billing admins | ✅ |
 
-₺1 burada bir tel örgü: her şey ücretsiz katmanda kalıyorsa hiç tetiklenmez.
-Tetiklenirse bir yerde gerçek ücret başlamış demektir.
+Net maliyeti izlediği için, her şey ücretsiz katmandayken hiç tetiklenmez.
+Tetiklenirse gerçekten para ödemeye başlamışsın demektir.
 
-**2) Sert tavan — yalnız Cloud Run**
+**3) Spend cap — varsa kur, yoksa takılma**
 
-İkinci bir bütçe oluştur:
+Spend cap 27 Temmuz 2026'da **Preview**'a girdi. Seçenek şu koşulların
+hepsi sağlanmazsa görünmez:
 
-| Alan | Değer |
-|---|---|
-| Name | `cloud-run-cap` |
-| Scope → Projects | **yalnız `meme-rock-preview`** |
-| Scope → Services | **yalnız Cloud Run** ← tek servis seçmek cap'i açar |
-| Time range | Monthly (zorunlu) |
-| Budget type | Specified amount |
-| Amount | **₺200 civarı** (~5 $) |
-| Actions | **Set a spend cap** seçeneğini etkinleştir |
+- Bütçe **tek proje + tek uygun servise** kapsanmış olmalı
+  (uygun servisler: Cloud Run, Cloud Run functions, Gemini API, Agent Platform)
+- Time range **Monthly** olmalı
+- Hesap **birinci taraf** Google Cloud müşterisi olmalı — bayi (reseller)
+  üzerinden açılan hesaplar kapsam dışı
+- **Billing Account Administrator** rolün olmalı (ya da Project Owner,
+  ya da Billing Account Costs Manager + Project Editor)
+- Projede o servisin **fiilen kullanımı** olmalı — henüz hiç Cloud Run
+  servisi deploy etmediysen seçenek çıkmayabilir
 
-Limit aşılınca Cloud Run otomatik durur; fatura büyümez.
+Seçenek, Create Budget akışının **1. adımında** ("Alerts only" / "Spend cap
+enforcement" tercihi olarak) çıkar — Actions adımında değil.
 
-> ⚠️ Spend cap hesabı **brüt maliyet** üzerinden yapar, ücretsiz katman
-> kredilerini düşmez. Bu yüzden cap'i ₺1 gibi çok düşük tutma — ücretsiz
-> katmandayken bile servisi durdurabilir. Erken uyarıyı 1. bütçe veriyor,
-> 2. bütçe felaket freni.
-
-> Spend cap uygun servisler: Cloud Run, Cloud Run functions, Gemini API,
-> Agent Platform. Artifact Registry ve Cloud Build kapsam dışı — onları
-> temizlik kuralı (Adım 4d) ve ücretsiz katman sınırları koruyor.
+> Çıkmıyorsa: önce Adım 4c'yi yapıp Cloud Run servisini deploy et, sonra
+> bütçeyi yeniden oluşturmayı dene. Yine çıkmazsa hesabın henüz Preview
+> kapsamında değil demektir; 1. ve 2. katman zaten seni koruyor.
 
 ### 4c — Servisi deploy et
 
