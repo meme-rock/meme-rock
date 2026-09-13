@@ -143,14 +143,54 @@ git push -u origin bilal
    yalnızca Kuzey Amerika bölgelerinden geçerli. Frankfurt'a kurarsan çıkış
    trafiği ilk bayttan itibaren ücretli (~$0.12/GB).
 
-### 4b — Harcama tavanı koy (önce bunu yap)
+### 4b — Harcama koruması (önce bunu yap)
 
-Bütçe **uyarıları** harcamayı durdurmaz; **spend cap** durdurur.
+Bütçe **uyarıları** harcamayı durdurmaz; **spend cap** durdurur. Ama spend cap
+yalnızca **tek proje + tek servise** kapsanmış bütçelerde açılır. O yüzden
+iki ayrı bütçe kuruyoruz.
 
-**Billing → Budgets & alerts → Create budget**
-- Scope: `meme-rock-preview` projesi
-- Amount: **$1**
-- **Spend cap**'i etkinleştir → limit aşılırsa servis otomatik durur, fatura gelmez
+**1) Erken uyarı bütçesi — tüm servisler**
+
+Billing → **Budgets & alerts → Create budget**
+
+| Alan | Değer |
+|---|---|
+| Name | `meme-rock-preview` |
+| Time range | Monthly |
+| Services | **All services** |
+| Savings programs / Other savings | **işaretli kalsın** — böylece bütçe ücretsiz katman kredileri düşüldükten sonraki gerçek maliyeti izler |
+| Budget type | **Specified amount** |
+| Amount | **₺1** (para birimin neyse en küçük anlamlı değer) |
+| Alert thresholds | 50% / 90% / 100%, Trigger on **Actual** |
+| Email alerts to billing admins | ✅ |
+
+₺1 burada bir tel örgü: her şey ücretsiz katmanda kalıyorsa hiç tetiklenmez.
+Tetiklenirse bir yerde gerçek ücret başlamış demektir.
+
+**2) Sert tavan — yalnız Cloud Run**
+
+İkinci bir bütçe oluştur:
+
+| Alan | Değer |
+|---|---|
+| Name | `cloud-run-cap` |
+| Scope → Projects | **yalnız `meme-rock-preview`** |
+| Scope → Services | **yalnız Cloud Run** ← tek servis seçmek cap'i açar |
+| Time range | Monthly (zorunlu) |
+| Budget type | Specified amount |
+| Amount | **₺200 civarı** (~5 $) |
+| Actions | **Set a spend cap** seçeneğini etkinleştir |
+
+Limit aşılınca Cloud Run otomatik durur; fatura büyümez.
+
+> ⚠️ Spend cap hesabı **brüt maliyet** üzerinden yapar, ücretsiz katman
+> kredilerini düşmez. Bu yüzden cap'i ₺1 gibi çok düşük tutma — ücretsiz
+> katmandayken bile servisi durdurabilir. Erken uyarıyı 1. bütçe veriyor,
+> 2. bütçe felaket freni.
+
+> Spend cap uygun servisler: Cloud Run, Cloud Run functions, Gemini API,
+> Agent Platform. Artifact Registry ve Cloud Build kapsam dışı — onları
+> temizlik kuralı (Adım 4d) ve ücretsiz katman sınırları koruyor.
 
 ### 4c — Servisi deploy et
 
