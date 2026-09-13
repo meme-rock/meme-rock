@@ -86,7 +86,27 @@ const commonImports = [
   ConfigModule.forRoot({
     isGlobal: true,
   }),
-  MongooseModule.forRoot(mongoUri),
+  MongooseModule.forRoot(mongoUri, {
+    // Varsayılanda Mongoose sunucu bulunamazsa 30 sn sessizce bekler.
+    // Cloud Run bu sırada "konteyner portu dinlemedi" diye deploy'u
+    // düşürür ve gerçek sebep loglara hiç yazılmaz. Kısa tutup
+    // bağlantı olaylarını logluyoruz ki sebep görünür olsun.
+    serverSelectionTimeoutMS: 10000,
+    // Nest varsayılanda sonsuz yeniden dener; bu sırada uygulama hiç
+    // dinlemeye başlamaz ve Cloud Run "port dinlenmedi" diyerek deploy'u
+    // düşürür. Sınırlayıp net bir hatayla çıkmasını sağlıyoruz.
+    retryAttempts: 5,
+    retryDelay: 3000,
+    connectionFactory: (connection) => {
+      connection.on('connected', () =>
+        console.log('✅ MongoDB connected'),
+      );
+      connection.on('error', (err: Error) =>
+        console.error(`❌ MongoDB connection error: ${err.message}`),
+      );
+      return connection;
+    },
+  }),
   HelpersModule,
 ];
 

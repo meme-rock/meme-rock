@@ -8,7 +8,27 @@ import { SpaFallbackFilter } from './common/filters/spa-fallback.filter';
 import { getBotToken } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 
+function logEnvChecklist() {
+  // Değerleri ASLA yazdırma — sadece var/yok.
+  const required = ['MONGODB_URI', 'TELEGRAM_BOT_TOKEN'];
+  const optional = [
+    'REDIS_URL',
+    'REDIS_HOST',
+    'TELEGRAM_WEBHOOK_DOMAIN',
+    'TELEGRAM_WEBHOOK_SECRET',
+    'ADMIN_API_KEY',
+    'TON_ENDPOINT_SECRET',
+    'TON_CONTRACT_ADDRESS',
+  ];
+  const mark = (k: string) => `${process.env[k] ? '✓' : '✗'} ${k}`;
+  console.log('── env ──');
+  console.log('  required: ' + required.map(mark).join('  '));
+  console.log('  optional: ' + optional.map(mark).join('  '));
+  console.log(`  PORT=${process.env.PORT ?? '(unset, defaulting to 8080)'}`);
+}
+
 async function bootstrap() {
+  logEnvChecklist();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // Trust proxy ayarı
   app.getHttpAdapter().getInstance().set('trust proxy', true);
