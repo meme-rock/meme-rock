@@ -78,3 +78,12 @@ mrdump/
 
 # örnek env dosyaları repoda kalsın
 !**/.env*.example
+
+# hata ayıklama dökümleri / kişisel notlar (repoya girmesin)
+booster-star.json
+market-star.json
+premium-star.json
+precheckoutquery.json
+loading_*.json
+tttstast.json
+hosting.txt
