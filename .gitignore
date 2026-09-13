@@ -63,3 +63,27 @@ lerna-debug.log*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+# local dev artifacts
+scripts/initdata.txt
+scripts/url.txt
+client/.env.backup
+server/.env.local.backup
+
+# tek servis build çıktısı (Dockerfile üretir)
+server/public/
+
+# veritabanı yedekleri (asla commit etme)
+mrdump/
+*.bson
+
+# örnek env dosyaları repoda kalsın
+!**/.env*.example
+
+# hata ayıklama dökümleri / kişisel notlar (repoya girmesin)
+booster-star.json
+market-star.json
+premium-star.json
+precheckoutquery.json
+loading_*.json
+tttstast.json
+hosting.txt

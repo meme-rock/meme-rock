@@ -1,0 +1,14 @@
+# Caddy, Let's Encrypt sertifikasını otomatik alır ve yeniler.
+# DOMAIN ortam değişkeni docker-compose.prod.yml'den gelir.
+#
+# Telegram webhook yalnızca 443/80/88/8443 portlarında ve geçerli
+# sertifikalı HTTPS ile çalışır — Caddy 443'te yayın yapar.
+
+{$DOMAIN} {
+	encode gzip
+
+	# Uygulama konteynerine ilet (client + API + webhook hepsi burada)
+	reverse_proxy app:8080 {
+		header_up X-Real-IP {remote_host}
+	}
+}

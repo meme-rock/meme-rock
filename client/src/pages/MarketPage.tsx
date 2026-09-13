@@ -1,14 +1,13 @@
 import { useState } from "react";
 import Lottie from "lottie-react";
-import starAnimation from "../../public/animated-star.json";
-import tonAnimation from "../../public/animated-ton.json";
-import star from "../../public/star.json";
+import starAnimation from "../assets/lottie/animated-star.json";
+import tonAnimation from "../assets/lottie/animated-ton.json";
+import star from "../assets/lottie/star.json";
 import { useLoadStonesMarketDataQuery } from "../redux/services/market/market-api";
 import { usePurchaseStonesWithStarsMutation } from "../redux/services/star/star-api";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import WebApp from "@twa-dev/sdk";
-import "buffer";
 import {
   useTonConnectUI,
   useTonAddress,

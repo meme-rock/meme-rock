@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { TonService } from './ton.service';
 import {
   PurchaseBoosterDto,
@@ -8,6 +17,7 @@ import {
 import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import { Throttle } from '@nestjs/throttler';
 import { TonScheduleService } from './ton-schedule.service';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @UseGuards(CustomThrottlerGuard)
 @Controller('ton')
@@ -53,12 +63,16 @@ export class TonController {
   }
 }
 
+@Public()
 @Controller('ton-schedule')
 export class TonScheduleController {
   constructor(private readonly tonScheduleService: TonScheduleService) {}
 
   @Get('check-ton-payments')
-  async checkTonPayments() {
+  async checkTonPayments(@Headers('x-api-key') api_key: string) {
+    if (api_key !== process.env.TON_ENDPOINT_SECRET) {
+      throw new UnauthorizedException('Invalid Request');
+    }
     return await this.tonScheduleService.checkTonPayments();
   }
 }

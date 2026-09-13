@@ -1,6 +1,8 @@
 import { Controller, Post, Body, Get, UseGuards, Param } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Public } from 'src/common/decorators/public.decorator';
 
+@Public()
 @Controller('throttle-test')
 export class ThrottleTestController {
   @Get('default')

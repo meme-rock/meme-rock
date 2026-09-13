@@ -8,7 +8,6 @@ export class DrillAudio {
   private masterGain: GainNode | null = null;
   private audioInitialized = false;
   private _isMuted = false;
-  private whiteNoiseBuf: AudioBuffer | null = null;
   private pinkNoiseBuf: AudioBuffer | null = null;
   private gravelBuf: AudioBuffer | null = null;
   private drillNodes: {
@@ -32,7 +31,6 @@ export class DrillAudio {
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.gain.setValueAtTime(1, this.audioCtx.currentTime);
     this.masterGain.connect(this.audioCtx.destination);
-    this.whiteNoiseBuf = this.createNoiseBuffer(2);
     this.pinkNoiseBuf = this.createPinkNoiseBuffer(2);
     this.gravelBuf = this.createGravelBuffer(0.15);
     this.audioInitialized = true;
@@ -497,15 +495,6 @@ export class DrillAudio {
     this.masterGain = null;
   }
 
-  private createNoiseBuffer(duration: number): AudioBuffer {
-    const sr = this.audioCtx!.sampleRate;
-    const len = sr * duration;
-    const buf = this.audioCtx!.createBuffer(1, len, sr);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    return buf;
-  }
-
   private createPinkNoiseBuffer(duration: number): AudioBuffer {
     const sr = this.audioCtx!.sampleRate;
     const len = sr * duration;
@@ -546,9 +535,9 @@ export class DrillAudio {
     return buf;
   }
 
-  private makeDistCurve(amount: number): Float32Array {
+  private makeDistCurve(amount: number): Float32Array<ArrayBuffer> {
     const n = 256;
-    const curve = new Float32Array(n);
+    const curve = new Float32Array(new ArrayBuffer(n * 4));
     for (let i = 0; i < n; i++) {
       const x = (i * 2) / n - 1;
       curve[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));

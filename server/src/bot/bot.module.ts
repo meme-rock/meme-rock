@@ -25,30 +25,24 @@ const isWorker = process.env.APP_MODE === 'WORKER';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const token = configService.get<string>('TELEGRAM_BOT_TOKEN');
-        const secret = configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
-        const domain = configService.get<string>('TELEGRAM_WEBHOOK_DOMAIN');
-        const hookPath = `/api/updates/${secret}`;
 
-        if (!token || !domain || !secret) {
-          throw new Error('TELEGRAM Environment variables missing!');
+        if (!token) {
+          throw new Error('TELEGRAM_BOT_TOKEN is not defined');
         }
 
-        // Worker ise webhook kurma (passive mode)
-        const launchOptions = isWorker
-          ? false
-          : {
-              webhook: {
-                hookPath,
-                domain,
-                secretToken: secret,
-              },
-            };
-
+        // Webhook'u BURADA kurmuyoruz. Telegraf'ın açılışta setWebhook
+        // çağırması, çağrı başarısız olduğunda tüm process'i öldürüyor —
+        // ki Cloud Run'da ilk deploy'da servis adresi henüz bilinmediği
+        // için bu kilitlenmeye yol açar.
+        //
+        // Bunun yerine main.ts sunucu dinlemeye başladıktan SONRA
+        // webhook'u en iyi çaba ilkesiyle kurar; hata olursa loglanır
+        // ve uygulama çalışmaya devam eder.
         return {
           middlewares: [session()],
           token: token,
           polling: false,
-          launchOptions: launchOptions,
+          launchOptions: false,
         };
       },
     }),

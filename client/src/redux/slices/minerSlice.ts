@@ -8,6 +8,7 @@ const initialState: IUserMinerState = {
     profit_per_hour: 0,
     stone_price_to_upgrade: 0,
     reward_type: EMinerRewardType.STONE,
+    max_periods: 2,
   },
   all_miners: [],
 };

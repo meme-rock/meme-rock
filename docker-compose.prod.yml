@@ -1,0 +1,66 @@
+# Sunucu üzerinde tek servis + TLS reverse proxy.
+#
+# Kullanım (VM üzerinde):
+#   cp .env.production.example .env.production   # doldur
+#   export DOMAIN=memerock.duckdns.org
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Mongo ve Redis dışarıda (Atlas + Upstash). Onları da bu makinede
+# çalıştırmak istersen aşağıdaki yorumlu bloğu aç ve .env.production
+# içindeki MONGODB_URI / REDIS_URL değerlerini yerel adreslere çevir.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meme-rock-app
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      - PORT=8080
+      - APP_MODE=
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: meme-rock-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:?DOMAIN ortam değişkeni gerekli, örn. memerock.duckdns.org}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  # --- İsteğe bağlı: Mongo ve Redis'i de bu makinede çalıştır ---
+  # Atlas'ın 512 MB veya Upstash'in 500k komut/ay limiti dar gelirse aç.
+  #
+  # mongo:
+  #   image: mongo:7
+  #   container_name: meme-rock-mongo
+  #   restart: always
+  #   volumes:
+  #     - mongo_data:/data/db
+  #   expose:
+  #     - "27017"
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: meme-rock-redis
+  #   restart: always
+  #   command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+  #   expose:
+  #     - "6379"
+
+volumes:
+  caddy_data:
+  caddy_config:
+  # mongo_data:

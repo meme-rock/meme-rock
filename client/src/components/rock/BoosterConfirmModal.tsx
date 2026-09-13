@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lock, Unlock, TrendingUp, AlertCircle } from "lucide-react";
+import { X, Lock, AlertCircle } from "lucide-react";
 import { formatInteger } from "../../utils/formatNumber";
 
 interface BoosterConfirmModalProps {
@@ -49,7 +49,6 @@ export const BoosterConfirmModal = ({
   onConfirm,
   isLoading,
   type,
-  boosterTitle,
   currentLevel,
   nextLevel,
   cost,

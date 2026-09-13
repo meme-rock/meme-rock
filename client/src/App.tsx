@@ -18,6 +18,7 @@ import { LeaderBoardPage2 } from "./pages/LeaderBoardPage2";
 import { AirdropPage } from "./pages/AirdropPage";
 import { MiniGamesPage } from "./pages/MiniGamesPage";
 import { DrillPage } from "./pages/DrillPage";
+import { PreviewDisclaimerModal } from "./components/shared/PreviewDisclaimerModal";
 
 function AppContent() {
   const user = useSelector((state: RootState) => state.user);
@@ -57,6 +58,8 @@ function AppContent() {
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  // Her açılışta gösterilir, kalıcı olarak saklanmaz
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
 
   // Initialize global rock counter (runs across all pages)
   useGlobalRockCounter();
@@ -71,6 +74,10 @@ function App() {
 
   return (
     <TonConnectUIProvider manifestUrl="https://gist.githubusercontent.com/bilalalibindal/28570ea4b0f3b327a2f8a2732e29a6b9/raw/fd8ccc3bdc6e970eaf88cd1e853be7bfc352f15c/tonconnect-manifest.json">
+      <PreviewDisclaimerModal
+        isOpen={!hasAcceptedDisclaimer}
+        onAccept={() => setHasAcceptedDisclaimer(true)}
+      />
       <Router>
         <AppContent />
       </Router>
