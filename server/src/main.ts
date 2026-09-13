@@ -66,6 +66,43 @@ async function bootstrap() {
 
     await app.listen(process.env.PORT ?? 8080);
     console.log(`✅ Server running on port ${process.env.PORT ?? 8080}`);
+
+    // Webhook'u sunucu DİNLEMEYE BAŞLADIKTAN SONRA kur.
+    // Başarısız olursa uygulama çalışmaya devam eder — Cloud Run'da ilk
+    // deploy'da servis adresi henüz bilinmez, o yüzden bu adım
+    // uygulamanın ayağa kalkmasını engellememelidir.
+    await registerTelegramWebhook(bot);
+  }
+}
+
+async function registerTelegramWebhook(bot: Telegraf) {
+  if (process.env.TELEGRAM_WEBHOOK_DISABLED === 'true') {
+    console.log('ℹ️  Telegram webhook setup skipped (TELEGRAM_WEBHOOK_DISABLED)');
+    return;
+  }
+
+  const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN;
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+
+  if (!domain || !secret) {
+    console.warn(
+      '⚠️  Telegram webhook not registered: TELEGRAM_WEBHOOK_DOMAIN or ' +
+        'TELEGRAM_WEBHOOK_SECRET is missing. The app runs, but the bot will ' +
+        'not receive updates until both are set and the service redeployed.',
+    );
+    return;
+  }
+
+  const url = `${domain.replace(/\/$/, '')}/api/updates/${secret}`;
+
+  try {
+    await bot.telegram.setWebhook(url, { secret_token: secret });
+    console.log(`✅ Telegram webhook registered: ${url}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      `⚠️  Telegram webhook registration failed (app still running): ${message}`,
+    );
   }
 }
 
