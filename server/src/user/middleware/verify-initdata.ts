@@ -56,9 +56,14 @@ export const parseAndVerifyInitData = (
   const hash = urlParams.get('hash');
   if (!hash) return null;
 
+  // SADECE 'hash' çıkarılır.
+  //
+  // 'signature' alanı da çıkarılmamalı: o, Ed25519 ile yapılan ÜÇÜNCÜ TARAF
+  // doğrulaması içindir ve orada hem 'hash' hem 'signature' hariç tutulur.
+  // Bot tarafındaki HMAC doğrulamasında ise Telegram 'hash'i, gönderdiği
+  // diğer TÜM alanlar üzerinden hesaplar — 'signature' dahil. Onu silmek
+  // gerçek Telegram istemcisinden gelen initData'yı geçersiz kılar.
   urlParams.delete('hash');
-  // 'signature' üçüncü taraf doğrulaması içindir, data_check_string'e girmez
-  urlParams.delete('signature');
   urlParams.sort();
 
   const dataCheckString = [...urlParams.entries()]
