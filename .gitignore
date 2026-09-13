@@ -75,3 +75,6 @@ server/public/
 # veritabanı yedekleri (asla commit etme)
 mrdump/
 *.bson
+
+# örnek env dosyaları repoda kalsın
+!**/.env*.example

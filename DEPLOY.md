@@ -5,8 +5,10 @@ Kökteki [`Dockerfile`](Dockerfile) client'ı build edip `public/` altına koyar
 `main.ts` orayı bulup SPA'yı yayınlar. Ayrı frontend hosting'e gerek yoktur.
 
 ```
+                    Oracle Always Free VM (ARM)
                     ┌─────────────────────────────┐
-   Telegram ────────▶  tek servis (443/HTTPS)     │
+   Telegram ────────▶  Caddy :443 (Let's Encrypt) │
+                    │         ↓                   │
    Mini App         │                             │
                     │  /                → SPA     │
                     │  /profile, /rock… → SPA     │
@@ -19,6 +21,9 @@ Kökteki [`Dockerfile`](Dockerfile) client'ı build edip `public/` altına koyar
                            │               │
                     MongoDB Atlas     Upstash Redis
 ```
+
+Tek container: client, API, bot webhook ve ödeme mutabakat ucu aynı process'te.
+Caddy önünde TLS sonlandırır. Ayrı worker container'ına gerek yok.
 
 ---
 
@@ -106,39 +111,133 @@ başka ayar gerekmez; `REDIS_HOST` / `REDIS_PORT` girmene gerek yok
 
 ---
 
-## Adım 3 — Kodu GitHub'a gönder
+## Adım 3 — Kodu GitHub'a gönder ✅
+
+Repo: **github.com/meme-rock/meme-rock** · Branch: **`bilal`**
 
 ```bash
-git checkout -b deploy
 git add .
-git commit -m "Deploy: single-service build, auth guard, preview disclaimer"
-git push -u origin deploy
+git commit -m "..."
+git push -u origin bilal
+```
+
+> Repo `bilalalibindal/meme-rock`'tan `meme-rock/meme-rock` organizasyonuna
+> taşınmış. Push hâlâ çalışıyor (GitHub yönlendiriyor) ama uyarıdan kurtulmak
+> için remote'u güncelleyebilirsin:
+> `git remote set-url origin https://github.com/meme-rock/meme-rock.git`
+
+---
+
+## Adım 4 — Oracle Cloud Always Free sunucusu
+
+> Koyeb'in ücretsiz planı Mistral satın alımından sonra **yeni kullanıcılara
+> kapandı**, o yüzden Oracle'ın kalıcı ücretsiz katmanını kullanıyoruz.
+> Gerçekten hep açık, uykuya dalmaz, süresi dolmaz.
+
+### 4a — Hesap ve sunucu
+
+1. **cloud.oracle.com** → **Start for free** → hesap aç
+   - Kart doğrulaması ister ama **Always Free** kaynaklarda ücret çıkmaz
+   - Home Region: **Germany Central (Frankfurt)**
+2. **Compute → Instances → Create instance**
+   - Image: **Ubuntu 24.04**
+   - Shape: **Change shape → Ampere → VM.Standard.A1.Flex**
+   - **2 OCPU / 12 GB** (Always Free sınırı — 15 Haziran 2026'da 4/24'ten düşürüldü)
+   - SSH: **Paste public key** → `cat ~/.ssh/id_ed25519.pub` çıktısını yapıştır
+     (anahtarın yoksa: `ssh-keygen -t ed25519`)
+   - **Create**
+
+> **"Out of host capacity"** hatası sık görülür — ARM talebi yüksek. Başka bir
+> Availability Domain seç veya birkaç saat sonra tekrar dene.
+
+### 4b — Portları aç (İKİ yerde)
+
+Bu adım atlanırsa site açılmaz; Oracle'ın klasik tuzağı.
+
+**1) Bulut tarafı** — Instance → Subnet → Security List → **Add Ingress Rules**:
+
+| Source CIDR | Protocol | Port |
+|---|---|---|
+| `0.0.0.0/0` | TCP | 80 |
+| `0.0.0.0/0` | TCP | 443 |
+
+**2) Sunucu içi firewall** — Ubuntu imajı 22 dışındaki her şeyi kapatır:
+
+```bash
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo netfilter-persistent save
+```
+
+### 4c — Alan adı (TLS için zorunlu)
+
+Telegram geçerli sertifika ister; Let's Encrypt **çıplak IP'ye sertifika vermez**.
+Kendi alan adın yoksa ücretsiz bir tane al:
+
+1. **duckdns.org** → GitHub/Google ile giriş
+2. Bir alt alan adı oluştur, örn. `memerock` → `memerock.duckdns.org`
+3. **current ip** alanına sunucunun Public IP'sini yaz → **update ip**
+
+Yayıldığını doğrula: `dig +short memerock.duckdns.org`
+
+### 4d — Sunucuyu hazırla
+
+```bash
+ssh ubuntu@<PUBLIC_IP>
+```
+
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
+sudo usermod -aG docker $USER && newgrp docker
+```
+
+### 4e — Projeyi çek ve çalıştır
+
+```bash
+git clone https://github.com/meme-rock/meme-rock.git
+cd meme-rock && git checkout bilal
+```
+
+```bash
+cp .env.production.example .env.production
+nano .env.production        # Adım 5'teki değerleri doldur
+```
+
+```bash
+export DOMAIN=memerock.duckdns.org
+echo "DOMAIN=$DOMAIN" >> ~/.bashrc
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+İlk build birkaç dakika sürer (ARM üzerinde client + server derleniyor).
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f app
+```
+
+`🖥️  Serving client from ...` ve `✅ Server running on port 8080` görmelisin.
+Caddy sertifikayı otomatik alır; `logs caddy` ile takip edebilirsin.
+
+### 4f — Güncelleme
+
+```bash
+cd ~/meme-rock && git pull
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ---
 
-## Adım 4 — Servisi deploy et (Koyeb)
+## Adım 5 — Ortam değişkenleri (`.env.production`)
 
-1. app.koyeb.com → **Create Service** → **GitHub**
-2. Repo: `meme-rock`, branch: `deploy`
-3. Builder: **Dockerfile**, context: **`.`** (repo kökü), path: **`./Dockerfile`**
-4. Instance: **Free**, bölge: **Frankfurt**
-5. Port: **8080**
-6. **Autoscaling → min instances = 1** (scale-to-zero KAPALI — uyursa webhook kaçar)
-7. Env değişkenlerini gir (Adım 5), **Deploy**
-
-Aynı akış Render / Cloud Run / Railway'de de geçerlidir; tek fark arayüz.
-
----
-
-## Adım 5 — Ortam değişkenleri
+Sunucuda `nano .env.production` ile doldur. Şablon repoda:
+[`.env.production.example`](.env.production.example)
 
 ```
-MONGODB_URI=mongodb+srv://…/meme-rock?retryWrites=true&w=majority
-REDIS_URL=rediss://default:<password>@<endpoint>.upstash.io:6379
+MONGODB_URI=mongodb+srv://KULLANICI:PAROLA@memerockpreview.kke0p8e.mongodb.net/meme-rock?retryWrites=true&w=majority
+REDIS_URL=rediss://default:TOKEN@known-bulldog-179141.upstash.io:6379
 
 TELEGRAM_BOT_TOKEN=<BotFather token>
-TELEGRAM_WEBHOOK_DOMAIN=https://<servis-adresin>
+TELEGRAM_WEBHOOK_DOMAIN=https://memerock.duckdns.org
 TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
 
 ADMIN_API_KEY=<openssl rand -hex 24>
@@ -157,8 +256,11 @@ kendi kurar. O değişken yalnızca lokal geliştirme içindir.
 **Girme:** `VITE_*` — bunlar runtime değil build arg'ıdır ve boş kalmaları gerekir
 (client aynı origin'e göreli istek atar, CORS derdi olmaz).
 
+`MONGODB_URI` içinde `/meme-rock` yoksa uygulama açılışta net hata verir —
+sessizce boş `test` veritabanına bağlanmaz.
+
 > ⚠️ Telegram webhook yalnızca **443 / 80 / 88 / 8443** portlarında ve geçerli
-> sertifikalı HTTPS ile çalışır. Bu platformlar 443'te yayın yapar.
+> sertifikalı HTTPS ile çalışır. Caddy 443'te yayın yapıyor.
 
 ---
 
