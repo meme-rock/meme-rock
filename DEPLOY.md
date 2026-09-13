@@ -239,12 +239,13 @@ kuralını ancak deploy tamamlandıktan sonra kurabilirsin.
 Ücretsiz depolama **tüm faturalandırma hesabı için 0,5 GB** ve her deploy yeni
 bir image yazar. Kural koymazsan birkaç deploy sonra ücret başlar.
 
+**Konsoldan:**
+
 1. Konsol arama çubuğuna **Artifact Registry** yaz → **Repositories**
-2. Bölge filtresini **us-central1** yap
-3. **`cloud-run-source-deploy`** deposuna tıkl
-4. Üstteki sekmelerden **Cleanup policies** → **Add policy** (ya da
-   depo listesinde satırın sonundaki ⋮ → **Edit cleanup policies**)
-5. Policy ekle:
+2. Listede **`cloud-run-source-deploy`** satırını **seç** (adına tıklama —
+   solundaki kutuyu işaretle ya da satırı seçili hale getir)
+3. Üstteki araç çubuğundan **EDIT REPOSITORY**
+4. Açılan sayfada **Cleanup policies** bölümüne in → **ADD A CLEANUP POLICY**
 
 | Alan | Değer |
 |---|---|
@@ -252,8 +253,32 @@ bir image yazar. Kural koymazsan birkaç deploy sonra ücret başlar.
 | Policy type | **Keep most recent versions** |
 | Keep count | **3** |
 
-6. **Dry run** kutusu varsa **kapat** — açık kalırsa kural sadece raporlar, silmez
-7. **Save**
+5. **Dry run** açıksa **kapat** — açık kalırsa kural sadece raporlar, silmez
+6. **SAVE**
+
+> Cleanup policies ayrı bir sekme değil, deponun **düzenleme** ekranının
+> içinde. Depo adına tıklayıp paket listesine girersen orada göremezsin.
+
+**Ya da tek komutla (Cloud Shell'de):**
+
+```bash
+cat > /tmp/keep3.json <<'EOF'
+[
+  {
+    "name": "keep-3",
+    "action": {"type": "Keep"},
+    "mostRecentVersions": {"keepCount": 3}
+  }
+]
+EOF
+
+gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy \
+  --location=us-central1 \
+  --policy=/tmp/keep3.json \
+  --no-dry-run
+```
+
+`--no-dry-run` şart; olmazsa kural kurulur ama hiçbir şey silmez.
 
 Deponun boyutunu **Repositories** listesindeki *Size* sütunundan takip
 edebilirsin. Bizim image ~55 MB, üç sürüm ~165 MB → 0,5 GB içinde rahat.
