@@ -5,10 +5,9 @@ Kökteki [`Dockerfile`](Dockerfile) client'ı build edip `public/` altına koyar
 `main.ts` orayı bulup SPA'yı yayınlar. Ayrı frontend hosting'e gerek yoktur.
 
 ```
-                    Oracle Always Free VM (ARM)
+                    Cloud Run (us-central1)
                     ┌─────────────────────────────┐
-   Telegram ────────▶  Caddy :443 (Let's Encrypt) │
-                    │         ↓                   │
+   Telegram ────────▶  tek container, HTTPS 443   │
    Mini App         │                             │
                     │  /                → SPA     │
                     │  /profile, /rock… → SPA     │
@@ -23,7 +22,8 @@ Kökteki [`Dockerfile`](Dockerfile) client'ı build edip `public/` altına koyar
 ```
 
 Tek container: client, API, bot webhook ve ödeme mutabakat ucu aynı process'te.
-Caddy önünde TLS sonlandırır. Ayrı worker container'ına gerek yok.
+Cloud Run TLS'i kendi sağlar. Ayrı worker container'ına gerek yok; ödeme
+mutabakatını Cloud Scheduler tetikler.
 
 ---
 
@@ -128,109 +128,80 @@ git push -u origin bilal
 
 ---
 
-## Adım 4 — Oracle Cloud Always Free sunucusu
+## Adım 4 — Google Cloud Run
 
-> Koyeb'in ücretsiz planı Mistral satın alımından sonra **yeni kullanıcılara
-> kapandı**, o yüzden Oracle'ın kalıcı ücretsiz katmanını kullanıyoruz.
-> Gerçekten hep açık, uykuya dalmaz, süresi dolmaz.
+> Koyeb'in ücretsiz planı Mistral satın alımından sonra yeni kullanıcılara
+> kapandı. Cloud Run'ın ücretsiz katmanı **her ay sıfırlanır** ve kalıcıdır.
+> Oracle VM alternatifi hâlâ geçerli: [`docker-compose.prod.yml`](docker-compose.prod.yml)
+> ve [`Caddyfile`](Caddyfile) o yol için repoda duruyor.
 
-### 4a — Hesap ve sunucu
+### 4a — Proje ve bölge
 
-1. **cloud.oracle.com** → **Start for free** → hesap aç
-   - Kart doğrulaması ister ama **Always Free** kaynaklarda ücret çıkmaz
-   - Home Region: **Germany Central (Frankfurt)**
-2. **Compute → Instances → Create instance**
-   - Image: **Ubuntu 24.04**
-   - Shape: **Change shape → Ampere → VM.Standard.A1.Flex**
-   - **2 OCPU / 12 GB** (Always Free sınırı — 15 Haziran 2026'da 4/24'ten düşürüldü)
-   - SSH: **Paste public key** → `cat ~/.ssh/id_ed25519.pub` çıktısını yapıştır
-     (anahtarın yoksa: `ssh-keygen -t ed25519`)
-   - **Create**
+1. **console.cloud.google.com** → yeni proje: `meme-rock-preview`
+2. Faturalandırma hesabı bağla (kart doğrulaması; ücretsiz katmanda ücret çıkmaz)
+3. **Bölge: `us-central1` seç.** Bu önemli — ücretsiz 1 GiB/ay çıkış trafiği
+   yalnızca Kuzey Amerika bölgelerinden geçerli. Frankfurt'a kurarsan çıkış
+   trafiği ilk bayttan itibaren ücretli (~$0.12/GB).
 
-> **"Out of host capacity"** hatası sık görülür — ARM talebi yüksek. Başka bir
-> Availability Domain seç veya birkaç saat sonra tekrar dene.
+### 4b — Harcama tavanı koy (önce bunu yap)
 
-### 4b — Portları aç (İKİ yerde)
+Bütçe **uyarıları** harcamayı durdurmaz; **spend cap** durdurur.
 
-Bu adım atlanırsa site açılmaz; Oracle'ın klasik tuzağı.
+**Billing → Budgets & alerts → Create budget**
+- Scope: `meme-rock-preview` projesi
+- Amount: **$1**
+- **Spend cap**'i etkinleştir → limit aşılırsa servis otomatik durur, fatura gelmez
 
-**1) Bulut tarafı** — Instance → Subnet → Security List → **Add Ingress Rules**:
+### 4c — Servisi deploy et
 
-| Source CIDR | Protocol | Port |
-|---|---|---|
-| `0.0.0.0/0` | TCP | 80 |
-| `0.0.0.0/0` | TCP | 443 |
+**Cloud Run → Create service → Continuously deploy from a repository**
 
-**2) Sunucu içi firewall** — Ubuntu imajı 22 dışındaki her şeyi kapatır:
+1. **Set up with Cloud Build** → GitHub'ı bağla
+   - Repo bir organizasyonda (`meme-rock/meme-rock`), Cloud Build'in GitHub
+     uygulamasına **organizasyon için** erişim vermen gerekir
+2. Repository: `meme-rock/meme-rock` · Branch: `bilal`
+3. Build type: **Dockerfile** · Source location: `/Dockerfile`
+4. Ayarlar:
 
-```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
-sudo netfilter-persistent save
-```
+| Alan | Değer |
+|---|---|
+| Region | **us-central1** |
+| Authentication | **Allow unauthenticated invocations** |
+| CPU allocation | **CPU is only allocated during request processing** |
+| Minimum instances | **0** (ücretsiz katman için şart) |
+| Maximum instances | **2** (kaza faturasına karşı) |
+| Memory | **512 MiB** |
+| Container port | **8080** |
 
-### 4c — Alan adı (TLS için zorunlu)
+5. **Variables & Secrets** → Adım 5'teki değişkenleri gir → **Create**
 
-Telegram geçerli sertifika ister; Let's Encrypt **çıplak IP'ye sertifika vermez**.
-Kendi alan adın yoksa ücretsiz bir tane al:
+> Cloud Build'de **machine type'ı değiştirme** — özel makine tipi seçmek
+> ücretsiz katmanı tamamen iptal eder. Varsayılanı bırak.
 
-1. **duckdns.org** → GitHub/Google ile giriş
-2. Bir alt alan adı oluştur, örn. `memerock` → `memerock.duckdns.org`
-3. **current ip** alanına sunucunun Public IP'sini yaz → **update ip**
+### 4d — Artifact Registry temizlik kuralı (şart)
 
-Yayıldığını doğrula: `dig +short memerock.duckdns.org`
+Ücretsiz depolama **tüm faturalandırma hesabı için 0.5 GB** ve her deploy yeni
+bir image yazar. Kural koymazsan birkaç deploy sonra ücret başlar.
 
-### 4d — Sunucuyu hazırla
+**Artifact Registry → `cloud-run-source-deploy` → Cleanup policies → Add**
+- Policy type: **Keep most recent versions**
+- Keep count: **3**
 
-```bash
-ssh ubuntu@<PUBLIC_IP>
-```
+Eski projelerden kalan image'ları da kontrol et — kota hesap geneli.
 
-```bash
-sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
-sudo usermod -aG docker $USER && newgrp docker
-```
+### 4e — Webhook adresini bağla
 
-### 4e — Projeyi çek ve çalıştır
-
-```bash
-git clone https://github.com/meme-rock/meme-rock.git
-cd meme-rock && git checkout bilal
-```
-
-```bash
-cp .env.production.example .env.production
-nano .env.production        # Adım 5'teki değerleri doldur
-```
-
-```bash
-export DOMAIN=memerock.duckdns.org
-echo "DOMAIN=$DOMAIN" >> ~/.bashrc
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-İlk build birkaç dakika sürer (ARM üzerinde client + server derleniyor).
-
-```bash
-docker compose -f docker-compose.prod.yml logs -f app
-```
-
-`🖥️  Serving client from ...` ve `✅ Server running on port 8080` görmelisin.
-Caddy sertifikayı otomatik alır; `logs caddy` ile takip edebilirsin.
-
-### 4f — Güncelleme
-
-```bash
-cd ~/meme-rock && git pull
-docker compose -f docker-compose.prod.yml up -d --build
-```
+İlk deploy bitince Cloud Run bir adres verir
+(`https://meme-rock-xxxxx-uc.a.run.app`). Bunu `TELEGRAM_WEBHOOK_DOMAIN`
+değişkenine yaz ve **Edit & deploy new revision** ile yeniden yayınla.
 
 ---
 
-## Adım 5 — Ortam değişkenleri (`.env.production`)
+## Adım 5 — Ortam değişkenleri
 
-Sunucuda `nano .env.production` ile doldur. Şablon repoda:
-[`.env.production.example`](.env.production.example)
+Cloud Run'da **Variables & Secrets** sekmesine tek tek gir.
+Tam liste ve açıklamalar: [`.env.production.example`](.env.production.example)
+(Oracle VM yolunu seçersen aynı değerleri `.env.production` dosyasına yazarsın.)
 
 ```
 MONGODB_URI=mongodb+srv://KULLANICI:PAROLA@memerockpreview.kke0p8e.mongodb.net/meme-rock?retryWrites=true&w=majority
@@ -282,15 +253,18 @@ curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
 
 ## Adım 7 — Ödeme mutabakat cron'u
 
-Ayrı worker yerine dışarıdan bir cron bu ucu dürtsün:
+Ayrı worker yerine **Cloud Scheduler** bu ucu dürtsün (3 iş ücretsiz):
 
-```
-GET  https://<servis-adresin>/market/check-ton-payments
-Header:  x-api-key: <TON_ENDPOINT_SECRET>
-```
+**Cloud Scheduler → Create job**
+- Region: `us-central1`
+- Frequency: `*/5 * * * *` (5 dakikada bir)
+- Target: **HTTP**
+- URL: `https://<cloud-run-adresin>/market/check-ton-payments`
+- Method: **GET**
+- Header: `x-api-key` = `<TON_ENDPOINT_SECRET>`
 
-Ücretsiz: **cron-job.org** (dakikalık) veya GitHub Actions `schedule` (min 5 dk).
-Anahtarsız istek 401 döner.
+Anahtarsız istek 401 döner. Ücretsiz alternatif: cron-job.org veya
+GitHub Actions `schedule` (en sık 5 dakika).
 
 ---
 
@@ -337,6 +311,31 @@ curl -s -o /dev/null -w "cron yok   %{http_code}\n"  "$BASE/market/check-ton-pay
 Beklenen: `200, 200, 401, 401, 401`
 
 Sonra Telegram'dan Mini App'i aç — önce uyarı modalı, sonra oyun gelmeli.
+
+---
+
+## Maliyet: gerçekten $0 mı?
+
+Bu preview için evet, ama üç şarta bağlı.
+
+| Kalem | Ücretsiz (aylık, sıfırlanır) | Bu projenin kullanımı |
+|---|---|---|
+| Cloud Run istek | 2.000.000 | binlerce → ✅ |
+| Cloud Run CPU | 180.000 vCPU-sn | sıfıra iniyor → ✅ |
+| Cloud Run bellek | 360.000 GiB-sn | ✅ |
+| Cloud Build | 2.500 dakika | ~5 dk/deploy → 500 deploy → ✅ |
+| Cloud Scheduler | 3 iş | 1 iş → ✅ |
+| Cloud Logging | 50 GiB | ✅ |
+| **Çıkış trafiği** | **1 GiB — yalnız Kuzey Amerika'dan** | ~600 KB/açılış → ~1.700 açılış |
+| **Artifact Registry** | **0,5 GB — hesap geneli** | ~55 MB/image |
+
+**Şartlar:**
+1. Bölge **us-central1** olmalı — Avrupa'da çıkış trafiği ücretsiz değil
+2. Artifact Registry'de **cleanup policy** kurulu olmalı (Adım 4d)
+3. **Spend cap** $1'a ayarlı olmalı (Adım 4b) — aşılırsa servis durur, fatura gelmez
+
+Ayda ~1.700 sayfa açılışını aşarsan çıkış trafiği $0,12/GB'den ücretlenir;
+5.000 açılış ≈ $0,25. Spend cap bunu da durdurur.
 
 ---
 
